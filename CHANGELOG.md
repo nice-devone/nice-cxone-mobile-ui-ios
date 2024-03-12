@@ -1,5 +1,11 @@
-<a name="unreleased"></a>
-## [Unreleased]
+<a name="1.3.1"></a>
+## [1.3.1] - 2024-03-12
+
+### Features
+- Add Privacy manifest
+
+<a name="1.3.0"></a>
+## [1.3.0] - 2024-03-04
 
 ### Bug Fixes
 - Handle different thread correctly
