@@ -40,7 +40,7 @@ let package = Package(
                 .byName(name: "GSPlayer"),
                 .product(name: "CXoneChatSDK", package: "nice-cxone-mobile-sdk-ios")
             ],
-            path: "../cxone-chat-ui/Sources",
+            path: "Sources",
             resources: [
                 .copy("../PrivacyInfo.xcprivacy")
             ],
