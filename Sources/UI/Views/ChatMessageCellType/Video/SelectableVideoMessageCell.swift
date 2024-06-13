@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -69,8 +69,7 @@ struct SelectableVideoMessageCell: View {
                 .overlay(
                     thumbnailOverlay
                         .imageScale(.large)
-                        .foregroundColor(style.backgroundColor.opacity(0.5))
-                        .colorInvert()
+                        .foregroundColor(style.formTextColor.opacity(0.5))
                         .padding(10)
                         .background(
                             Circle()
@@ -88,7 +87,7 @@ struct SelectableVideoMessageCell: View {
                     .padding([.top, .trailing], 10)
             }
         }
-        .cornerRadius(14)
+        .cornerRadius(StyleGuide.Message.cornerRadius)
     }
 }
 
@@ -98,12 +97,12 @@ private extension SelectableVideoMessageCell {
 
     @ViewBuilder
     var thumbnail: some View {
-        if let thumbnail = getThumbnail() {
+        if let thumbnail = viewModel.cachedVideoURL?.getVideoThumbnail(maximumSize: CGSize(width: width, height: MultipleAttachmentContainer.cellDimension)) {
             thumbnail
                 .resizable()
                 .scaledToFill()
         } else {
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: StyleGuide.Message.cornerRadius)
         }
     }
 
@@ -113,31 +112,6 @@ private extension SelectableVideoMessageCell {
             Asset.Attachment.videoInFullScreen
         } else {
             Asset.Attachment.play
-        }
-    }
-}
-
-// MARK: - Private methods
-
-private extension SelectableVideoMessageCell {
-
-    private func getThumbnail() -> Image? {
-        guard let videoURL = viewModel.cachedVideoURL else {
-            return nil
-        }
-        let asset = AVAsset(url: videoURL)
-        let assetImgGenerate = AVAssetImageGenerator(asset: asset)
-        assetImgGenerate.appliesPreferredTrackTransform = true
-        assetImgGenerate.maximumSize = CGSize(width: width, height: MultipleAttachmentContainer.cellDimension)
-
-        do {
-            let img = try assetImgGenerate.copyCGImage(at: CMTimeMakeWithSeconds(1.0, preferredTimescale: 600), actualTime: nil)
-
-            return Image(uiImage: UIImage(cgImage: img))
-        } catch {
-            error.logError()
-
-            return nil
         }
     }
 }

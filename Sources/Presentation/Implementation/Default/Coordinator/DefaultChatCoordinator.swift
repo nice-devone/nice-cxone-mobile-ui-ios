@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -32,6 +32,10 @@ public class DefaultChatCoordinator {
     var onFinished: (() -> Void)?
     
     public var style = ChatStyle()
+
+    public var chatLocalization = ChatLocalization()
+    
+    private var appViewsStack = [UIViewController]()
     
     // MARK: - Init
     
@@ -51,12 +55,9 @@ public class DefaultChatCoordinator {
     /// It enables you to create and customize chat interactions and provides flexibility in managing the chat's appearance and behavior.
     public func start(threadIdToOpen: UUID? = nil, onFinished: (() -> Void)?) {
         self.onFinished = onFinished
-
-        let viewModel = DefaultChatCoordinatorViewModel(coordinator: self)
-        let view = DefaultChatCoordinatorView(viewModel: viewModel, threadIdToOpen: threadIdToOpen)
-            .environmentObject(self.style)
+        self.appViewsStack = navigationController.viewControllers
         
-        navigationController.show(UIHostingController(rootView: view), sender: self)
+        showCoordinator(threadIdToOpen: threadIdToOpen)
     }
     
     /// A function that presents a form view with custom fields to collect user input.
@@ -82,7 +83,12 @@ public class DefaultChatCoordinator {
     ///     ...
     /// }
     /// ```
-    public func presentForm(title: String, customFields: [FormCustomFieldType], onFinished: @escaping ([String: String]) -> Void) {
+    public func presentForm(
+        title: String,
+        customFields: [FormCustomFieldType],
+        onFinished: @escaping ([String: String]) -> Void,
+        onCancel: (() -> Void)? = nil
+    ) {
         LogManager.trace("Presenting \(title) form")
         
         let view = FormView(
@@ -93,10 +99,15 @@ public class DefaultChatCoordinator {
                 onFinished(customFields)
         }, onCancel: {
             self.navigationController.dismiss(animated: true)
-        })            
-            .environmentObject(style)
+            
+            onCancel?()
+        })
+        .environmentObject(style)
+        .environmentObject(chatLocalization)
 
-        navigationController.present(UIHostingController(rootView: view), animated: true)
+        let controller = UIHostingController(rootView: view)
+        controller.isModalInPresentation = true
+        navigationController.present(controller, animated: true)
     }
 }
 
@@ -104,20 +115,42 @@ public class DefaultChatCoordinator {
 
 extension DefaultChatCoordinator {
     
-    func showThread(_ thread: ChatThread) {
-        let view = DefaultChatView(chatThread: thread, coordinator: self)
+    func dismiss(animated: Bool) {
+        navigationController.setViewControllers(appViewsStack, animated: animated)
+    }
+    
+    func showCoordinator(threadIdToOpen: UUID? = nil) {
+        let viewModel = DefaultChatCoordinatorViewModel(coordinator: self)
+        viewModel.initializeViewModels(localization: chatLocalization)
+        let view = DefaultChatCoordinatorView(viewModel: viewModel, threadIdToOpen: threadIdToOpen, localization: chatLocalization)
             .environmentObject(style)
+            .environmentObject(chatLocalization)
         
+        var stack = appViewsStack
+        stack.append(UIHostingController(rootView: view))
+        
+        navigationController.setViewControllers(stack, animated: true)
+    }
+    
+    func showThread(_ thread: ChatThread) {
+        let view = DefaultChatView(viewModel: DefaultChatViewModel(thread: thread, coordinator: self, localization: chatLocalization))
+            .environmentObject(style)
+            .environmentObject(chatLocalization)
+
         navigationController.show(UIHostingController(rootView: view), sender: self)
     }
     
     func presentUpdateThreadNameAlert(completion: @escaping (String) -> Void) {
-        let controller = UIAlertController(title: "Update Thread Name", message: "Enter a name for this thread", preferredStyle: .alert)
+        let controller = UIAlertController(
+            title: chatLocalization.alertUpdateThreadNameTitle,
+            message: chatLocalization.alertUpdateThreadNameMessage,
+            preferredStyle: .alert
+        )
         controller.addTextField { textField in
-            textField.placeholder = "Thread Name"
+            textField.placeholder = self.chatLocalization.alertUpdateThreadNamePlaceholder
         }
         
-        let saveAction = UIAlertAction(title: "Confirm", style: .default) { _ in
+        let saveAction = UIAlertAction(title: chatLocalization.commonConfirm, style: .default) { _ in
             LogManager.trace("Confirm update thread name did tap")
             
             guard let title = (controller.textFields?[safe: 0] as? UITextField)?.text else {
@@ -128,10 +161,27 @@ extension DefaultChatCoordinator {
             completion(title)
         }
         
-        let cancel = UIAlertAction(title: "Cancel", style: .cancel)
+        let cancel = UIAlertAction(title: chatLocalization.commonCancel, style: .cancel)
         controller.addAction(saveAction)
         controller.addAction(cancel)
         
         navigationController.present(controller, animated: true)
+    }
+}
+
+// MARK: - Methods
+
+extension DefaultChatCoordinator {
+ 
+    func showLocalNotificationForDifferentThreadMessage(_ message: Message) async throws {
+        let content = UNMutableNotificationContent()
+        content.title = message.senderInfo.fullName
+        content.subtitle = message.getLocalizedContentOrFallbackText(basedOn: chatLocalization, useFallback: true) ?? ""
+        content.userInfo = ["messageFromDifferentThread": true]
+        content.sound = .default
+        
+        try await UNUserNotificationCenter
+            .current()
+            .add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
     }
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ struct VideoPlayerContainer: View {
     @Environment(\.colorScheme) private var scheme
     
     @Binding var isPresented: Bool
+    
+    private static let controlButtonSize: CGFloat = 30
     
     // MARK: - Init
     
@@ -72,10 +74,14 @@ struct VideoPlayerContainer: View {
 
 private extension VideoPlayerContainer {
     
-    var closeButton: some View {
+    var controlButtonView: some View {
         (scheme == .dark ? Color.white : Color.black).opacity(0.2)
-            .cornerRadius(10)
+            .cornerRadius(StyleGuide.Message.cornerRadius)
             .frame(width: 50, height: 40)
+    }
+    
+    var closeButton: some View {
+        controlButtonView
             .overlay(
                 Asset.close
                     .font(Font.body.weight(.semibold))
@@ -88,9 +94,7 @@ private extension VideoPlayerContainer {
     }
     
     var muteButton: some View {
-        (scheme == .dark ? Color.white : Color.black).opacity(0.2)
-            .cornerRadius(10)
-            .frame(width: 50, height: 40)
+        controlButtonView
             .overlay(
                 (viewModel.mute ? Asset.Attachment.mute : Asset.Attachment.unmute)
                     .font(Font.body.weight(.semibold))
@@ -144,7 +148,7 @@ private extension VideoPlayerContainer {
                     .resizable()
                     .scaledToFit()
                     .foregroundColor(.white)
-                    .frame(width: 30, height: 30)
+                    .frame(width: Self.controlButtonSize, height: Self.controlButtonSize)
                     .onTapGesture(perform: viewModel.onRewind)
                 
                 Spacer()
@@ -153,7 +157,7 @@ private extension VideoPlayerContainer {
                     .resizable()
                     .scaledToFit()
                     .foregroundColor(.white)
-                    .frame(width: 30, height: 30)
+                    .frame(width: Self.controlButtonSize, height: Self.controlButtonSize)
                     .onTapGesture {
                         viewModel.play.toggle()
                     }
@@ -164,7 +168,7 @@ private extension VideoPlayerContainer {
                     .resizable()
                     .scaledToFit()
                     .foregroundColor(.white)
-                    .frame(width: 30, height: 30)
+                    .frame(width: Self.controlButtonSize, height: Self.controlButtonSize)
                     .onTapGesture(perform: viewModel.onAdvance)
             }
             .padding(.top, 10)
@@ -173,7 +177,7 @@ private extension VideoPlayerContainer {
         .padding(.horizontal, 8)
         .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: StyleGuide.Message.cornerRadius)
                 .fill((scheme == .dark ? Color.white : Color.black).opacity(0.2))
         )
     }
@@ -187,7 +191,7 @@ private extension VideoPlayerContainer {
             in: 0...viewModel.totalDuration
         )
         .padding(.horizontal)
-        .accentColor(.red)
+        .accentColor(.gray)
         .gesture(DragGesture())
     }
 }

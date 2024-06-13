@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
+import CXoneChatSDK
 import SwiftUI
 
 struct ChatView: View {
@@ -20,12 +21,14 @@ struct ChatView: View {
     // MARK: - Properties
     
     @EnvironmentObject private var style: ChatStyle
-    
-    private let chatManager: ChatManager
+    @EnvironmentObject private var localization: ChatLocalization
 
     @Binding private var isAgentTyping: Bool
     @Binding private var isUserTyping: Bool
+    @Binding private var isInputEnabled: Bool
+    @Binding private var alertType: ChatAlertType?
 
+    private let chatManager: ChatManager
     private let onNewMessage: (ChatMessageType, [AttachmentItem]) -> Void
     private let onPullToRefresh: (UIRefreshControl) -> Void
     private let onRichMessageElementSelected: (_ textToSend: String?, RichMessageSubElementType) -> Void
@@ -40,6 +43,8 @@ struct ChatView: View {
         messages: Binding<[ChatMessage]>,
         isAgentTyping: Binding<Bool>,
         isUserTyping: Binding<Bool>,
+        isInputEnabled: Binding<Bool>,
+        alertType: Binding<ChatAlertType?>,
         onNewMessage: @escaping (ChatMessageType, [AttachmentItem]) -> Void,
         onPullToRefresh: @escaping (UIRefreshControl) -> Void,
         onRichMessageElementSelected: @escaping (_ textToSend: String?, RichMessageSubElementType) -> Void
@@ -47,6 +52,8 @@ struct ChatView: View {
         self.chatManager = ChatManager(messages: messages.wrappedValue)
         self._isAgentTyping = isAgentTyping
         self._isUserTyping = isUserTyping
+        self._isInputEnabled = isInputEnabled
+        self._alertType = alertType
         self.onNewMessage = onNewMessage
         self.onPullToRefresh = onPullToRefresh
         self.onRichMessageElementSelected = onRichMessageElementSelected
@@ -79,25 +86,19 @@ struct ChatView: View {
                     }
 
                     if isAgentTyping {
-                        HStack {
-                            TypingIndicator()
-                                .id("typingIndicator")
-                                .padding(.leading, 10)
-                                .onAppear {
-                                    withAnimation {
-                                        proxy.scrollTo("typingIndicator")
-                                    }
-                                }
-
-                            Spacer()
-                        }
+                        typingIndicator(proxy: proxy)
                     }
                 }
                 .frame(maxWidth: .infinity)
                 .clipped()
             }
 
-            MessageInputView(isEditing: $isUserTyping, onSend: onNewMessage)
+            if isInputEnabled {
+                MessageInputView(isEditing: $isUserTyping, alertType: $alertType, onSend: onNewMessage)
+            } else {
+                archivedChatMessage
+                    .padding(.bottom, UIDevice.current.hasHomeButton ? 10 : 0)
+            }
         }
         .ifNotNil(style.navigationBarLogo) { view, logo in
             view.toolbar {
@@ -120,5 +121,42 @@ struct ChatView: View {
         view.isRefreshableActive = bool
         
         return view
+    }
+}
+
+// MARK: - Subviews
+
+private extension ChatView {
+
+    func typingIndicator(proxy: ScrollViewProxy) -> some View {
+        HStack {
+            TypingIndicator()
+                .id("typingIndicator")
+                .padding(.leading, 10)
+                .onAppear {
+                    withAnimation {
+                        proxy.scrollTo("typingIndicator")
+                    }
+                }
+
+            Spacer()
+        }
+    }
+    
+    var archivedChatMessage: some View {
+        VStack(spacing: 10) {
+            Divider()
+                .padding(.horizontal, 24)
+                .foregroundColor(style.formTextColor)
+                .opacity(0.5)
+            
+            HStack {
+                Asset.Message.archived
+                
+                Text(CXoneChat.shared.mode == .liveChat ? localization.chatMessageInputClosed : localization.chatMessageInputArchived)
+            }
+            .foregroundColor(style.formTextColor)
+            .opacity(0.5)
+        }
     }
 }

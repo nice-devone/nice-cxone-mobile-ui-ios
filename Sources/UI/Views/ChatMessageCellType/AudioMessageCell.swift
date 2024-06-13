@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -26,15 +26,16 @@ struct AudioMessageCell: View {
     private let message: ChatMessage
     private let item: AttachmentItem
     private let isMultiAttachment: Bool
+    private let position: MessageGroupPosition
     
-    static private let buttonDimension: CGFloat  = 44
-
     // MARK: - Init
 
-    init(message: ChatMessage, item: AttachmentItem, isMultiAttachment: Bool) {
+    init(message: ChatMessage, item: AttachmentItem, isMultiAttachment: Bool, position: MessageGroupPosition) {
         self.message = message
         self.item = item
         self.isMultiAttachment = isMultiAttachment
+        self.position = position
+        
         self.audioPlayer = AudioPlayer(url: item.url, fileName: item.fileName)
         self.audioPlayer.prepare()
     }
@@ -48,10 +49,9 @@ struct AudioMessageCell: View {
 
                 controlButtons
             }
-            .padding(.top, 10)
-            .padding(.horizontal, isMultiAttachment ? 0 : 12)
-            .background(message.user.isAgent ? style.agentCellColor : style.customerCellColor)
-            .cornerRadius(14, corners: .allCorners)
+            .padding(.top, isMultiAttachment ? 0 : StyleGuide.Message.paddingVertical)
+            .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
+            .messageChatStyle(message, position: position)
             .if(isMultiAttachment) { view in
                 view.frame(width: MultipleAttachmentContainer.cellDimension, height: MultipleAttachmentContainer.cellDimension)
             }
@@ -59,9 +59,6 @@ struct AudioMessageCell: View {
                 view.shareable(message, attachments: [item], spacerLength: 0)
             }
         }
-        .padding(.leading, isMultiAttachment ? 0 : 14)
-        .padding(.trailing, isMultiAttachment ? 0 : 4)
-        .padding(.bottom, isMultiAttachment ? 0 : message.user.isAgent ? 14 : 0)
     }
 }
 
@@ -103,7 +100,7 @@ private extension AudioMessageCell {
     }
 
     var controlButtons: some View {
-        HStack {
+        HStack(spacing: 0) {
             Button {
                 audioPlayer.seek(-10)
             } label: {
@@ -111,7 +108,10 @@ private extension AudioMessageCell {
                     .imageScale(isMultiAttachment ? .medium : .large)
             }
             .foregroundColor(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
-            .frame(width: Self.buttonDimension, height: Self.buttonDimension)
+            .frame(
+                width: isMultiAttachment ? StyleGuide.buttonSmallerDimension : StyleGuide.buttonDimension,
+                height: StyleGuide.buttonDimension
+            )
 
             Button {
                 if audioPlayer.isPlaying {
@@ -124,7 +124,10 @@ private extension AudioMessageCell {
                     .imageScale(isMultiAttachment ? .medium : .large)
             }
             .foregroundColor(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
-            .frame(width: Self.buttonDimension, height: Self.buttonDimension)
+            .frame(
+                width: isMultiAttachment ? StyleGuide.buttonSmallerDimension : StyleGuide.buttonDimension,
+                height: StyleGuide.buttonDimension
+            )
 
             Button {
                 audioPlayer.seek(10)
@@ -133,7 +136,10 @@ private extension AudioMessageCell {
                     .imageScale(isMultiAttachment ? .medium : .large)
             }
             .foregroundColor(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
-            .frame(width: Self.buttonDimension, height: Self.buttonDimension)
+            .frame(
+                width: isMultiAttachment ? StyleGuide.buttonSmallerDimension : StyleGuide.buttonDimension,
+                height: StyleGuide.buttonDimension
+            )
         }
     }
 }
@@ -145,20 +151,23 @@ struct AudioMessageCell_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             VStack(spacing: 4) {
-                AudioMessageCell(message: MockData.audioMessage(user: MockData.customer), item: MockData.audioItem, isMultiAttachment: true)
+                AudioMessageCell(message: MockData.audioMessage(user: MockData.customer), item: MockData.audioItem, isMultiAttachment: true, position: .single)
+                    .background(Color.blue)
 
-                AudioMessageCell(message: MockData.audioMessage(user: MockData.agent), item: MockData.audioItem, isMultiAttachment: false)
+                AudioMessageCell(message: MockData.audioMessage(user: MockData.agent), item: MockData.audioItem, isMultiAttachment: false, position: .single)
             }
             .previewDisplayName("Light Mode")
 
             VStack(spacing: 4) {
-                AudioMessageCell(message: MockData.audioMessage(user: MockData.customer), item: MockData.audioItem, isMultiAttachment: false)
+                AudioMessageCell(message: MockData.audioMessage(user: MockData.customer), item: MockData.audioItem, isMultiAttachment: false, position: .single)
+                    .background(Color.blue)
 
-                AudioMessageCell(message: MockData.audioMessage(user: MockData.agent), item: MockData.audioItem, isMultiAttachment: false)
+                AudioMessageCell(message: MockData.audioMessage(user: MockData.agent), item: MockData.audioItem, isMultiAttachment: false, position: .single)
             }
             .previewDisplayName("Dark Mode")
             .preferredColorScheme(.dark)
         }
         .environmentObject(ChatStyle())
+        .environmentObject(ChatLocalization())
     }
 }

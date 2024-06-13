@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -84,19 +84,27 @@ struct ValidatedTextField: View {
 
 // MARK: - Validators
 
-func required(_ text: String) -> String? {
-    text.isEmpty ? "Required Field" : nil
+func required(_ localization: ChatLocalization) -> (String) -> String? {
+    { text in
+        text.isEmpty ? localization.commonRequired : nil
+    }
 }
 
-func numeric(_ text: String) -> String? {
-    (Double(text) == nil) ? "Invalid Number" : nil
+func numeric(_ localization: ChatLocalization) -> (String) -> String? {
+    { text in
+        text.isEmpty
+            ? nil
+            : (Double(text) == nil) ? localization.commonInvalidNumber : nil
+    }
 }
 
-func email(_ text: String) -> String? {
-    let emailRegEx = #"^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,64}$"#
-    let isValidFormat = text.range(of: emailRegEx, options: [.regularExpression]) != nil
-    
-    return !isValidFormat ? "Invalid E-mail" : nil
+func email(_ localization: ChatLocalization) -> (String) -> String? {
+    { text in
+        let emailRegEx = #"^(?:|([A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,64}))$"#
+        let isValidFormat = text.range(of: emailRegEx, options: [.regularExpression]) != nil
+
+        return !isValidFormat ? localization.commonInvalidEmail : nil
+    }
 }
 
 func any(_: String) -> String? {
@@ -114,6 +122,7 @@ func allOf(_ validators: ((String) -> String?)...) -> (String) -> String? {
 // MARK: - Helpers
 
 private extension View {
+    
     func placeholder<Content: View>(when shouldShow: Bool, alignment: Alignment = .leading, @ViewBuilder placeholder: () -> Content) -> some View {
         ZStack(alignment: alignment) {
             placeholder().opacity(shouldShow ? 1 : 0)
@@ -129,24 +138,36 @@ struct ValidatedTextField_Previews: PreviewProvider {
     
     @State static var text: String = ""
 
+    private static let localization = ChatLocalization()
+
+    private static var isRequired: (String) -> String? {
+        required(localization)
+    }
+    private static var isEmail: (String) -> String? {
+        email(localization)
+    }
+    private static var isNumeric: (String) -> String? {
+        numeric(localization)
+    }
+
     static var previews: some View {
         Group {
             ScrollView {
                 VStack(spacing: 24) {
                     ValidatedTextField("Placeholder", text: $text, label: "Text")
                     
-                    ValidatedTextField("Placeholder", text: $text, validator: required, label: "Required Text")
-                    
-                    ValidatedTextField("Placeholder", text: $text, validator: numeric, label: "Numeric")
+                    ValidatedTextField("Placeholder", text: $text, validator: isRequired, label: "Required Text")
+
+                    ValidatedTextField("Placeholder", text: $text, validator: isNumeric, label: "Numeric")
                         .keyboardType(.decimalPad)
                     
-                    ValidatedTextField("Placeholder", text: $text, validator: allOf(numeric, numeric), label: "Numeric")
+                    ValidatedTextField("Placeholder", text: $text, validator: allOf(isNumeric, isRequired), label: "Required Numeric")
                         .keyboardType(.decimalPad)
                     
-                    ValidatedTextField("Placeholder", text: $text, validator: email, label: "Email")
+                    ValidatedTextField("Placeholder", text: $text, validator: isEmail, label: "Email")
                         .keyboardType(.emailAddress)
                     
-                    ValidatedTextField("Placeholder", text: $text, validator: allOf(required, email), label: "Required Email")
+                    ValidatedTextField("Placeholder", text: $text, validator: allOf(isRequired, isEmail), label: "Required Email")
                         .keyboardType(.emailAddress)
                 }
             }
@@ -157,18 +178,18 @@ struct ValidatedTextField_Previews: PreviewProvider {
                 VStack(spacing: 24) {
                     ValidatedTextField("Placeholder", text: $text, label: "Text")
                     
-                    ValidatedTextField("Placeholder", text: $text, validator: required, label: "Required Text")
-                    
-                    ValidatedTextField("Placeholder", text: $text, validator: numeric, label: "Numeric")
+                    ValidatedTextField("Placeholder", text: $text, validator: isRequired, label: "Required Text")
+
+                    ValidatedTextField("Placeholder", text: $text, validator: isNumeric, label: "Numeric")
                         .keyboardType(.decimalPad)
                     
-                    ValidatedTextField("Placeholder", text: $text, validator: allOf(numeric, numeric), label: "Numeric")
+                    ValidatedTextField("Placeholder", text: $text, validator: allOf(isNumeric, isRequired), label: "Required Numeric")
                         .keyboardType(.decimalPad)
                     
-                    ValidatedTextField("Placeholder", text: $text, validator: email, label: "Email")
+                    ValidatedTextField("Placeholder", text: $text, validator: isEmail, label: "Email")
                         .keyboardType(.emailAddress)
                     
-                    ValidatedTextField("Placeholder", text: $text, validator: allOf(required, email), label: "Required Email")
+                    ValidatedTextField("Placeholder", text: $text, validator: allOf(isRequired, isEmail), label: "Required Email")
                         .keyboardType(.emailAddress)
                 }
             }
@@ -177,5 +198,6 @@ struct ValidatedTextField_Previews: PreviewProvider {
             .previewDisplayName("Dark Mode")
         }
         .environmentObject(ChatStyle())
+        .environmentObject(localization)
     }
 }

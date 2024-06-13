@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -26,10 +26,7 @@ struct ChatMessageCell: View {
     private let message: ChatMessage
     private let messageGroupPosition: MessageGroupPosition
     private let onRichMessageElementTapped: (_ textToSend: String?, RichMessageSubElementType) -> Void
-
-    private var isMultiAttachment: Bool {
-        message.types.count > 1
-    }
+    private let isMultiAttachment: Bool
 
     // MARK: - Init
 
@@ -41,6 +38,7 @@ struct ChatMessageCell: View {
         self.message = message
         self.messageGroupPosition = messageGroupPosition
         self.onRichMessageElementTapped = onRichMessageElementTapped
+        self.isMultiAttachment = message.types.filter(\.isAttachment).count > 1
     }
 
     // MARK: - Builder
@@ -48,7 +46,7 @@ struct ChatMessageCell: View {
     var body: some View {
         VStack {
             if isMultiAttachment {
-                MultipleAttachmentContainer(message)
+                MultipleAttachmentContainer(message, position: messageGroupPosition)
             } else {
                 messageContent
             }
@@ -72,11 +70,11 @@ private extension ChatMessageCell {
                         }
                     }
             case .video(let item):
-                VideoMessageCell(message: message, item: item, isMultiAttachment: message.types.count > 1 ? true : false)
+                VideoMessageCell(message: message, item: item, isMultiAttachment: false, position: messageGroupPosition)
             case .image(let item):
-                ImageMessageCell(message: message, item: item, isMultiAttachment: message.types.count > 1 ? true : false)
+                ImageMessageCell(message: message, item: item, isMultiAttachment: false, position: messageGroupPosition)
             case .audio(let item):
-                AudioMessageCell(message: message, item: item, isMultiAttachment: message.types.count > 1 ? true: false)
+                AudioMessageCell(message: message, item: item, isMultiAttachment: false, position: messageGroupPosition)
             case .linkPreview(let item):
                 LinkPreviewCell(message: message, item: item) { url in
                     if UIApplication.shared.canOpenURL(url) {
@@ -85,12 +83,6 @@ private extension ChatMessageCell {
                 }
             case .richContent(let content):
                 switch content {
-                case .gallery(let elements):
-                    GalleryMessageCell(message: message, elements: elements, elementSelected: onRichMessageElementTapped)
-                case .menu(let elements):
-                    MenuMessageCell(message: message, elements: elements) { element in
-                        onRichMessageElementTapped(nil, element)
-                    }
                 case .quickReplies(let item):
                     QuickRepliesMessageCell(message: message, item: item) { option in
                         onRichMessageElementTapped(option.title, .button(option))
@@ -101,18 +93,6 @@ private extension ChatMessageCell {
                     }
                 case .richLink(let item):
                     RichLinkMessageCell(message: message, item: item) { url in
-                        if UIApplication.shared.canOpenURL(url) {
-                            UIApplication.shared.open(url)
-                        }
-                    }
-                case .satisfactionSurvey(let item):
-                    SatisfactionSurveyMessageCell(message: message, item: item) { url in
-                        if UIApplication.shared.canOpenURL(url) {
-                            UIApplication.shared.open(url)
-                        }
-                    }
-                case .custom(let item):
-                    CustomMessageCell(message: message, item: item) { url in
                         if UIApplication.shared.canOpenURL(url) {
                             UIApplication.shared.open(url)
                         }
@@ -142,7 +122,7 @@ private extension RichMessageSubElementType {
 struct DefaultMessageItemPreview: PreviewProvider {
     
     static let agentTextMessage = MockData.textMessage(user: MockData.agent)
-    static let agentImageMessage = MockData.imageMessage(user: MockData.agent, elementsCount: 2)
+    static let agentImageMessage = MockData.imageMessage(user: MockData.agent, elementsCount: 1)
     static let customerAudioMessage = MockData.audioMessage(user: MockData.customer)
     static let customerImageMessage = MockData.imageMessage(user: MockData.customer, elementsCount: 5)
     static let manager = ChatManager(messages: [customerAudioMessage, agentImageMessage, agentTextMessage, customerImageMessage])
@@ -152,7 +132,7 @@ struct DefaultMessageItemPreview: PreviewProvider {
             LazyVStack {
                 ChatMessageCell(message: agentImageMessage, messageGroupPosition: .first) { _, _ in }
                 
-                ChatMessageCell(message: agentTextMessage, messageGroupPosition: .inside) { _, _ in }
+                ChatMessageCell(message: agentTextMessage, messageGroupPosition: .last) { _, _ in }
 
                 ChatMessageCell(message: customerAudioMessage, messageGroupPosition: .first) { _, _ in }
                 
@@ -163,7 +143,7 @@ struct DefaultMessageItemPreview: PreviewProvider {
             LazyVStack {
                 ChatMessageCell(message: agentImageMessage, messageGroupPosition: .first) { _, _ in }
                 
-                ChatMessageCell(message: agentTextMessage, messageGroupPosition: .inside) { _, _ in }
+                ChatMessageCell(message: agentTextMessage, messageGroupPosition: .last) { _, _ in }
 
                 ChatMessageCell(message: customerAudioMessage, messageGroupPosition: .first) { _, _ in }
                 
@@ -172,6 +152,8 @@ struct DefaultMessageItemPreview: PreviewProvider {
             .preferredColorScheme(.dark)
             .previewDisplayName("Dark mode")
         }
+        .padding(.horizontal, 12)
         .environmentObject(ChatStyle())
+        .environmentObject(ChatLocalization())
     }
 }

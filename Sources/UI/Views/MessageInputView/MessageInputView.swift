@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -13,20 +13,24 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
+import CXoneChatSDK
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 struct MessageInputView: View {
     
     // MARK: - Properties
     
     @EnvironmentObject private var style: ChatStyle
-    
-    @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var localization: ChatLocalization
+
+    @SwiftUI.Environment(\.colorScheme) private var colorScheme
     
     @ObservedObject private var audioRecorder = AudioRecorder()
     
     @Binding private var isEditing: Bool
+    @Binding private var alertType: ChatAlertType?
     
     @State private var message = ""
     @State private var attachments = [AttachmentItem]()
@@ -45,6 +49,7 @@ struct MessageInputView: View {
             return message.isEmpty && attachments.isEmpty
         }
     }
+
     private var onSend: ((ChatMessageType, [AttachmentItem]) -> Void)?
     private var attributedMessage: Binding<NSAttributedString> {
         Binding<NSAttributedString>(
@@ -67,8 +72,9 @@ struct MessageInputView: View {
     
     // MARK: - Init
     
-    init(isEditing: Binding<Bool>, onSend: @escaping (ChatMessageType, [AttachmentItem]) -> Void) {
+    init(isEditing: Binding<Bool>, alertType: Binding<ChatAlertType?>, onSend: @escaping (ChatMessageType, [AttachmentItem]) -> Void) {
         self._isEditing = isEditing
+        self._alertType = alertType
         self._contentSizeThatFits = State(initialValue: .zero)
         self.onSend = onSend
     }
@@ -81,20 +87,13 @@ struct MessageInputView: View {
                 AttachmentListView(attachments: $attachments)
             }
             
-            HStack(alignment: .bottom, spacing: 8) {
-                if audioRecorder.state == .idle {
+            HStack(alignment: .center, spacing: 2) {
+                if audioRecorder.state == .idle, CXoneChat.shared.connection.channelConfiguration.fileRestrictions.isAttachmentsEnabled {
                     attachmentsButton
                     
-                    Button {
-                        withAnimation {
-                            audioRecorder.record()
-                        }
-                    } label: {
-                        Asset.Attachment.recordVoice
-                            .imageScale(.large)
+                    if isAnyMimeTypeAllowed([UTType.audioPreffix]) {
+                        recordVoiceMessageButton
                     }
-                    .foregroundColor(style.customerCellColor)
-                    .frame(width: 32, height: 32)
                 }
                 
                 inputBar
@@ -103,9 +102,8 @@ struct MessageInputView: View {
                     voiceMessageButtons
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
-            .padding(.bottom, 16)
+            .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
+            .padding(.vertical, StyleGuide.Message.paddingVertical)
         }
         .animation(.spring(duration: 0.5), value: audioRecorder.state)
     }
@@ -114,7 +112,7 @@ struct MessageInputView: View {
 // MARK: - Subviews
 
 private extension MessageInputView {
-
+    
     var attachmentsButton: some View {
         Button {
             showAttachmentsSheet = true
@@ -123,40 +121,70 @@ private extension MessageInputView {
                 .imageScale(.large)
         }
         .foregroundColor(style.customerCellColor)
-        .frame(width: 32, height: 32)
+        .frame(width: StyleGuide.buttonSmallerDimension, height: StyleGuide.buttonSmallerDimension)
         .actionSheet(isPresented: $showAttachmentsSheet) {
             attachmentsSourceActionSheet
         }
         .sheet(isPresented: $attachmentsPickerSheet.visible) {
             MediaPickerView(sourceType: attachmentsPickerSheet.type) { attachment in
-                self.attachments.append(attachment)
+                Task { @MainActor in
+                    if attachment.isSizeValid {
+                        attachments.append(attachment)
+                    } else {
+                        alertType = .invalidAttachmentSize(localization: localization)
+                    }
+                }
             }
             .edgesIgnoringSafeArea(.all)
         }
         .sheet(isPresented: $showDocumentPickerSheet) {
             DocumentPickerView { attachments in
-                self.attachments.append(contentsOf: attachments)
+                Task { @MainActor in
+                    if attachments.contains(where: { !$0.isSizeValid }) {
+                        alertType = .invalidAttachmentSize(localization: localization)
+                    } else {
+                        self.attachments.append(contentsOf: attachments)
+                    }
+                }
             }
             .edgesIgnoringSafeArea(.all)
         }
     }
     
+    var recordVoiceMessageButton: some View {
+        Button {
+            withAnimation {
+                audioRecorder.record()
+            }
+        } label: {
+            Asset.Attachment.recordVoice
+                .imageScale(.large)
+        }
+        .foregroundColor(style.customerCellColor)
+        .frame(width: StyleGuide.buttonSmallerDimension, height: StyleGuide.buttonSmallerDimension)
+    }
+    
     var attachmentsSourceActionSheet: ActionSheet {
-        ActionSheet(
-            title: Text("Attachments Source"),
-            buttons: [
-                .default(Text("Camera")) {
-                    attachmentsPickerSheet = (true, .camera)
-                },
-                .default(Text("Photo Library")) {
-                    attachmentsPickerSheet = (true, .photoLibrary)
-                },
-                .default(Text("File Manager")) {
-                    showDocumentPickerSheet = true
-                },
-                .cancel()
-            ]
-        )
+        var buttons: [Alert.Button] = [
+            .default(Text(localization.chatMessageInputAttachmentsOptionFiles)) {
+                showDocumentPickerSheet = true
+            },
+            .cancel()
+        ]
+        
+        if isAnyMimeTypeAllowed([UTType.imagePreffix, UTType.videoPreffix]) {
+            buttons.append(.default(Text(localization.chatMessageInputAttachmentsOptionPhotos)) {
+                attachmentsPickerSheet = (true, .photoLibrary)
+            })
+        }
+        // `.camera` does not allow to have only `video` MIME type, it requires
+        if isAnyMimeTypeAllowed([UTType.imagePreffix]) {
+            buttons.append(.default(Text(localization.chatMessageInputAttachmentsOptionCamera)) {
+                attachmentsPickerSheet = (true, .camera)
+            })
+        }
+        
+        return ActionSheet(title: Text(localization.chatMessageInputAttachmentsOptionTitle), buttons: buttons)
     }
     
     var inputBar: some View {
@@ -174,22 +202,22 @@ private extension MessageInputView {
             sendButton
         }
         .background(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(style.backgroundColor.opacity(0.25)).colorInvert()
+            RoundedRectangle(cornerRadius: StyleGuide.buttonDimension / 2)
+                .stroke(style.formTextColor.opacity(0.25))
         )
     }
     
     var audioRecorderInputBar: some View {
         Group {
-            Asset.waveform
+            Asset.Attachment.voiceIndicator
                 .foregroundColor(style.customerCellColor)
                 .padding(.leading, 8)
             
             if case .recording = audioRecorder.state {
-                AnimatedDotsView(text: "Recording")
+                AnimatedDotsView(text: localization.chatMessageInputAudioRecorderRecording)
                     .padding(.leading, 4)
             } else if case .playing = audioRecorder.state {
-                AnimatedDotsView(text: "Playing")
+                AnimatedDotsView(text: localization.chatMessageInputAudioRecorderPlaying)
                     .padding(.leading, 4)
             }
             
@@ -197,10 +225,10 @@ private extension MessageInputView {
             
             if audioRecorder.state == .recorded {
                 Text(audioRecorder.formattedLength)
-                    .foregroundColor(style.backgroundColor).colorInvert()
+                    .foregroundColor(style.formTextColor)
             } else {
                 Text(audioRecorder.formattedCurrentTime)
-                    .foregroundColor(style.backgroundColor).colorInvert()
+                    .foregroundColor(style.formTextColor)
             }
         }
     }
@@ -219,12 +247,12 @@ private extension MessageInputView {
             hideKeyboard()
         } label: {
             sendButtonBackground
-                .frame(width: 32, height: 32)
+                .frame(width: StyleGuide.buttonSmallerDimension, height: StyleGuide.buttonSmallerDimension)
                 .overlay(
                     Asset.Message.send
                         .resizable()
                         .offset(x: -1, y: 1)
-                        .padding(8)
+                    .padding(8)
                 )
         }
         .disabled(isSendButtonDisabled)
@@ -232,11 +260,10 @@ private extension MessageInputView {
         .padding(3)
     }
     
-    @ViewBuilder
     var sendButtonBackground: some View {
         if isSendButtonDisabled {
             Circle()
-                .fill(style.backgroundColor.opacity(0.5)).colorInvert()
+                .fill(style.formTextColor.opacity(0.5))
         } else {
             Circle()
                 .fill(style.customerCellColor)
@@ -257,30 +284,27 @@ private extension MessageInputView {
             } label: {
                 Circle()
                     .fill(style.customerCellColor)
-                    .frame(width: 32, height: 32)
+                    .frame(width: StyleGuide.buttonSmallerDimension, height: StyleGuide.buttonSmallerDimension)
                     .overlay(
                         recordingControlButtonOverlay
                             .foregroundColor(colorScheme == .dark ? .black : .white)
                     )
             }
-            .padding(3)
+            .padding(4)
         
-            Button {
-                audioRecorder.delete()
-            } label: {
+            Button(action: audioRecorder.delete) {
                 Circle()
                     .fill(Color(.red))
-                    .frame(width: 32, height: 32)
+                    .frame(width: StyleGuide.buttonSmallerDimension, height: StyleGuide.buttonSmallerDimension)
                     .overlay(
                         Asset.Attachment.deleteVoice
                             .foregroundColor(.white)
                     )
             }
-            .padding(3)
+            .padding(4)
         }
     }
     
-    @ViewBuilder
     var recordingControlButtonOverlay: some View {
         switch audioRecorder.state {
         case .recording:
@@ -293,29 +317,80 @@ private extension MessageInputView {
     }
 }
 
+// MARK: - Helpers
+
+private extension MessageInputView {
+
+    func isAnyMimeTypeAllowed(_ mimeTypes: [String]) -> Bool {
+        let allowedMimeTypes = CXoneChat.shared.connection.channelConfiguration.fileRestrictions.allowedFileTypes
+        
+        for mimeType in mimeTypes where allowedMimeTypes.contains(where: { $0.mimeType.contains(mimeType) }) {
+            return true
+        }
+        
+        return false
+    }
+}
+
+private extension AttachmentItem {
+    
+    static var megabyte: Int32 = 1024 * 1024
+    
+    var isSizeValid: Bool {
+        do {
+            return try url.accessSecurelyScopedResource { url in
+                let allowedFileSize = CXoneChat.shared.connection.channelConfiguration.fileRestrictions.allowedFileSize * Self.megabyte
+                let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+
+                guard let fileSize = attributes[.size] as? Int32 else {
+                    return false
+                }
+
+                return fileSize <= allowedFileSize
+            }
+        } catch {
+            error.logError()
+            return false
+        }
+    }
+}
+
 // MARK: - Preview
 
 struct MessageInputView_Previews: PreviewProvider {
     
+    static var localization = ChatLocalization()
+    
     @State private static var isEditing = false
+    @State private static var alertType: ChatAlertType?
     
     static var previews: some View {
         Group {
             VStack {
                 Spacer()
                 
-                MessageInputView(isEditing: $isEditing) { _, _ in }
+                MessageInputView(isEditing: $isEditing, alertType: $alertType) { _, _ in }
             }
+            .alert(item: $alertType, content: alertContent)
             .previewDisplayName("Light Mode")
             
             VStack {
                 Spacer()
                 
-                MessageInputView(isEditing: $isEditing) { _, _ in }
+                MessageInputView(isEditing: $isEditing, alertType: $alertType) { _, _ in }
             }
             .preferredColorScheme(.dark)
             .previewDisplayName("Dark Mode")
         }
         .environmentObject(ChatStyle())
+        .environmentObject(localization)
+    }
+    
+    static func alertContent(for alertType: ChatAlertType) -> Alert {
+        Alert(
+            title: Text(localization.commonAttention),
+            message: Text(localization.alertGenericErrorMessage),
+            dismissButton: .cancel()
+        )
     }
 }

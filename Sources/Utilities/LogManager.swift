@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -69,9 +69,9 @@ public class LogManager {
     
     public static weak var delegate: LogDelegate?
     
-    public static var verbository: Verbosity = .medium
-    public static var level: Level = .warning
-    public static var isEnabled = false
+    static var verbosity: Verbosity = .medium
+    static var level: Level = .warning
+    static var isEnabled = false
     
     private static var dateTime: String { formatter.string(from: Date()) }
     private static let formatter: DateFormatter = {
@@ -82,6 +82,12 @@ public class LogManager {
     }()
 
     // MARK: - Methods
+    
+    public class func configure(level: Level, verbosity: Verbosity) {
+        self.isEnabled = true
+        self.level = level
+        self.verbosity = verbosity
+    }
     
     class func error(_ error: CommonError, fun: StaticString = #function, file: StaticString = #file, line: UInt = #line) {
         self.error(error.localizedDescription, fun: fun, file: file, line: line)
@@ -129,7 +135,7 @@ public class LogManager {
 private extension LogManager {
 
     class func log(_ message: String, emoji: String, fun: StaticString = #function, file: StaticString = #file, line: UInt = #line) -> String {
-        switch verbository {
+        switch verbosity {
         case .simple:
             return "\(dateTime) \(emoji): \(message)"
         case .medium:

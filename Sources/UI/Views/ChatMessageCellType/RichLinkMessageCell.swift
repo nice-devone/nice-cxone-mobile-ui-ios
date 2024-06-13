@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,9 @@ struct RichLinkMessageCell: View {
     // MARK: - Properties
     
     @EnvironmentObject private var style: ChatStyle
-    
+    @EnvironmentObject private var localization: ChatLocalization
+
     @State private var isShareSheetVisible = false
-    
-    private var applyPadding = true
     
     let message: ChatMessage
     let item: RichLinkItem
@@ -62,17 +61,17 @@ struct RichLinkMessageCell: View {
                                 .foregroundColor(style.agentFontColor.opacity(0.5))
                         }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 10)
+                    .padding(.vertical, StyleGuide.Message.paddingVertical)
+                    .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
                 }
                 .background(style.agentCellColor)
-                .cornerRadius(14, corners: .allCorners)
+                .cornerRadius(StyleGuide.Message.cornerRadius, corners: .allCorners)
                 .contextMenu {
                     Button {
                         isShareSheetVisible = true
                     } label: {
-                        Text("Share")
-                        
+                        Text(localization.commonShare)
+
                         Asset.share
                     }
                     
@@ -80,35 +79,21 @@ struct RichLinkMessageCell: View {
                         UIPasteboard.general.url = item.url
                         UIPasteboard.general.string = item.url.absoluteString
                     } label: {
-                        Text("Copy")
+                        Text(localization.commonCopy)
                         
                         Asset.copy
                     }
                 }
                 
-                if applyPadding {
-                    Spacer(minLength: UIScreen.main.bounds.size.width / 3)
-                }
+                Spacer(minLength: UIScreen.main.bounds.size.width / 3)
             }
         }
-        .padding(.leading, 14)
-        .padding(.trailing, 4)
         .onTapGesture {
             openLink(item.url)
         }
         .sheet(isPresented: $isShareSheetVisible) {
             ShareSheet(activityItems: [item.url])
         }
-    }
-    
-    // MARK: - Methods
-    
-    func applyPadding(_ apply: Bool) -> Self {
-        var view = self
-        
-        view.applyPadding = apply
-        
-        return view
     }
 }
 
@@ -126,5 +111,6 @@ struct RichLinkMessageCell_Previews: PreviewProvider {
                 .preferredColorScheme(.dark)
         }
         .environmentObject(ChatStyle())
+        .environmentObject(ChatLocalization())
     }
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -78,8 +78,7 @@ private extension ShareableModifier {
         .padding(6)
         .background(
             Circle()
-                .fill(style.backgroundColor.opacity(0.5))
-                .colorInvert()
+                .fill(style.formTextColor.opacity(0.5))
         )
     }
 }
@@ -91,15 +90,16 @@ struct ShareableView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             VStack(spacing: 4) {
-                ImageMessageCell(message: MockData.imageMessage(user: MockData.agent), item: MockData.imageItem, isMultiAttachment: false)
-                ImageMessageCell(message: MockData.imageMessage(user: MockData.customer), item: MockData.imageItem, isMultiAttachment: false)
+                ImageMessageCell(message: MockData.imageMessage(user: MockData.agent), item: MockData.imageItem, isMultiAttachment: false, position: .first)
+                
+                ImageMessageCell(message: MockData.imageMessage(user: MockData.customer), item: MockData.imageItem, isMultiAttachment: false, position: .last)
             }
             .previewDisplayName("Light Mode")
             
             VStack(spacing: 4) {
-                ImageMessageCell(message: MockData.imageMessage(user: MockData.agent), item: MockData.imageItem, isMultiAttachment: false)
+                ImageMessageCell(message: MockData.imageMessage(user: MockData.agent), item: MockData.imageItem, isMultiAttachment: false, position: .first)
 
-                ImageMessageCell(message: MockData.imageMessage(user: MockData.customer), item: MockData.imageItem, isMultiAttachment: false)
+                ImageMessageCell(message: MockData.imageMessage(user: MockData.customer), item: MockData.imageItem, isMultiAttachment: false, position: .last)
             }
             .previewDisplayName("Dark Mode")
             .preferredColorScheme(.dark)

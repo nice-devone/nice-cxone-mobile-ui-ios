@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
+import CXoneChatSDK
 import Foundation
 
 /// Object for a List picker message cell
@@ -41,7 +42,7 @@ public struct ListPickerItem: Hashable {
     public let message: String?
     
     /// An array of `RichMessageSubElementType` objects, representing the elements available for selection within the list picker.
-    public let elements: [RichMessageSubElementType]
+    public let buttons: [RichMessageSubElementType]
     
     // MARK: - Init
     
@@ -51,9 +52,9 @@ public struct ListPickerItem: Hashable {
     ///  - title: The title or label associated with the list picker item.
     ///  - message: An optional message or description providing additional context for the item.
     ///  - elements: An array of `RichMessageSubElementType` objects, representing the elements available for selection within the list picker.
-    public init(title: String, message: String?, elements: [RichMessageSubElementType]) {
+    public init(title: String, message: String?, buttons: [RichMessageSubElementType]) {
         self.title = title
         self.message = message
-        self.elements = elements
+        self.buttons = buttons
     }
 }

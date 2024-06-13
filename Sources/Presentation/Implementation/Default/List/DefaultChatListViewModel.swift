@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -21,29 +21,29 @@ class DefaultChatListViewModel: ObservableObject {
     // MARK: - Properties
     
     @Published var chatThreads = [ChatThread]()
-    
-    @Published var presentGenericError = false
-    @Published var presentUnableToCreateThreadError = false
-    @Published var presentUnknownThreadFromDeeplinkError = false
-    @Published var presentDisconnectAlert = false
-    
     @Published var preChatSurvey: PreChatSurvey?
     @Published var thread: ChatThread?
+    @Published var threadStatus: ThreadStatusType = .current
+    @Published var alertType: ChatAlertType?
+    @Published var isLoading = false
     
     private let coordinator: DefaultChatCoordinator
-    
+    private let localization: ChatLocalization
     private var threadIdToOpen: UUID?
+    private var isActive = true
     
-    var threadsStatus: ThreadsStatusType = .current
     var isMultiThread: Bool { CXoneChat.shared.connection.channelConfiguration.hasMultipleThreadsPerEndUser }
-    var dismiss = false
-    var isLoading = false
     
     // MARK: - Lifecycle
     
-    init(coordinator: DefaultChatCoordinator, threadIdToOpen: UUID? = nil) {
+    init(
+        coordinator: DefaultChatCoordinator,
+        threadIdToOpen: UUID? = nil,
+        localization: ChatLocalization
+    ) {
         self.coordinator = coordinator
         self.threadIdToOpen = threadIdToOpen
+        self.localization = localization
     }
 }
 
@@ -55,6 +55,7 @@ extension DefaultChatListViewModel {
         LogManager.trace("Default chat list view appeared")
         
         CXoneChat.shared.delegate = self
+        isActive = true
         
         if CXoneChat.shared.state.isChatAvailable {
             updateCurrentThreads()
@@ -63,12 +64,14 @@ extension DefaultChatListViewModel {
                 navigateToThread(with: threadIdToOpen)
             }
         } else {
-            Task { @MainActor in
-                isLoading = true
-                
-                reconnect()
-            }
+            reconnect()
         }
+    }
+    
+    func onDisappear() {
+        LogManager.trace("Default chat list view disappear")
+        
+        isActive = false
     }
     
     func onDisconnectTapped() {
@@ -79,7 +82,7 @@ extension DefaultChatListViewModel {
         CXoneChat.shared.connection.disconnect()
         coordinator.onFinished?()
         
-        dismiss = true
+        coordinator.dismiss(animated: true)
     }
     
     func onCreateNewThread() {
@@ -88,18 +91,22 @@ extension DefaultChatListViewModel {
         if let preChatSurvey = CXoneChat.shared.threads.preChatSurvey {
             let fieldEntities = preChatSurvey.customFields.map(FormCustomFieldTypeMapper.map)
             
-            coordinator.presentForm(title: preChatSurvey.name, customFields: fieldEntities) { [weak self] customFields in
-                self?.createNewThread(with: customFields)
+            coordinator.presentForm(title: preChatSurvey.name, customFields: fieldEntities) { customFields in
+                Task { @MainActor in
+                    await self.createNewThread(with: customFields)
+                }
             }
         } else {
-            createNewThread()
+            Task { @MainActor in
+                await createNewThread()
+            }
         }
     }
     
-    func updateThreadsStatus(_ status: ThreadsStatusType) {
-        LogManager.trace("Changing thread list to \(status.rawValue)")
+    func updateThreadStatus(_ status: ThreadStatusType) {
+        LogManager.trace("Changing thread list to \(status)")
         
-        threadsStatus = status
+        threadStatus = status
         
         updateCurrentThreads()
     }
@@ -128,9 +135,30 @@ extension DefaultChatListViewModel {
             isLoading = true
         } catch {
             error.logError()
-            
-            presentGenericError = true
+            alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
         }
+    }
+    
+    func willEnterForeground(_ output: NotificationCenter.Publisher.Output) {
+        guard isActive else {
+            // Skipped because it is called even when the list is not active -> DefaultChatView is the current active view
+            return
+        }
+        
+        LogManager.trace("Enter foreground")
+        
+        reconnect()
+    }
+    
+    func didEnterBackground(_ output: NotificationCenter.Publisher.Output) {
+        guard isActive else {
+            // Skipped because it is called even when the list is not active -> DefaultChatView is the current active view
+            return
+        }
+        
+        LogManager.trace("Enter background")
+        
+        CXoneChat.shared.connection.disconnect()
     }
 }
 
@@ -182,8 +210,6 @@ extension DefaultChatListViewModel: CXoneChatDelegate {
     func onUnexpectedDisconnect() {
         LogManager.trace("Unexpected disconnect did occur")
         
-        isLoading = true
-        
         reconnect()
     }
     
@@ -192,23 +218,15 @@ extension DefaultChatListViewModel: CXoneChatDelegate {
         
         CXoneChat.shared.customer.set(nil)
 
-        dismiss = true
+        coordinator.dismiss(animated: true)
     }
 
     func onError(_ error: Error) {
         error.logError()
         
-        isLoading = false
-    }
-    
-    func willEnterForeground() {
-        reconnect()
-    }
-    
-    func didEnterBackgroundNotification() {
-        LogManager.trace("Entering background")
-        
-        CXoneChat.shared.connection.disconnect()
+        Task { @MainActor in
+            isLoading = false
+        }
     }
 }
 
@@ -221,40 +239,44 @@ private extension DefaultChatListViewModel {
         
         CXoneChat.shared.delegate = self
         
-        Task {
+        Task { @MainActor in
+            isLoading = true
+            
             do {
                 try await CXoneChat.shared.connection.connect()
             } catch {
                 error.logError()
                 
-                dismiss = true
+                coordinator.dismiss(animated: true)
             }
         }
     }
 
     func updateCurrentThreads(with threads: [ChatThread]? = nil) {
         chatThreads = (threads ?? CXoneChat.shared.threads.get())
-            .filter { (threadsStatus == .current) == ($0.state != .closed) }
+            .filter { (threadStatus == .current) == ($0.state != .closed) }
     }
-    
-    func createNewThread(with customFields: [String: String]? = nil) {
+
+    @MainActor
+    func createNewThread(with customFields: [String: String]? = nil) async {
         LogManager.trace(customFields == nil ? "Creating new thread" : "Creating new thread with custom fields: \(String(describing: customFields))")
         
         do {
             if let customFields {
-                try CXoneChat.shared.threads.create(with: customFields)
+                try await CXoneChat.shared.threads.create(with: customFields)
             } else {
-                try CXoneChat.shared.threads.create()
+                try await CXoneChat.shared.threads.create()
             }
         } catch {
             error.logError()
             
-            presentUnableToCreateThreadError = true
+            alertType = .unableToCreateThread(localization: localization)
         }
     }
     
     func navigateToThread(with id: UUID) {
         guard let thread = chatThreads.first(where: { $0.id == threadIdToOpen }) else {
+            alertType = .unknownThreadFromDeeplink(localization: localization)
             return
         }
      

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
+import CXoneChatSDK
 import SwiftUI
 
 class ChatExampleViewModel: ObservableObject {
@@ -22,25 +23,28 @@ class ChatExampleViewModel: ObservableObject {
     @Published var messages = [ChatMessage]()
     @Published var isAgentTyping = false
     @Published var isUserTyping = false
+    @Published var isInputEnabled = true
+    @Published var alertType: ChatAlertType?
+    
+    let isChatHistoryEnabled: Bool
     
     // MARK: - Methods
     
-    func onAppear() {
-        messages.append(contentsOf: [
-//            MockData.textMessage(),
-//            MockData.emojiMessage(),
-//            MockData.quickRepliesMessage(),
-//            MockData.imageMessage(),
-//            MockData.videoMessage(),
-//            MockData.audioMessage(),
-//            MockData.linkPreviewMessage(),
-//            MockData.listPickerMessage(),
-//            MockData.richLinkMessage(),
-//            MockData.customMessage(),
-//            MockData.galleryMessage()
-        ])
+    init(isChatHistoryEnabled: Bool) {
+        self.isChatHistoryEnabled = isChatHistoryEnabled
         
-//        setupTimer()
+        if isChatHistoryEnabled {
+            messages.append(contentsOf: [
+                MockData.textMessage(),
+                MockData.textMessage(),
+                MockData.imageMessage(),
+                MockData.emojiMessage(),
+                MockData.textMessage(),
+                MockData.emojiMessage(),
+                MockData.textMessage(),
+                MockData.textMessage()
+            ])
+        }
     }
     
     func onNewMessage(messageType: ChatMessageType, attachments: [AttachmentItem]) {

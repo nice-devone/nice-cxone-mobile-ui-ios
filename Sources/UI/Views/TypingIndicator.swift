@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ struct TypingIndicator: View {
             }
             .padding(12)
             .background(style.agentCellColor)
-            .cornerRadius(14, corners: .allCorners)
+            .cornerRadius(StyleGuide.Message.cornerRadius, corners: .allCorners)
         }
         .padding(.leading, 14)
         .padding(.bottom, 10)

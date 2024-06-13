@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -17,39 +17,22 @@ import CXoneChatSDK
 
 extension Message {
 
-    var message: String {
+    func getLocalizedContentOrFallbackText(basedOn localization: ChatLocalization, useFallback: Bool = false) -> String? {
         switch self.contentType {
         case .text(let entity):
-            if !attachments.isEmpty {
-                return "\(attachments.count) attachment(s)"
+            if !attachments.isEmpty, entity.text.isEmpty {
+                return useFallback ? String(format: localization.chatFallbackMessageAttachments, attachments.count) : nil
             } else {
                 return entity.text
             }
-        case .plugin(let plugin):
-            switch plugin.element {
-            case .gallery:
-                return "Gallery plugin message"
-            case .menu:
-                return "Menu plugin message"
-            case .textAndButtons:
-                return "Text and buttons plugin message"
-            case .quickReplies:
-                return "Quick replies plugin message"
-            case .satisfactionSurvey:
-                return "Satisfaction survey plugin message"
-            case .custom:
-                return "Custom plugin message"
-            case .subElements:
-                return "Sub elements plugin message"
-            }
         case .richLink(let entity):
-            return entity.title.nilIfEmpty() ?? "Rich link TORM message"
+            return entity.title.nilIfEmpty() ?? (useFallback ? localization.chatFallbackMessageTORMRichlink : nil)
         case .quickReplies(let entity):
-            return entity.title.nilIfEmpty() ?? "Quick replies TORM message"
+            return entity.title.nilIfEmpty() ?? (useFallback ? localization.chatFallbackMessageTORMQuickReplies : nil)
         case .listPicker(let entity):
-            return entity.title.nilIfEmpty() ?? "List picker TORM message"
+            return entity.title.nilIfEmpty() ?? (useFallback ? localization.chatFallbackMessageTORMListPicker : nil)
         case .unknown:
-            return "Unknown message"
+            return useFallback ? localization.chatFallbackMessageUnknown : nil
         }
     }
 }

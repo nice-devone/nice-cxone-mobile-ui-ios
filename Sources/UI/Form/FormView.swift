@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ struct FormView: View {
 
     // MARK: - Properties
 
+    @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject private var style: ChatStyle
     
     @ObservedObject var viewModel: FormViewModel
@@ -65,6 +66,7 @@ struct FormView: View {
 
             cancelConfirmButtonsStack
         }
+        .onTapGesture(perform: hideKeyboard)
         .padding([.top, .leading, .trailing], 12)
         .padding(.bottom, UIDevice.current.hasHomeButton ? 12 : 32)
         .background(style.backgroundColor)
@@ -78,12 +80,12 @@ private extension FormView {
 
     var cancelConfirmButtonsStack: some View {
         HStack {
-            Button("Cancel") {
+            Button(localization.commonCancel) {
                 onCancel()
             }
             .buttonStyle(PrimaryButtonStyle(chatStyle: style))
 
-            Button("Confirm") {
+            Button(localization.commonConfirm) {
                 guard viewModel.isValid() else {
                     return
                 }
@@ -130,5 +132,6 @@ struct FormView_Previews: PreviewProvider {
                 .preferredColorScheme(.dark)
         }
         .environmentObject(ChatStyle())
+        .environmentObject(ChatLocalization())
     }
 }

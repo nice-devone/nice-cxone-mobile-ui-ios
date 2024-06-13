@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ struct AttachmentListView: View {
                                 .padding(14)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10)
-                                        .fill(style.backgroundColor.opacity(0.5)).colorInvert()
+                                        .fill(style.formTextColor.opacity(0.5))
                                 )
                             
                             Button {

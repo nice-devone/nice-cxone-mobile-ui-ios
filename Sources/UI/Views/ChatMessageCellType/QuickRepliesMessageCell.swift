@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,6 @@ struct QuickRepliesMessageCell: View {
     // MARK: - Properties
     
     @EnvironmentObject private var style: ChatStyle
-    
-    private var applyPadding = true
     
     let message: ChatMessage
     let item: QuickRepliesItem
@@ -58,31 +56,17 @@ struct QuickRepliesMessageCell: View {
                                 .foregroundColor(style.agentFontColor)
                         }
                     }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
+                    .padding(.vertical, StyleGuide.Message.paddingVertical)
+                    .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
                     .background(style.agentCellColor)
-                    .cornerRadius(14, corners: .allCorners)
+                    .cornerRadius(StyleGuide.Message.cornerRadius, corners: .allCorners)
                     
-                    if applyPadding {
-                        Spacer(minLength: UIScreen.main.bounds.size.width / 10)
-                    }
+                    Spacer(minLength: UIScreen.main.bounds.size.width / 10)
                 }
             }
-            .padding(.leading, 14)
-            .padding(.trailing, 4)
             
             quickReplyOptions
         }
-    }
-    
-    // MARK: - Methods
-    
-    func applyPadding(_ apply: Bool) -> Self {
-        var view = self
-        
-        view.applyPadding = apply
-        
-        return view
     }
 }
 
@@ -118,7 +102,7 @@ private extension QuickRepliesMessageCell {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 4)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .frame(maxWidth: .infinity, minHeight: StyleGuide.buttonDimension)
                     .background(
                         Capsule()
                             .fill(style.customerCellColor)
@@ -127,8 +111,7 @@ private extension QuickRepliesMessageCell {
                 }
             }
         }
-        .padding(.vertical, 10)
-        .animation(.spring())
+        .padding(.vertical, 4)
     }
 }
 

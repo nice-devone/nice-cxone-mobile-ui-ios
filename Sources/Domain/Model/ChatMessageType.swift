@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -39,23 +39,14 @@ public enum ChatMessageType: Hashable {
     
     // MARK: - Properties
     
-    /// Indicates whether the message is of a rich content type (e.g., multimedia, rich link, satisfaction survey).
-    public var isRichContent: Bool {
+    /// Indicates whether the message is of a attachment type (image, video, audio).
+    public var isAttachment: Bool {
         switch self {
-        case .text:
+        case .text, .richContent, .linkPreview:
             return false
         default:
             return true
         }
-    }
-    
-    /// Indicates whether a text message contains plain text (excluding emojis).
-    public var isPlainText: Bool {
-        guard case .text(let text) = self else {
-            return false
-        }
-        
-        return !text.containsOnlyEmoji
     }
 }
 
@@ -66,18 +57,10 @@ public enum ChatMessageType: Hashable {
 /// This enum is designed to categorize and represent different types of rich messages that can be used in chat systems.
 /// It provides flexibility in displaying various types of content and interactions within chat applications.
 public enum ChatRichMessageType: Hashable {
-    
-    case gallery([ChatRichMessageType])
-    
-    case menu([RichMessageSubElementType])
-    
+
     case quickReplies(QuickRepliesItem)
     
     case listPicker(ListPickerItem)
     
     case richLink(RichLinkItem)
-    
-    case satisfactionSurvey(SatisfactionSurveyItem)
-    
-    case custom(CustomPluginMessageItem)
 }

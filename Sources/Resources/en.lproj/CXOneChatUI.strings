@@ -1,0 +1,84 @@
+// Common
+"chatui_common_ok" = "Ok";
+"chatui_common_cancel" = "Cancel";
+"chatui_common_close" = "Close";
+"chatui_common_confirm" = "Confirm";
+"chatui_common_delete" = "Delete";
+"chatui_common_required" = "Required Field";
+"chatui_common_noSelection" = "No Selection";
+"chatui_common_invalidEmail" = "Invalid Email";
+"chatui_common_invalidNumber" = "Invalid Number";
+"chatui_common_select" = "Select";
+"chatui_common_attachments" = "Attachments";
+"chatui_common_copy" = "Copy";
+"chatui_common_share" = "Share";
+"chatui_common_attention" = "Attention";
+"chatui_common_unassigned_agent" = "No Agent";
+"chatui_common_unknown_agent" = "Automated Agent";
+"chatui_common_unknown_customer" = "Unknown Customer";
+
+// Alert
+"chatui_alert_threadCreationFailed_message" = "Unable to create new thread";
+"chatui_alert_DeeplinkUnknownThread_message" = "Received remote notification from unknown thread.";
+"chatui_alert_disconnect_message" = "Do you want to disconnect from the CXone services?";
+"chatui_alert_disconnect_confirm" = "Disconnect";
+"chatui_alert_updateThreadName_title" = "Update Thread Name";
+"chatui_alert_updateThreadName_message" = "Enter a name for this thread";
+"chatui_alert_updateThreadName_placeholder" = "Thread Name";
+"chatui_alert_editPrechatCustomFields_title" = "Edit Custom Fields";
+"chatui_alert_genericError_message" = "Something went wrong. Try it again later or contact the CXone Mobile team";
+"chatui_alert_invalidFileSize_message" = "Unable to upload attachment(s). Attachment(s) size greater than %1$d MB";
+"chatui_alert_endConverastion_message" = "Are you sure you want to end this conversation?";
+
+// ChatList
+"chatui_chatList_title" = "Threads";
+"chatui_chatList_empty" = "No Threads";
+"chatui_chatList_threadStatus_archived" = "Archived";
+"chatui_chatList_threadStatus_current" = "Current";
+
+// Chat - Fallback Message
+"chatui_chat_fallbackMessage_attachments" = "%1$d attachment(s)";
+"chatui_chat_fallbackMessage_plugin_textAndButtons" = "Text and buttons message";
+"chatui_chat_fallbackMessage_plugin_quickReplies" = "Quick replies message";
+"chatui_chat_fallbackMessage_plugin_subElements" = "Sub elements message";
+"chatui_chat_fallbackMessage_torm_richLink" = "Rich link message";
+"chatui_chat_fallbackMessage_torm_quickReplies" = "Quick replies message";
+"chatui_chat_fallbackMessage_torm_listPicker" = "List picker message";
+"chatui_chat_fallbackMessage_unknown" = "Unknown message";
+
+// Chat - Message Input Bar
+"chatui_chat_messageInput_archived" = "This conversation was archived.";
+"chatui_chat_messageInput_closed" = "This conversation was closed.";
+"chatui_chat_messageInput_placeholder" = "Aa";
+"chatui_chat_messageInput_attachmentsOption_title" = "Attachments Source";
+"chatui_chat_messageInput_attachmentsOption_camera" = "Camera";
+"chatui_chat_messageInput_attachmentsOption_photos" = "Photo Library";
+"chatui_chat_messageInput_attachmentsOption_files" = "File Manager";
+"chatui_chat_messageInput_audioRecorder_recording" = "Recording";
+"chatui_chat_messageInput_audioRecorder_playing" = "Playing";
+
+// Chat - Attachments
+"chatui_chat_attachments_selection_all" = "All";
+"chatui_chat_attachments_deselect" = "None";
+"chatui_chat_attachments_selectionMode" = "Select items";
+"chatui_chat_attachments_selectedCount_message" = "%1$d item(s) selected";
+
+// Chat - Menu Actions
+"chatui_chat_menuOption_disconnect" = "Disconnect";
+"chatui_chat_menuOption_updateName" = "Update conversation name";
+"chatui_chat_menuOption_editPrechatCustomFields" = "Edit custom fields";
+"chatui_chat_menuOption_endConversation" = "End conversation";
+
+// LiveChat - Offline
+"chatui_liveChat_offline_title" = "We are offline";
+"chatui_liveChat_offline_message" = "Try again later";
+
+// LiveChat - Queue
+"chatui_liveChat_queue_title" = "All agents are currently busy";
+"chatui_liveChat_queue_message" = "You are number %1$d in the queue";
+
+// LiveChat - End Conversation
+"chatui_liveChat_endConverastion_assignedAgent" = "You chatted with";
+"chatui_liveChat_endConverastion_new" = "Start a new chat";
+"chatui_liveChat_endConverastion_back" = "Back to conversation";
+"chatui_liveChat_endConverastion_close" = "Close the chat";

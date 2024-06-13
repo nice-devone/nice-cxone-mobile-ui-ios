@@ -63,6 +63,10 @@ The CXoneChatUI module seamlessly supports single-threaded channel configuration
 
 For scenarios involving multiple threads or group conversations, the CXoneChatUI module provides a smooth experience. Users can navigate and participate in multi-threaded discussions effortlessly.
 
+### LiveChat Channel Configuration
+
+The CXoneChatUI module offers robust live chat functionalities, enabling real-time communication between agents and mobile customers.
+
 
 ## Customization
 

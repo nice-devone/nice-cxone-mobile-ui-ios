@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 import CXoneChatSDK
 import SwiftUI
 
-struct DefaultChatListView: View {
+struct DefaultChatListView: View, Alertable {
 
     // MARK: - Properties
 
     @EnvironmentObject private var style: ChatStyle
     
+    @EnvironmentObject var localization: ChatLocalization
+
     @SwiftUI.Environment(\.presentationMode) private var presentationMode
     
     @ObservedObject private var viewModel: DefaultChatListViewModel
@@ -46,31 +48,16 @@ struct DefaultChatListView: View {
         }
         .background(style.backgroundColor)
         .onAppear(perform: viewModel.onAppear)
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            viewModel.willEnterForeground()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
-            viewModel.didEnterBackgroundNotification()
-        }
-        .alert(isPresented: $viewModel.presentGenericError)
-        .alert(isPresented: $viewModel.presentUnableToCreateThreadError, title: "Attention", message: "Unable to create new thread")
-        .alert(isPresented: $viewModel.presentUnknownThreadFromDeeplinkError, message: "Received remote notification from unknown thread.")
-        .alert(
-            isPresented: $viewModel.presentDisconnectAlert,
-            title: "Attention",
-            message: "Do you want to disconnect from the CXone services?",
-            primaryButton: .destructive(Text("Disconnect"), action: viewModel.onDisconnectTapped),
-            secondaryButton: .cancel()
-        )
-        .onChange(of: viewModel.dismiss) { _ in
-            presentationMode.wrappedValue.dismiss()
-        }
+        .onDisappear(perform: viewModel.onDisappear)
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification), perform: viewModel.willEnterForeground)
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification), perform: viewModel.didEnterBackground)
+        .alert(item: $viewModel.alertType, content: alertContent)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button {
-                    viewModel.presentDisconnectAlert = true
+                    viewModel.alertType = .disconnect(localization: localization, primaryAction: viewModel.onDisconnectTapped)
                 } label: {
-                    Asset.List.disconnect
+                    Asset.disconnect
                 }
                 .foregroundColor(style.navigationBarElementsColor)
             }
@@ -83,7 +70,7 @@ struct DefaultChatListView: View {
             }
         }
         .navigationBarBackButtonHidden()
-        .navigationBarTitle("Threads")
+        .navigationBarTitle(localization.chatListTitle)
     }
 }
 
@@ -93,10 +80,13 @@ private extension DefaultChatListView {
     
     @ViewBuilder
     var content: some View {
-        Picker("", selection: $viewModel.threadsStatus.onChange(viewModel.updateThreadsStatus)) {
-            ForEach(ThreadsStatusType.allCases, id: \.self) {
-                Text($0.rawValue)
+        Picker("", selection: $viewModel.threadStatus) {
+            ForEach(ThreadStatusType.allCases, id: \.self) {
+                Text(localization.string(for: $0)).tag($0.rawValue)
             }
+        }
+        .onChange(of: viewModel.threadStatus) { newValue in
+            viewModel.updateThreadStatus(newValue)
         }
         .pickerStyle(SegmentedPickerStyle())
         .padding()
@@ -104,7 +94,7 @@ private extension DefaultChatListView {
         if viewModel.chatThreads.isEmpty {
             Spacer()
             
-            Text("No Threads")
+            Text(localization.chatListEmpty)
                 .foregroundColor(style.formTextColor)
             
             Spacer()
@@ -121,16 +111,17 @@ private extension DefaultChatListView {
     
     var listContent: some View {
         List {
-            ForEach($viewModel.chatThreads, id: \.id) { chatThread in
-                DefaultChatListCell(title: chatThread.wrappedValue.listName, message: chatThread.wrappedValue.messages.last?.message)
-                    .if(viewModel.threadsStatus == .current) { view in
-                        view.onTapGesture {
-                            viewModel.onThreadTapped(chatThread.wrappedValue)
-                        }
-                    }
-                    .listRowBackground(Color.clear)
+            ForEach($viewModel.chatThreads) { chatThread in
+                DefaultChatListCell(
+                    title: listName(thread: chatThread.wrappedValue),
+                    message: chatThread.wrappedValue.messages.last?.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: true)
+                )
+                .listRowBackground(Color.clear)
+                .onTapGesture {
+                    viewModel.onThreadTapped(chatThread.wrappedValue)
+                }
             }
-            .if(viewModel.threadsStatus == .current) { view in
+            .if(viewModel.threadStatus == .current) { view in
                 view.onDelete(perform: viewModel.onSwipeToDelete)
             }
         }
@@ -140,20 +131,22 @@ private extension DefaultChatListView {
     
     var lazyStackContent: some View {
         LazyVStack {
-            ForEach($viewModel.chatThreads, id: \.id) { chatThread in
-                let thread = chatThread.wrappedValue
-                
-                DefaultChatListCell(title: thread.listName, message: thread.messages.last?.message, showDeleteButton: viewModel.threadsStatus == .current) {
+            ForEach($viewModel.chatThreads) { chatThread in
+                DefaultChatListCell(
+                    title: listName(thread: chatThread.wrappedValue),
+                    message: chatThread.wrappedValue.messages.last?.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: true),
+                    showDeleteButton: viewModel.threadStatus == .current
+                ) {
                     viewModel.onDelete(chatThread.wrappedValue)
                 }
                 .padding(.horizontal, 12)
-                .if(viewModel.threadsStatus == .current) { view in
-                    view.onTapGesture {
-                        viewModel.onThreadTapped(chatThread.wrappedValue)
-                    }
-                }
                 .listRowBackground(Color.clear)
+                .onTapGesture {
+                    viewModel.onThreadTapped(chatThread.wrappedValue)
+                }
             }
+            .listStyle(.plain)
+            .background(style.backgroundColor)
         }
         .background(style.backgroundColor)
     }
@@ -161,12 +154,12 @@ private extension DefaultChatListView {
 
 // MARK: - Helpers
 
-private extension ChatThread {
-    
-    var listName: String {
-        name?.nilIfEmpty()
-            ?? assignedAgent?.fullName
-            ?? "No Agent"
+private extension DefaultChatListView {
+
+    func listName(thread: ChatThread) -> String {
+        thread.name?.nilIfEmpty()
+            ?? thread.assignedAgent?.fullName
+            ?? localization.commonUnassignedAgent
     }
 }
 
@@ -174,7 +167,10 @@ private extension ChatThread {
 
 struct DefaultChatListView_Previews: PreviewProvider {
 
-    static let viewModel = DefaultChatListViewModel(coordinator: DefaultChatCoordinator(navigationController: UINavigationController()))
+    static let viewModel = DefaultChatListViewModel(
+        coordinator: DefaultChatCoordinator(navigationController: UINavigationController()), 
+        localization: ChatLocalization()
+    )
     
     static var previews: some View {
         Group {
@@ -190,5 +186,6 @@ struct DefaultChatListView_Previews: PreviewProvider {
             .preferredColorScheme(.dark)
         }
         .environmentObject(ChatStyle())
+        .environmentObject(ChatLocalization())
     }
 }

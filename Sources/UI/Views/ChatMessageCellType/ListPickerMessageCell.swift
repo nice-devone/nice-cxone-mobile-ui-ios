@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
+import CXoneChatSDK
 import Kingfisher
 import SwiftUI
 
@@ -21,8 +22,6 @@ struct ListPickerMessageCell: View {
     // MARK: - Properties
     
     @EnvironmentObject private var style: ChatStyle
-    
-    private var applyPadding = true
     
     let message: ChatMessage
     let item: ListPickerItem
@@ -53,24 +52,24 @@ struct ListPickerMessageCell: View {
                             .foregroundColor(style.agentFontColor)
                     }
                     
-                    ForEach(item.elements, id: \.self) { element in
+                    ForEach(item.buttons, id: \.self) { element in
                         switch element {
-                        case .button(let entity):
+                        case .button(let button):
                             Button {
                                 withAnimation {
                                     elementSelected(element)
                                 }
                             } label: {
                                 HStack(alignment: .center) {
-                                    if let url = entity.iconUrl {
+                                    if let url = button.iconUrl {
                                         KFImage(url)
                                             .resizable()
                                             .scaledToFit()
                                             .frame(width: 32, height: 32)
                                     }
                                     
-                                    Text(entity.title)
-                                        .foregroundColor(style.backgroundColor).colorInvert()
+                                    Text(button.title)
+                                        .foregroundColor(style.formTextColor)
                                 }
                                 .frame(maxWidth: .infinity, minHeight: 44)
                                 .padding(4)
@@ -84,28 +83,14 @@ struct ListPickerMessageCell: View {
                         }
                     }
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
+                .padding(.vertical, StyleGuide.Message.paddingVertical)
+                .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
                 .background(style.agentCellColor)
-                .cornerRadius(14, corners: .allCorners)
+                .cornerRadius(StyleGuide.Message.cornerRadius, corners: .allCorners)
                 
-                if applyPadding {
-                    Spacer(minLength: UIScreen.main.bounds.size.width / 10)
-                }
+                Spacer(minLength: UIScreen.main.bounds.size.width / 10)
             }
         }
-        .padding(.leading, 14)
-        .padding(.trailing, 4)
-    }
-    
-    // MARK: - Methods
-    
-    func applyPadding(_ apply: Bool) -> Self {
-        var view = self
-        
-        view.applyPadding = apply
-        
-        return view
     }
 }
 

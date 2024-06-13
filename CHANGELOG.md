@@ -1,3 +1,30 @@
+<a name="2.0.0"></a>
+# [2.0.0] - 2024-06-13
+
+### Features
+- Add Live chat mode
+- Minimum iOS deployment target set to iOS 14.0
+- Add localized strings to sdk package
+- Disable modification for archived thread
+- implement file restrictions parsing and publication
+- Deprecate legacy plugins
+- Handle sent message via `onThreadUpdated(_:)`
+- Privacy Manifest
+
+### Bug Fixes
+- Rotation bug on iOS15
+- Incorrect attachment size displayed for single attachment
+- append UTType.movie for all videos
+- Update ListFieldView behavior for iOS 14
+- Exclude links from multiattachments view
+- remove validation for Prechat survey
+
+<a name="1.3.3"></a>
+## [1.3.3] - 2024-05-15
+
+### Bug Fixes
+- make assignedAgent optional for the event
+
 <a name="1.3.2"></a>
 ## [1.3.2] - 2024-03-21
 
@@ -36,6 +63,7 @@
 - Fix Deploy to TestFlight action
 - Handle different thread correctly
 - Fix issue when multiple messages with matching ids are received
+
 ### Features
 - add login error state in case of unreachable API
 - Add basic validation for brandId and channelId
@@ -70,6 +98,7 @@
 - Fixed issue where SettingsView was crashing
 - Correct title when enter thread detail
 - Fixed problem in hexString where wrong color was being created.
+
 ### Features
 - change open Chat button background color
 - Login with Amazon SDK update + fixed Launch screen storyboard
@@ -190,7 +219,9 @@
     - failure
   - typing start/end
 
-[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/1.3.2...HEAD
+[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.0.0...HEAD
+[2.0.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/1.3.3...2.0.0
+[1.3.3]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/1.3.2...1.3.3
 [1.3.2]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/1.3.1...1.3.2
 [1.3.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/1.3.0...1.3.1
 [1.3.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/1.2.0...1.3.0
