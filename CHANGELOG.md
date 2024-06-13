@@ -19,7 +19,6 @@
 - Exclude links from multiattachments view
 - remove validation for Prechat survey
 
-
 <a name="1.3.3"></a>
 ## [1.3.3] - 2024-05-15
 
