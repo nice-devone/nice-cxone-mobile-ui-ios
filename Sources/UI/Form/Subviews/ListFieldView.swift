@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -20,32 +20,34 @@ struct ListFieldView: View {
     // MARK: - Properties
 
     @EnvironmentObject private var style: ChatStyle
+    @EnvironmentObject private var localization: ChatLocalization
     
     @ObservedObject var entity: ListFieldEntity
 
+    @State private var isActionSheetVisible = false
+    
     // MARK: - Content
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(entity.label)
                     .font(.caption)
                     .foregroundColor(style.formTextColor)
-
-                Picker("", selection: $entity.value) {
-                    Text("No Selection")
-                        .tag("")
-                    
-                    ForEach(entity.options.map(\.value), id: \.self) { value in
-                        Text(value)
-                            .tag(entity.getKey(listOption: value))
+                
+                HStack(spacing: 4) {
+                    Button(entity.value.isEmpty ? localization.commonNoSelection : entity.value) {
+                        isActionSheetVisible.toggle()
                     }
+                    
+                    Asset.disclosure
+                        .font(.caption)
+                        .rotationEffect(.degrees(isActionSheetVisible ? 90 : .zero))
                 }
-                .pickerStyle(.menu)
-                .accentColor(style.formTextColor)
+                .foregroundColor(style.formTextColor)
 
                 if entity.isRequired {
-                    Text("Required Field")
+                    Text(localization.commonRequired)
                         .font(.caption)
                         .foregroundColor(style.formErrorColor)
                 }
@@ -53,20 +55,15 @@ struct ListFieldView: View {
             
             Spacer()
         }
-    }
-}
+        .actionSheet(isPresented: $isActionSheetVisible) {
+            var options: [ActionSheet.Button] = entity.options.map { option in
+                    .default(Text(option.value)) { entity.value = option.value }
+            }
+            options.append(.cancel { entity.value = "" })
 
-// MARK: - Helpers
-
-private extension ListFieldEntity {
-    
-    func getKey(listOption: String) -> String {
-        guard let key = options.first(where: { $1 == listOption })?.key else {
-            LogManager.error(.unableToParse(listOption, from: options))
-            return ""
+            return ActionSheet(title: Text(entity.label), buttons: options)
         }
-        
-        return key
+        .animation(.bouncy, value: isActionSheetVisible)
     }
 }
 
@@ -86,5 +83,6 @@ struct ListFieldView_Previews: PreviewProvider {
                 .preferredColorScheme(.dark)
         }
         .environmentObject(ChatStyle())
+        .environmentObject(ChatLocalization())
     }
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
+import CXoneChatSDK
 import SwiftUI
 
 enum MockData {
@@ -20,7 +21,7 @@ enum MockData {
     // MARK: - Properties
     
     static var imageUrl: URL {
-        URL(string: "https://picsum.photos/\(Int.random(in: 1...1000))/300/300").unsafelyUnwrapped
+        URL(string: "https://picsum.photos/id/\(Int.random(in: 1...700))/300/300").unsafelyUnwrapped
     }
     static var imageItem: AttachmentItem {
         AttachmentItem(url: imageUrl, friendlyName: "Photo", mimeType: imageUrl.mimeType, fileName: imageUrl.lastPathComponent)
@@ -33,7 +34,7 @@ enum MockData {
     static let audioUrl = URL(string: "https://www2.cs.uic.edu/~i101/SoundFiles/gettysburg10.wav").unsafelyUnwrapped
     static let audioItem = AttachmentItem(url: audioUrl, friendlyName: "Gettysburg", mimeType: audioUrl.mimeType, fileName: audioUrl.lastPathComponent)
     
-    static let videoUrl = URL(string: "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4").unsafelyUnwrapped
+    static let videoUrl = URL(string: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4").unsafelyUnwrapped
     static let videoItem = AttachmentItem(url: videoUrl, friendlyName: "Big Buck Bunny", mimeType: videoUrl.mimeType, fileName: videoUrl.lastPathComponent)
     
     static let linkPreviewUrl = URL(string: "https://www.soundczech.cz/temp/lorem-ipsum.pdf").unsafelyUnwrapped
@@ -43,40 +44,9 @@ enum MockData {
         mimeType: linkPreviewUrl.mimeType,
         fileName: linkPreviewUrl.lastPathComponent
     )
-    
-    static let customRichMessageVariables: [String: Any] = [
-        "thumbnail": imageUrl,
-        "url": videoUrl,
-        "buttons": [
-            [
-                "id": "0edc9bf6-4922-4695-a6ad-1bdb248dd42f",
-                "name": "Open"
-            ]
-        ],
-        "size": [
-            "ios": "big",
-            "android": "middle"
-        ]
-    ]
-    static let menuRichMessageElements: [RichMessageSubElementType] = [
-        .text(Lorem.word(), isTitle: true),
-        .text(Lorem.words(), isTitle: false),
-        .file(imageUrl),
-        .button(RichMessageButton(title: Lorem.words(nbWords: 2)))
-    ]
-    static let galleryRichMessageElements: [ChatRichMessageType] = [
-        .menu(menuRichMessageElements),
-        .satisfactionSurvey(satisfactionSurveyItem),
-        .custom(customItem),
-        .richLink(richLinkItem),
-        .listPicker(listPickerItem),
-        .quickReplies(quickRepliesItem)
-    ]
-    static let listPickerItem = ListPickerItem(title: Lorem.word(), message: Lorem.sentence(), elements: richMessageOptions())
+    static let listPickerItem = ListPickerItem(title: Lorem.word(), message: Lorem.sentence(), buttons: richMessageOptions())
     static let quickRepliesItem = QuickRepliesItem(title: Lorem.word(), message: Lorem.sentence(), options: quickReplyOptions())
     static let richLinkItem = RichLinkItem(title: Lorem.words(), url: videoUrl, imageUrl: imageUrl)
-    static let satisfactionSurveyItem = SatisfactionSurveyItem(title: Lorem.words(), message: Lorem.sentence(), buttonTitle: Lorem.word(), url: imageUrl)
-    static let customItem = CustomPluginMessageItem(title: Lorem.words(), variables: customRichMessageVariables)
     
     static let customer = ChatUser(id: UUID().uuidString, userName: "Peter Parker", avatarURL: nil, isAgent: false)
     static let agent = ChatUser(id: UUID().uuidString, userName: "John Doe", avatarURL: imageUrl, isAgent: true)
@@ -108,6 +78,16 @@ enum MockData {
             id: UUID(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .image(imageItem) },
+            date: date,
+            status: .seen
+        )
+    }
+    
+    static func imageMessageWithText(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date()) -> ChatMessage {
+        ChatMessage(
+            id: UUID(),
+            user: user ?? [customer, agent].random().unsafelyUnwrapped,
+            types: [.text(Lorem.sentence()), .image(imageItem)],
             date: date,
             status: .seen
         )
@@ -169,22 +149,6 @@ enum MockData {
     
     static func richLinkMessage(date: Date = Date()) -> ChatMessage {
         ChatMessage(id: UUID(), user: agent, types: [.richContent(.richLink(richLinkItem))], date: date, status: .seen)
-    }
-    
-    static func galleryMessage(date: Date = Date()) -> ChatMessage {
-        ChatMessage(id: UUID(), user: agent, types: [.richContent(.gallery(galleryRichMessageElements))], date: date, status: .seen)
-    }
-    
-    static func menuMessage(date: Date = Date()) -> ChatMessage {
-        ChatMessage(id: UUID(), user: agent, types: [.richContent(.menu(menuRichMessageElements))], date: date, status: .sent)
-    }
-    
-    static func satisfactionSurveyMessage(date: Date = Date()) -> ChatMessage {
-        ChatMessage(id: UUID(), user: agent, types: [.richContent(.satisfactionSurvey(satisfactionSurveyItem))], date: date, status: .seen)
-    }
-    
-    static func customMessage(date: Date = Date()) -> ChatMessage {
-        ChatMessage(id: UUID(), user: agent, types: [.richContent(.custom(customItem))], date: date, status: .seen)
     }
     
     static var chatHistory: [ChatMessage] = [

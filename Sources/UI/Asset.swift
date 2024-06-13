@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -25,26 +25,40 @@ enum Asset {
     static let copy = Image(systemName: "doc.on.doc")
     /// `xmark`
     static let close = Image(systemName: "xmark")
-    /// `waveform`
-    static let waveform = Image(systemName: "waveform")
     /// `checkmark`
     static let check = Image(systemName: "checkmark")
-    /// `rectangle.stack.badge.person.crop`
-    static let editCustomFields = Image(systemName: "rectangle.stack.badge.person.crop")
-    /// `rectangle.and.pencil.and.ellipsis.rtl`
-    static let editThreadName = Image(systemName: "rectangle.and.pencil.and.ellipsis.rtl")
-    /// `bubble.left.and.bubble.right`
-    static let exampleNavigationIcon = Image(systemName: "bubble.left.and.bubble.right")
+    /// `chevron.left`
+    static let back = Image(systemName: "chevron.left")
+    /// `"ellipsis`
+    static let menu = Image(systemName: "ellipsis")
+    /// `bolt.slash.fill`
+    static let disconnect = Image(systemName: "bolt.slash.fill")
+    /// `chevron.right`
+    static let disclosure = Image(systemName: "chevron.right")
+    
+    // MARK: - Chat Example
+    
+    enum ChatExample {
+        /// `bubble.left.and.bubble.right`
+        static let exampleNavigationIcon = Image(systemName: "bubble.left.and.bubble.right")
+    }
     
     // MARK: - List
     
     enum List {
-        /// `bolt.slash.fill`
-        static let disconnect = Image(systemName: "bolt.slash.fill")
         /// `plus`
         static let new = Image(systemName: "plus")
         /// `trash`
         static let delete = Image(systemName: "trash")
+    }
+    
+    // MARK: - Chat Thread
+    
+    enum ChatThread {
+        /// `rectangle.stack.badge.person.crop`
+        static let editPrechatCustomFields = Image(systemName: "rectangle.stack.badge.person.crop")
+        /// `rectangle.and.pencil.and.ellipsis.rtl`
+        static let editThreadName = Image(systemName: "rectangle.and.pencil.and.ellipsis.rtl")
     }
     
     // MARK: - Message
@@ -58,6 +72,8 @@ enum Asset {
         static let delivered = Image(systemName: "checkmark.circle.fill")
         /// `paperplane.fill`
         static let send = Image(systemName: "paperplane.fill")
+        /// `archivebox.fill`
+        static let archived = Image(systemName: "archivebox.fill")
     }
     
     // MARK: - Attachments
@@ -99,5 +115,18 @@ enum Asset {
         static let openLink = Image(systemName: "rectangle.portrait.and.arrow.right")
         /// `doc.text`
         static let linkPlaceholder = Image(systemName: "doc.text")
+        /// `waveform`
+        static let voiceIndicator = Image(systemName: "waveform")
+    }
+    
+    // MARK: - LiveChat - End Conversation
+    
+    enum LiveChat {
+        /// `moon.zzz`
+        static let offline = Image(systemName: "moon.zzz")
+        /// `person.crop.circle.badge.clock`
+        static let personWithClock = Image(systemName: "person.crop.circle.badge.clock")
+        /// `bubble.left.and.bubble.right.fill`
+        static let newChat = Image(systemName: "bubble.left.and.bubble.right.fill")
     }
 }

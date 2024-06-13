@@ -1,6 +1,6 @@
 // swift-tools-version: 5.7
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import PackageDescription
 
 let package = Package(
     name: "CXoneChatUI",
+    defaultLocalization: "en",
     platforms: [.iOS(.v14)],
     products: [
         .library(
@@ -29,7 +30,7 @@ let package = Package(
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "7.0.0"),
         .package(url: "https://github.com/siteline/swiftui-introspect", from: "0.8.0"),
         .package(url: "https://github.com/wxxsw/GSPlayer.git", from: "0.2.25"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "1.3.3")
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "2.0.0")
     ],
     targets: [
         .target(

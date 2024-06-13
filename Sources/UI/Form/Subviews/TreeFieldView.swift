@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ struct TreeFieldView: View {
     // MARK: - Properties
 
     @EnvironmentObject private var style: ChatStyle
+    @EnvironmentObject private var localization: ChatLocalization
     
     @ObservedObject var entity: TreeFieldEntity
 
@@ -39,7 +40,7 @@ struct TreeFieldView: View {
             }
             
             if entity.isRequired {
-                Text("Required Field")
+                Text(localization.commonRequired)
                     .font(.caption)
                     .foregroundColor(style.formErrorColor)
             }
@@ -182,5 +183,6 @@ struct TreeFieldView_Previews: PreviewProvider {
             .previewDisplayName("Dark Mode")
         }
         .environmentObject(ChatStyle())
+        .environmentObject(ChatLocalization())
     }
 }

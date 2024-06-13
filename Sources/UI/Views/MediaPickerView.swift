@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
+import CXoneChatSDK
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
@@ -21,7 +22,7 @@ struct MediaPickerView: UIViewControllerRepresentable {
     
     // MARK: - Properties
     
-    @Environment(\.presentationMode) var presentationMode
+    @SwiftUI.Environment(\.presentationMode) var presentationMode
     
     var sourceType: UIImagePickerController.SourceType = .photoLibrary
     var onSelected: (AttachmentItem) -> Void
@@ -33,10 +34,13 @@ struct MediaPickerView: UIViewControllerRepresentable {
     }
     
     func makeUIViewController(context: UIViewControllerRepresentableContext<MediaPickerView>) -> UIImagePickerController {
+        let validContentTypes = UTType.resolve(for: CXoneChat.shared.connection.channelConfiguration.fileRestrictions.allowedFileTypes)
+        
         let picker = UIImagePickerController()
         picker.delegate = context.coordinator
         picker.sourceType = sourceType
-        picker.mediaTypes = [UTType.movie.identifier, UTType.image.identifier]
+        picker.mediaTypes = validContentTypes.map(\.identifier)
+        picker.allowsEditing = true
         
         return picker
     }

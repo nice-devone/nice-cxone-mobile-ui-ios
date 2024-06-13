@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -16,29 +16,6 @@
 import SwiftUI
 
 extension View {
-    
-    func alert(
-        isPresented: Binding<Bool>,
-        title: String = "Oops!",
-        message: String = "Something went wrong. Try it again later or contact the CXone Mobile team.",
-        dismissButton: Alert.Button = .cancel()
-    ) -> some View {
-        alert(isPresented: isPresented) {
-            Alert(title: Text(title), message: Text(message), dismissButton: dismissButton)
-        }
-    }
-    
-    func alert(
-        isPresented: Binding<Bool>,
-        title: String = "Oops!",
-        message: String = "Something went wrong. Try it again later or contact the CXone Mobile team.",
-        primaryButton: Alert.Button,
-        secondaryButton: Alert.Button
-    ) -> some View {
-        alert(isPresented: isPresented) {
-            Alert(title: Text(title), message: Text(message), primaryButton: primaryButton, secondaryButton: secondaryButton)
-        }
-    }
     
     /// Applies the given transform if the given condition evaluates to `true`.
     /// - Parameters:
@@ -69,5 +46,15 @@ extension View {
     
     func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+    
+    func overlay(isVisible: Binding<Bool>, @ViewBuilder overlayContent: () -> some View) -> some View {
+        ZStack {
+            self
+            
+            if isVisible.wrappedValue {
+                overlayContent()
+            }
+        }
     }
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -42,7 +42,9 @@ struct TextMessageCell: View {
             }
             
             Text(text)
-                .messageChatTextStyle(message, text: text, position: position)
+                .padding(.vertical, StyleGuide.Message.paddingVertical)
+                .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
+                .messageChatStyle(message, position: position, text: text)
             
             if message.user.isAgent {
                 Spacer()
@@ -61,12 +63,12 @@ struct TextMessageCell_Previews: PreviewProvider {
                 TextMessageCell(
                     message: MockData.textMessage(user: MockData.customer),
                     text: Lorem.sentence(),
-                    position: .first
+                    position: .single
                 )
                 TextMessageCell(
                     message: MockData.textMessage(user: MockData.agent),
                     text: Lorem.sentence(),
-                    position: .first
+                    position: .single
                 )
             }
             .previewDisplayName("Light Mode")
@@ -75,13 +77,13 @@ struct TextMessageCell_Previews: PreviewProvider {
                 TextMessageCell(
                     message: MockData.textMessage(user: MockData.customer),
                     text: Lorem.sentence(),
-                    position: .first
+                    position: .single
                 )
 
                 TextMessageCell(
                     message: MockData.textMessage(user: MockData.agent),
                     text: Lorem.sentence(),
-                    position: .first
+                    position: .single
                 )
             }
             .previewDisplayName("Dark Mode")

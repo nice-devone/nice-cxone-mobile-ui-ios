@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ class ChatManager {
 
     let messages: [ChatMessage]
 
+    private static let groupInterval: TimeInterval = 120
+    
     // MARK: - Init
 
     init(messages: [ChatMessage]) {
@@ -32,12 +34,12 @@ class ChatManager {
     func groupMessages() -> [MessageGroup] {
         messages
             .group { last, current in
-                current.allText
-                    && last.allText
-                    && current.user.id == last.user.id 
-                    && abs(last.date.timeIntervalSince(current.date)) <= 30
+                !current.richContentMessages
+                    && !last.richContentMessages
+                    && current.user.id == last.user.id
+                    && abs(last.date.timeIntervalSince(current.date)) <= Self.groupInterval
             }
-            .compactMap(MessageGroup.init(messages:))
+            .compactMap(MessageGroup.init)
     }
 }
 

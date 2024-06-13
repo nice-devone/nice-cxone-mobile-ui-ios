@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ import Foundation
 
 enum ChatMessageMapper {
     
-    static func map(_ message: Message) -> ChatMessage {
+    static func map(_ message: Message, localization: ChatLocalization) -> ChatMessage {
         ChatMessage(
             id: message.id,
-            user: message.user,
-            types: ChatMessageTypeMapper.map(message),
+            user: message.getUser(localization: localization),
+            types: ChatMessageTypeMapper.map(message, localization: localization),
             date: message.createdAt,
             status: message.status
         )
@@ -33,18 +33,18 @@ enum ChatMessageMapper {
 
 private extension Message {
 
-    var user: ChatUser {
+    func getUser(localization: ChatLocalization) -> ChatUser {
         if self.direction == .toClient {
             return ChatUser(
-                id: self.authorUser.map { String($0.id) } ?? UUID().uuidString,
-                userName: "\(self.authorUser?.firstName ?? "Automated") \(self.authorUser?.surname ?? "Agent")",
+                id: authorUser.map { String($0.id) } ?? UUID().uuidString,
+                userName: authorUser.map(\.fullName) ?? localization.commonUnknownAgent,
                 avatarURL: authorUser.map { URL(string: $0.imageUrl) } ?? nil,
                 isAgent: true
             )
         } else {
             return ChatUser(
-                id: self.authorEndUserIdentity?.id ?? UUID().uuidString,
-                userName: "\(self.authorEndUserIdentity?.firstName ?? "Unknown") \(self.authorEndUserIdentity?.lastName ?? "Customer")",
+                id: authorEndUserIdentity?.id ?? UUID().uuidString,
+                userName: authorEndUserIdentity?.fullName ?? "Unknown Customer",
                 avatarURL: nil,
                 isAgent: false
             )

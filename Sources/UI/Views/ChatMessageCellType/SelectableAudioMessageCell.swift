@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -55,14 +55,14 @@ struct SelectableAudioMessageCell: View {
         ZStack(alignment: .topTrailing) {
             VStack {
                 progressBar
-                    .padding(.top, 10)
-                    .padding(.horizontal, 12)
+                    .padding(.top, StyleGuide.Message.paddingVertical)
+                    .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
                 
                 controlButtons
             }
             .frame(width: width, height: width)
             .background(style.agentCellColor)
-            .cornerRadius(14, corners: .allCorners)
+            .cornerRadius(StyleGuide.Message.cornerRadius, corners: .allCorners)
             .onTapGesture {
                 if inSelectionMode {
                     attachmentsViewModel.selectAttachment(uuid: item.id)

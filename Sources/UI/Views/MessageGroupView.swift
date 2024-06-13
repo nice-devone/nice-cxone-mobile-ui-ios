@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
+import CXoneChatSDK
 import SwiftUI
 
 struct MessageGroupView: View {
@@ -51,10 +52,10 @@ struct MessageGroupView: View {
                 footer
             }
         }
-        .padding(.top, 10)
+        .padding(.top, StyleGuide.Message.paddingVertical)
         .padding(.leading, 16)
         .padding(.trailing, 10)
-        .padding(.bottom, group.shouldShowFooter ? 0 : 10)
+        .padding(.bottom, group.shouldShowFooter ? 0 : 14)
     }
 }
 
@@ -66,14 +67,14 @@ extension MessageGroupView {
         Group {
             Text(group.date.formatted())
                 .font(.footnote.bold())
-                .foregroundColor(style.backgroundColor.opacity(0.5)).colorInvert()
+                .foregroundColor(style.formTextColor.opacity(0.5))
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 4)
 
             if group.shouldShowUserName {
                 Text(group.sender.userName)
                     .font(.footnote)
-                    .foregroundColor(style.backgroundColor.opacity(0.5)).colorInvert()
+                    .foregroundColor(style.formTextColor.opacity(0.5))
                     .offset(x: 10)
             }
         }
@@ -144,12 +145,11 @@ struct MessageGroupView_Previews: PreviewProvider {
         ScrollView {
             VStack {
                 ForEach(manager.groupMessages()) { message in
-                    MessageGroupView(
-                        group: message
-                    ) { _, _ in }
+                    MessageGroupView(group: message) { _, _ in }
                 }
             }
         }
+        .environmentObject(ChatLocalization())
         .environmentObject(ChatStyle())
     }
 }

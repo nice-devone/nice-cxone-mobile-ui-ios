@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
-import MobileCoreServices
+import CXoneChatSDK
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -21,7 +21,7 @@ struct DocumentPickerView: UIViewControllerRepresentable {
     
     // MARK: - Properties
     
-    @Environment(\.presentationMode) var presentationMode
+    @SwiftUI.Environment(\.presentationMode) var presentationMode
     
     var onSelected: ([AttachmentItem]) -> Void
 
@@ -32,7 +32,9 @@ struct DocumentPickerView: UIViewControllerRepresentable {
     }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: [.image, .video, .audio, .pdf])
+        let validContentTypes = UTType.resolve(for: CXoneChat.shared.connection.channelConfiguration.fileRestrictions.allowedFileTypes)
+        
+        let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: validContentTypes)
         documentPicker.delegate = context.coordinator
         documentPicker.allowsMultipleSelection = true
         

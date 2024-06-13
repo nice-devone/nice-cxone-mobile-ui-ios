@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import SwiftUI
 
 extension View {
     
-    func messageChatTextStyle(_ message: ChatMessage, text: String, position: MessageGroupPosition) -> some View {
+    func messageChatStyle(_ message: ChatMessage, position: MessageGroupPosition, text: String? = nil) -> some View {
         modifier(ChatTextStyleModifier(message: message, text: text, position: position))
     }
 }
@@ -26,27 +26,30 @@ extension View {
 
 private struct ChatTextStyleModifier: ViewModifier {
 
+    @EnvironmentObject private var style: ChatStyle
+    
     private let customerCorners = UIRectCorner([.topLeft, .topRight, .bottomLeft])
     private let agentCorners = UIRectCorner([.topLeft, .topRight, .bottomRight])
     
-    @EnvironmentObject private var style: ChatStyle
-
     let message: ChatMessage
-    let text: String
+    let text: String?
     let position: MessageGroupPosition
     
     private var font: Font? {
+        guard let text else {
+            return nil
+        }
         guard text.containsOnlyEmoji else {
             return .body
         }
-            
+        
         switch text.count {
         case 1:
-            return .system(size: 50)
+            return .system(size: StyleGuide.Message.singleEmojiFontSize)
         case 2:
-            return .system(size: 38)
+            return .system(size: StyleGuide.Message.twoEmojiesFontSize)
         case 3:
-            return .system(size: 25)
+            return .system(size: StyleGuide.Message.threeEmojiesFontSize)
         default:
             return .body
         }
@@ -54,8 +57,6 @@ private struct ChatTextStyleModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .padding(.vertical, 8)
-            .padding(.horizontal, 12)
             .font(font)
             .background(background)
             .foregroundColor(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
@@ -68,7 +69,7 @@ private struct ChatTextStyleModifier: ViewModifier {
 
     @ViewBuilder
     private var background: some View {
-        if text.containsOnlyEmoji {
+        if let text, text.containsOnlyEmoji {
             Color.clear
         } else {
             message.user.isAgent ? style.agentCellColor : style.customerCellColor
@@ -79,33 +80,33 @@ private struct ChatTextStyleModifier: ViewModifier {
     
     private var topLeftCornerRadius: CGFloat {
         guard position != .single, message.user.isAgent else {
-            return 14
+            return StyleGuide.Message.cornerRadius
         }
         
-        return position == .first ? 14 : 4
+        return position == .first ? StyleGuide.Message.cornerRadius : StyleGuide.Message.cornerRadiusBetweenMessages
     }
     
     private var topRightCornerRadius: CGFloat {
         guard position != .single, !message.user.isAgent else {
-            return 14
+            return StyleGuide.Message.cornerRadius
         }
         
-        return position == .first ? 14 : 4
+        return position == .first ? StyleGuide.Message.cornerRadius : StyleGuide.Message.cornerRadiusBetweenMessages
     }
     
     private var bottomLeftCornerRadius: CGFloat {
         guard position != .single, message.user.isAgent else {
-            return 14
+            return StyleGuide.Message.cornerRadius
         }
         
-        return [.first, .inside].contains(position) ? 4 : 14
+        return [.first, .inside].contains(position) ? StyleGuide.Message.cornerRadiusBetweenMessages : StyleGuide.Message.cornerRadius
     }
     
     private var bottomRightCornerRadius: CGFloat {
         guard position != .single, !message.user.isAgent else {
-            return 14
+            return StyleGuide.Message.cornerRadius
         }
         
-        return [.first, .inside].contains(position) ? 4 : 14
+        return [.first, .inside].contains(position) ? StyleGuide.Message.cornerRadiusBetweenMessages : StyleGuide.Message.cornerRadius
     }
 }

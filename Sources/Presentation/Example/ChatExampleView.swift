@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -23,14 +23,14 @@ import SwiftUI
 public struct ChatExampleView: View {
     
     // MARK: - Properties
-    
+
     @ObservedObject private var viewModel: ChatExampleViewModel
     
     // MARK: - Init
     
     /// Initialization of the ChatExampleView
-    public init() {
-        self.viewModel = ChatExampleViewModel()
+    public init(withHistory: Bool = false) {
+        self.viewModel = ChatExampleViewModel(isChatHistoryEnabled: withHistory)
     }
     
     // MARK: - Builder
@@ -41,12 +41,14 @@ public struct ChatExampleView: View {
             messages: $viewModel.messages,
             isAgentTyping: $viewModel.isAgentTyping,
             isUserTyping: $viewModel.isUserTyping,
+            isInputEnabled: $viewModel.isInputEnabled,
+            alertType: $viewModel.alertType,
             onNewMessage: viewModel.onNewMessage,
             onPullToRefresh: viewModel.onPullToRefresh, 
             onRichMessageElementSelected: viewModel.onRichMessageElementSelected
         )
-        .environmentObject(ChatStyle(navigationBarLogo: Asset.exampleNavigationIcon))
-        .onAppear(perform: viewModel.onAppear)
+        .environmentObject(ChatStyle(navigationBarLogo: Asset.ChatExample.exampleNavigationIcon))
+        .environmentObject(ChatLocalization())
         .navigationBarTitle(MockData.agent.userName)
         .navigationBarItems(leading: Button("Reset", action: viewModel.onReset))
         .navigationBarItems(trailing: Button("Add", action: viewModel.onAdd))

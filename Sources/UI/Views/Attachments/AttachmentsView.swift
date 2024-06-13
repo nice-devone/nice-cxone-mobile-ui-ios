@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ struct AttachmentsView: View {
 
     // MARK: - Properties
 
+    @EnvironmentObject private var localization: ChatLocalization
+    
     @ObservedObject var viewModel: AttachmentsViewModel
 
     @State private var shareModalIsPresented = false
@@ -47,11 +49,11 @@ struct AttachmentsView: View {
                 selectionOptionsView
                     .padding(.bottom, 20)
             }
-            .padding(.horizontal, 12)
-            .navigationTitle("Attachments")
+            .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
+            .navigationTitle(localization.commonAttachments)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(viewModel.inSelectionMode ? "Cancel" : "Select") {
+                    Button(viewModel.inSelectionMode ? localization.commonCancel : localization.commonSelect) {
                         viewModel.inSelectionMode.toggle()
                     }
                 }
@@ -85,7 +87,7 @@ private extension AttachmentsView {
 
     var selectionOptionsView: some View {
         HStack {
-            Button("All") {
+            Button(localization.chatAttachmentsSelectionAll) {
                 viewModel.selectAll()
             }
             .if(!viewModel.inSelectionMode) { view in
@@ -94,7 +96,7 @@ private extension AttachmentsView {
             
             Spacer()
             
-            Button("None") {
+            Button(localization.chatAttachmentsDeselect) {
                 viewModel.selectNone()
             }
             .if(!viewModel.inSelectionMode) { view in
@@ -103,16 +105,21 @@ private extension AttachmentsView {
 
             Spacer()
             
-            Text(viewModel.selectedAttachments.isEmpty ? "Select items" : "\(viewModel.selectedAttachments.count) items selected")
-                .if(!viewModel.inSelectionMode) { view in
-                    view.hidden()
-                }
+            Text(
+                viewModel.selectedAttachments.isEmpty
+                    ? localization.chatAttachmentsSelectionMode
+                    : String(format: localization.chatAttachmentsSelectedCount, viewModel.selectedAttachments.count)
+            )
+            .if(!viewModel.inSelectionMode) { view in
+                view.hidden()
+            }
+            
             Spacer()
             
             Button {
                 shareModalIsPresented.toggle()
             } label: {
-                Image(systemName: "square.and.arrow.up")
+                Asset.share
             }
             .disabled(viewModel.inSelectionMode ? viewModel.selectedAttachments.isEmpty : false)
         }
@@ -149,5 +156,6 @@ struct AttachmentsView_Previews: PreviewProvider {
                 .preferredColorScheme(.dark)
                 .previewDisplayName("Dark Mode")
         }
+        .environmentObject(ChatLocalization())
     }
 }

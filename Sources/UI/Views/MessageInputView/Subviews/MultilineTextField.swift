@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ struct MultilineTextField: View {
     // MARK: - Properties
     
     @EnvironmentObject private var style: ChatStyle
+    @EnvironmentObject private var localization: ChatLocalization
     
     @Binding private var attributedText: NSAttributedString
     @Binding private var isEditing: Bool
@@ -83,8 +84,8 @@ struct MultilineTextField: View {
     
     @ViewBuilder private var placeholderView: some View {
         if attributedText.length == 0 {
-            Text("Aa")
-                .foregroundColor(style.backgroundColor.opacity(0.5)).colorInvert()
+            Text(localization.chatMessageInputPlaceholder)
+                .foregroundColor(style.formTextColor.opacity(0.5))
                 .padding(.vertical, 8)
                 .padding(.horizontal, 4)
         }
@@ -193,6 +194,7 @@ private struct UITextViewWrapper: UIViewRepresentable {
         return view
     }
     
+    @MainActor
     func updateUIView(_ uiView: UITextView, context: Context) {
         uiView.attributedText = attributedText
         uiView.textColor = UIColor(style.backgroundColor).inverse()

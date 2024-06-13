@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,9 @@ struct LinkPreviewCell: View {
     // MARK: - Properties
     
     @EnvironmentObject private var style: ChatStyle
-    
+    @EnvironmentObject private var localization: ChatLocalization
+
     @State private var isShareSheetVisible = false
-    
-    private var applyPadding = true
     
     let message: ChatMessage
     let item: AttachmentItem
@@ -54,24 +53,12 @@ struct LinkPreviewCell: View {
                 }
             }
         }
-        .padding([.leading, .bottom], 14)
-        .padding(.trailing, 4)
         .onTapGesture {
             openLink(item.url)
         }
         .sheet(isPresented: $isShareSheetVisible) {
             ShareSheet(activityItems: [item.url])
         }
-    }
-    
-    // MARK: - Methods
-    
-    func applyPadding(_ apply: Bool) -> Self {
-        var view = self
-        
-        view.applyPadding = apply
-        
-        return view
     }
 }
 
@@ -94,14 +81,12 @@ private extension LinkPreviewCell {
                 Text(item.friendlyName)
                     .font(.body)
                     .fontWeight(.medium)
-                    .foregroundColor(style.backgroundColor)
-                    .colorInvert()
+                    .foregroundColor(style.formTextColor)
                 
                 if let host = item.url.host {
                     Text(host)
                         .font(.caption)
-                        .foregroundColor(style.backgroundColor)
-                        .colorInvert()
+                        .foregroundColor(style.formTextColor)
                         .opacity(0.5)
                 }
             }
@@ -119,8 +104,8 @@ private extension LinkPreviewCell {
             Button {
                 isShareSheetVisible = true
             } label: {
-                Text("Share")
-                
+                Text(localization.commonShare)
+
                 Asset.share
             }
             
@@ -128,7 +113,7 @@ private extension LinkPreviewCell {
                 UIPasteboard.general.url = item.url
                 UIPasteboard.general.string = item.url.absoluteString
             } label: {
-                Text("Copy")
+                Text(localization.commonCopy)
                 
                 Asset.copy
             }
@@ -138,17 +123,15 @@ private extension LinkPreviewCell {
     var openLinkImage: some View {
         Asset.Attachment.openLink
             .font(.footnote)
-            .foregroundColor(style.backgroundColor)
-            .colorInvert()
+            .foregroundColor(style.formTextColor)
             .opacity(0.25)
     }
     
     var fileImage: some View {
         Asset.Attachment.linkPlaceholder
             .font(.title2)
-            .foregroundColor(style.backgroundColor)
+            .foregroundColor(style.formTextColor)
             .opacity(0.5)
-            .colorInvert()
     }
 }
 
@@ -174,5 +157,6 @@ struct LinkPreviewCell_Previews: PreviewProvider {
             .preferredColorScheme(.dark)
         }
         .environmentObject(ChatStyle())
+        .environmentObject(ChatLocalization())
     }
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,12 @@ struct TextFieldView: View {
     
     @ObservedObject var entity: FormCustomFieldType
     
+    @EnvironmentObject private var localization: ChatLocalization
+
     private var isEmail: Bool {
         (entity as? TextFieldEntity)?.isEmail ?? false
     }
-    
+
     // MARK: - Content
     
     var body: some View {
@@ -32,8 +34,8 @@ struct TextFieldView: View {
             entity.label,
             text: $entity.value,
             validator: allOf(
-                entity.isRequired ? required : any,
-                isEmail ? email : any
+                entity.isRequired ? required(localization) : any,
+                isEmail ? email(localization) : any
             ),
             label: entity.label
         )
@@ -47,7 +49,8 @@ struct TextFieldView_Previews: PreviewProvider {
 
     private static let firstNameEntity = TextFieldEntity(label: "First Name", isRequired: true, ident: "firstName", isEmail: false)
     private static let ageEntity = TextFieldEntity(label: "Age", isRequired: false, ident: "age", isEmail: false)
-    private static let emailEntity = TextFieldEntity(label: "E-mail", isRequired: true, ident: "email", isEmail: true)
+    private static let emailEntity = TextFieldEntity(label: "E-mail", isRequired: false, ident: "email", isEmail: true)
+    private static let localization = ChatLocalization()
 
     static var previews: some View {
         Group {
@@ -70,5 +73,7 @@ struct TextFieldView_Previews: PreviewProvider {
             .previewDisplayName("Dark Mode")
             .preferredColorScheme(.dark)
         }
+        .environmentObject(ChatStyle())
+        .environmentObject(ChatLocalization())
     }
 }

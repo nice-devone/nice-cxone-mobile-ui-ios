@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -21,33 +21,31 @@ class DefaultChatViewModel: ObservableObject {
     
     // MARK: - Properties
     
-    @Published var title: String
+    @Published var thread: ChatThread?
+    @Published var title: String?
     @Published var messages = [ChatMessage]()
+    @Published var alertType: ChatAlertType?
+    @Published var isInputEnabled: Bool
     @Published var isRefreshable = false
     @Published var isAgentTyping = false
     @Published var isUserTyping = false
     @Published var isLoading = false
-    @Published var isEditCustomFieldsHidden = true
-    @Published var shouldShowGenericError = false
-    @Published var shouldShowDisconnectAlert = false
-    @Published var dismiss = false    
-
-    var thread: ChatThread
+    @Published var isEditPrechatCustomFieldsHidden = true
+    @Published var isEndConversationVisible = false
     
+    private let localization: ChatLocalization
     private let coordinator: DefaultChatCoordinator
     
     private var currentRefreshControl: UIRefreshControl?
     private var cachedThreads = [ChatThread]()
-    private var wasOffline = false
     
-    // MARK: - Lifecycle
+    // MARK: - Init
     
-    init(thread: ChatThread, coordinator: DefaultChatCoordinator) {
+    init(thread: ChatThread?, coordinator: DefaultChatCoordinator, localization: ChatLocalization) {
         self.thread = thread
         self.coordinator = coordinator
-        
-        self.title = thread.chatTitle
-        self.messages = thread.messages.map(ChatMessageMapper.map)
+        self.isInputEnabled = thread?.state != .closed
+        self.localization = localization
         
         CXoneChat.shared.delegate = self
     }
@@ -56,6 +54,11 @@ class DefaultChatViewModel: ObservableObject {
     
     func onAppear() {
         LogManager.trace("Default chat view appeared")
+        
+        guard let thread = thread else {
+            Log.error("Unable to get selected thread")
+            return
+        }
         
         do {
             // Mark as read a thread that has not just been created locally
@@ -69,43 +72,36 @@ class DefaultChatViewModel: ObservableObject {
                 try await CXoneChat.shared.analytics.chatWindowOpen()
             }
             
-            // Single-thread chat mode = Chat thread is already recovered via automated `connect` flow -> no need to do anything
-            guard CXoneChat.shared.mode == .multithread else {
-                return
+            if CXoneChat.shared.mode != .multithread {
+                LogManager.trace("LiveChat/Single-thread chat mode = Chat thread is already recovered via automated `connect` flow -> no need to do anything")
+                
+                self.title = thread.chatTitle
+                self.messages = thread.messages.map { ChatMessageMapper.map($0, localization: localization) }
+            } else {
+                LogManager.trace("Multi-thread chat mode = Chat thread is not yet recovered -> load it manually")
+                
+                isLoading = true
+                
+                // To be able to handle receiving new messages from different thread, it is necessary to cache current thread list
+                cachedThreads = CXoneChat.shared.threads.get()
+                
+                try CXoneChat.shared.threads.load(with: thread.id)
             }
-            
-            // To be able to handle receiving new messages from different thread, it is necessary to cache current thread list
-            cachedThreads = CXoneChat.shared.threads.get()
-
-            LogManager.trace("Loading remaining thread properties and messages")
-            
-            isLoading = true
-            
-            try CXoneChat.shared.threads.load(with: thread.id)
         } catch {
             error.logError()
              
-            dismiss = true
+            coordinator.dismiss(animated: true)
         }
     }
     
-    func onDisconnectTapped() {
-        LogManager.trace("Disconnecting from CXoneChat services")
+    func willEnterForeground(_ output: NotificationCenter.Publisher.Output) {
+        LogManager.trace("Enter foreground")
         
-        CXoneChat.shared.delegate = nil
-        
-        CXoneChat.shared.connection.disconnect()
-        coordinator.onFinished?()
-        
-        dismiss = true
-    }
-    
-    func willEnterForeground() {
         reconnect()
     }
     
-    func didEnterBackgroundNotification() {
-        LogManager.trace("Entering background")
+    func didEnterBackground(_ output: NotificationCenter.Publisher.Output) {
+        LogManager.trace("Enter background")
         
         CXoneChat.shared.connection.disconnect()
     }
@@ -115,27 +111,41 @@ class DefaultChatViewModel: ObservableObject {
 
 extension DefaultChatViewModel {
     
-    func onEditCustomField() {
-        LogManager.trace("Trying to edit custom fields")
+    func onDisconnectTapped() {
+        LogManager.trace("Disconnecting from CXoneChat services")
         
-        let contactCustomFields: [CustomFieldType] = CXoneChat.shared.threads.customFields.get(for: thread.id)
+        CXoneChat.shared.delegate = nil
         
-        guard !contactCustomFields.isEmpty else {
-            LogManager.error(.unableToParse("contactCustomFields"))
+        CXoneChat.shared.connection.disconnect()
+        coordinator.onFinished?()
+        
+        coordinator.dismiss(animated: true)
+    }
+    
+    func onEditPrechatField(title: String) {
+        LogManager.trace("Trying to edit prechat custom fields")
+        
+        guard let thread = thread else {
+            Log.error("Unable to get selected thread")
             return
         }
         
-        coordinator.presentForm(title: "Edit Custom Fields", customFields: contactCustomFields.map(FormCustomFieldTypeMapper.map)) { [weak self] customFields in
+        guard let prechatCustomFields = CXoneChat.shared.threads.preChatSurvey?.customFields, !prechatCustomFields.isEmpty else {
+            LogManager.error(.unableToParse("prechatCustomFields"))
+            return
+        }
+
+        coordinator.presentForm(title: title, customFields: prechatCustomFields.map(FormCustomFieldTypeMapper.map)) { [weak self] customFields in
             guard let self else {
                 return
             }
             
             do {
-                try CXoneChat.shared.threads.customFields.set(customFields, for: self.thread.id)
+                try CXoneChat.shared.threads.customFields.set(customFields, for: thread.id)
             } catch {
                 error.logError()
                 
-                self.shouldShowGenericError = true
+                alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
             }
         }
     }
@@ -143,24 +153,58 @@ extension DefaultChatViewModel {
     func onEditThreadName() {
         LogManager.trace("Editing thread name")
         
+        guard let thread = thread else {
+            Log.error("Unable to get selected thread")
+            return
+        }
+        
         coordinator.presentUpdateThreadNameAlert { [weak self] threadName in
             guard let self else {
                 return
             }
             
             do {
-                try CXoneChat.shared.threads.updateName(threadName, for: self.thread.id)
+                try CXoneChat.shared.threads.updateName(threadName, for: thread.id)
             } catch {
                 error.logError()
                 
-                self.shouldShowGenericError = true
+                alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
             }
+        }
+    }
+    
+    func onEndConversation() {
+        guard let thread = thread else {
+            Log.error("Unable to get selected thread")
+            return
+        }
+        
+        guard thread.state != .closed else {
+            LogManager.info("Conversation has been already closed -> show end converastion view without interaction with the SDK")
+            
+            isEndConversationVisible = true
+            return
+        }
+        
+        LogManager.trace("Ending live chat conversation")
+        
+        do {
+            try CXoneChat.shared.threads.endContact(thread)
+            
+            isLoading = true
+        } catch {
+            error.logError()
         }
     }
     
     @MainActor
     func onSendMessage(_ messageType: ChatMessageType, attachments: [AttachmentItem], postback: String? = nil) {
         LogManager.trace("Sending a message")
+        
+        guard let thread = thread else {
+            Log.error("Unable to get selected thread")
+            return
+        }
         
         let message: OutboundMessage
 
@@ -176,22 +220,21 @@ extension DefaultChatViewModel {
         
         Task { @MainActor in
             do {
-                // DE-90705: Core should be responsible for adding the new message to the message list and
-                // publishing that change.  Then normal update mechanisms will get the changes reflected through
-                // to .messages.
-                let newMessage = try await CXoneChat.shared.threads.messages.send(message, for: thread)
-               
-                thread.messages.append(newMessage)
-                messages.append(ChatMessageMapper.map(newMessage))
+                try await CXoneChat.shared.threads.messages.send(message, for: thread)
             } catch {
                 error.logError()
                 
-                shouldShowGenericError = true
+                alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
             }
         }
     }
     
     func onPullToRefresh(refreshControl: UIRefreshControl) {
+        guard let thread = thread else {
+            Log.error("Unable to get selected thread")
+            return
+        }
+        
         guard thread.hasMoreMessagesToLoad else {
             currentRefreshControl = nil
             refreshControl.endRefreshing()
@@ -210,7 +253,7 @@ extension DefaultChatViewModel {
             currentRefreshControl?.endRefreshing()
             currentRefreshControl = nil
             
-            shouldShowGenericError = true
+            alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
         }
     }
     
@@ -230,13 +273,38 @@ extension DefaultChatViewModel {
     func onUserTyping() {
         LogManager.trace("User has \(isUserTyping ? "started" : "ended") typing")
         
+        guard let thread = thread else {
+            Log.error("Unable to get selected thread")
+            return
+        }
+        
         do {
             try CXoneChat.shared.threads.reportTypingStart(isUserTyping, in: thread)
         } catch {
             error.logError()
             
-            shouldShowGenericError = true
+            alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
         }
+    }
+    
+    func onEndConversationStartChatTapped() {
+        LogManager.trace("Create a new live chat conversation")
+        
+        coordinator.showCoordinator()
+    }
+    
+    func onEndConversationBackTapped() {
+        LogManager.trace("Return to the chat transcript")
+        
+        isEndConversationVisible = false
+    }
+    
+    func onEndConversationCloseTapped() {
+        LogManager.trace("Close the chat and return to the host application")
+        
+        isEndConversationVisible = false
+        
+        onDisconnectTapped()
     }
 }
 
@@ -253,20 +321,7 @@ extension DefaultChatViewModel: CXoneChatDelegate {
                 isLoading = true
             }
         case .connected:
-            // Recover is automatically done within reconnect
-            if mode != .multithread {
-                LogManager.trace("Did connect to the CXone chat services")
-            } else {
-                LogManager.trace("Did connect to the CXone chat services. Refreshing thread")
-                
-                do {
-                    try CXoneChat.shared.threads.load(with: thread.id)
-                } catch {
-                    error.logError()
-                    
-                    dismiss = true
-                }
-            }
+            LogManager.trace("Did connect to the CXone chat services")
         default:
             return
         }
@@ -278,28 +333,42 @@ extension DefaultChatViewModel: CXoneChatDelegate {
         reconnect()
     }
     
-    func onThreadUpdated(_ chatThread: ChatThread) {
+    func onThreadUpdated(_ updatedThread: ChatThread) {
         LogManager.trace("Thread has been updated")
         
+        guard let thread = thread else {
+            Log.error("Unable to get selected thread")
+            return
+        }
+        
         Task { @MainActor in
-            if chatThread.id != thread.id {
-                await differentThreadHasBeenUpdated(chatThread)
+            if thread.id != updatedThread.id {
+                await differentThreadHasBeenUpdated(updatedThread)
             } else {
-                updateThread()
+                messages = updatedThread.messages.map { ChatMessageMapper.map($0, localization: localization) }
+                title = updatedThread.chatTitle
+                isRefreshable = updatedThread.hasMoreMessagesToLoad
+                isInputEnabled = updatedThread.state != .closed
                 
-                title = thread.chatTitle
-                isRefreshable = thread.hasMoreMessagesToLoad
-                
-                let anyContactCustomFieldsExists = !(CXoneChat.shared.threads.customFields.get(for: thread.id) as [CustomFieldType]).isEmpty
-                
-                if anyContactCustomFieldsExists && isEditCustomFieldsHidden {
-                    isEditCustomFieldsHidden = false
+                if !isEndConversationVisible, CXoneChat.shared.mode == .liveChat, updatedThread.state == .closed {
+                    if updatedThread.state != thread.state {
+                        isEndConversationVisible = true
+                    } else if updatedThread.assignedAgent == nil, thread.assignedAgent != nil {
+                        isEndConversationVisible = false
+                    }
                 }
                 
+                let anyPrechatCustomFields = CXoneChat.shared.threads.preChatSurvey?.customFields.isEmpty == false
+                
+                if anyPrechatCustomFields && isEditPrechatCustomFieldsHidden {
+                    isEditPrechatCustomFieldsHidden = false
+                }
                 if currentRefreshControl?.isRefreshing == true {
                     currentRefreshControl?.endRefreshing()
                     currentRefreshControl = nil
                 }
+                
+                self.thread = updatedThread
                 
                 isLoading = false
             }
@@ -307,7 +376,7 @@ extension DefaultChatViewModel: CXoneChatDelegate {
     }
     
     func onAgentTyping(_ isTyping: Bool, threadId: UUID) {
-        guard threadId == thread.id else {
+        guard threadId == thread?.id else {
             return
         }
         
@@ -321,26 +390,17 @@ extension DefaultChatViewModel: CXoneChatDelegate {
     func onError(_ error: Error) {
         error.logError()
         
-        shouldShowGenericError = true
+        Task { @MainActor in
+            alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
+        
+            isLoading = false
+        }
     }
 }
 
 // MARK: - Private methods
 
 private extension DefaultChatViewModel {
-
-    @MainActor
-    func updateThread() {
-        LogManager.trace("Updating thread")
-        
-        guard let updatedThread = CXoneChat.shared.threads.get().thread(by: thread.id) else {
-            LogManager.error(.unableToParse("updatedThread", from: CXoneChat.shared.threads))
-            return
-        }
-        
-        thread = updatedThread
-        messages = thread.messages.map(ChatMessageMapper.map)
-    }
     
     @MainActor
     func differentThreadHasBeenUpdated(_ updatedThread: ChatThread) async {
@@ -358,27 +418,17 @@ private extension DefaultChatViewModel {
             return
         }
         
-        let content = UNMutableNotificationContent()
-        content.title = lastMessage.senderInfo.fullName
-        content.subtitle = lastMessage.message
-        content.userInfo = ["messageFromDifferentThread": true]
-        content.sound = .default
-        
         do {
-            try await UNUserNotificationCenter
-                .current()
-                .add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
+            try await coordinator.showLocalNotificationForDifferentThreadMessage(lastMessage)
         } catch {
             error.logError()
             
-            shouldShowGenericError = true
+            alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
         }
     }
     
     func reconnect() {
         LogManager.trace("Reconnecting to the CXone chat services")
-        
-        CXoneChat.shared.delegate = self
         
         Task {
             do {
@@ -386,19 +436,17 @@ private extension DefaultChatViewModel {
             } catch {
                 error.logError()
                 
-                dismiss = true
+                coordinator.dismiss(animated: true)
             }
         }
     }
 }
 
-// MARK: - Helpers
-
 private extension ChatThread {
     
-    var chatTitle: String {
+    var chatTitle: String? {
         name?.nilIfEmpty()
             ?? assignedAgent?.fullName.nilIfEmpty()
-            ?? "No Agent"
+            ?? lastAssignedAgent?.fullName.nilIfEmpty()
     }
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -15,22 +15,11 @@
 
 import Foundation
 
-enum ThreadsStatusType: String, CaseIterable {
-    
+enum ThreadStatusType: String, CaseIterable {
+
     // MARK: - Cases
-    
+
     case current
-    
+
     case archived
-    
-    // MARK: - Properties
-    
-    var rawValue: String {
-        switch self {
-        case .current:
-            return "Current"
-        case .archived:
-            return "Archived"
-        }
-    }
 }

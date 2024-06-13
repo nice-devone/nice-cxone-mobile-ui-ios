@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2023. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -28,17 +28,13 @@ struct MessageAvatarView: View {
     // MARK: - Builder
     
     var body: some View {
-        if let avatarUrl {
-            KFImage(avatarUrl)
-                .placeholder {
-                    CircleText(initials, textColor: style.backgroundColor)
-                }
-                .resizable()
-                .scaledToFit()
-                .clipShape(Circle())
-        } else {
-            CircleText(initials, textColor: style.backgroundColor)
-        }
+        KFImage(avatarUrl)
+            .placeholder {
+                CircleText(initials, textColor: style.backgroundColor, backgroundColor: style.formTextColor)
+            }
+            .resizable()
+            .scaledToFit()
+            .clipShape(Circle())
     }
 }
 
@@ -46,19 +42,21 @@ struct MessageAvatarView: View {
 
 private struct CircleText: View {
     
-    var text: String
+    let text: String
     let textColor: Color
+    let backgroundColor: Color
     
-    init(_ text: String, textColor: Color) {
+    init(_ text: String, textColor: Color, backgroundColor: Color) {
         self.text = text
         self.textColor = textColor
+        self.backgroundColor = backgroundColor
     }
     
     var body: some View {
         GeometryReader { proxy in
             ZStack {
                 Circle()
-                    .fill(textColor).colorInvert()
+                    .fill(backgroundColor)
                 
                 Text(text)
                     .foregroundColor(textColor)
