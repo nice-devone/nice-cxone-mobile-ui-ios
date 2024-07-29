@@ -61,7 +61,7 @@ private struct OnListRefreshModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .introspect(.scrollView, on: .iOS(.v14, .v15, .v16, .v17), scope: .ancestor) { scrollView in
+            .introspect(.scrollView, on: .iOS(.v15, .v16, .v17), scope: .ancestor) { scrollView in
                 scrollView.onRefresh(onValueChanged)
             }
     }

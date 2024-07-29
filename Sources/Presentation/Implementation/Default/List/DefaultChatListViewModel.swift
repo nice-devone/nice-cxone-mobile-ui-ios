@@ -89,7 +89,9 @@ extension DefaultChatListViewModel {
         LogManager.trace("Trying to create a new thread")
 
         if let preChatSurvey = CXoneChat.shared.threads.preChatSurvey {
-            let fieldEntities = preChatSurvey.customFields.map(FormCustomFieldTypeMapper.map)
+            let fieldEntities = preChatSurvey.customFields.map { prechatField in
+                FormCustomFieldTypeMapper.map(prechatField, with: [:])
+            }
             
             coordinator.presentForm(title: preChatSurvey.name, customFields: fieldEntities) { customFields in
                 Task { @MainActor in
@@ -216,7 +218,11 @@ extension DefaultChatListViewModel: CXoneChatDelegate {
     func onTokenRefreshFailed() {
         LogManager.trace("Token refresh failed")
         
-        CXoneChat.shared.customer.set(nil)
+        do {
+            try CXoneChat.shared.customer.set(nil)
+        } catch {
+            error.logError()
+        }
 
         coordinator.dismiss(animated: true)
     }

@@ -26,6 +26,12 @@ public struct ChatExampleView: View {
 
     @ObservedObject private var viewModel: ChatExampleViewModel
     
+    private static let attachmentRestrictions = AttachmentRestrictions(
+        allowedFileSize: 40,
+        allowedTypes: ["image/*", "video/*", "audio/*"],
+        areAttachmentsEnabled: true
+    )
+    
     // MARK: - Init
     
     /// Initialization of the ChatExampleView
@@ -42,7 +48,9 @@ public struct ChatExampleView: View {
             isAgentTyping: $viewModel.isAgentTyping,
             isUserTyping: $viewModel.isUserTyping,
             isInputEnabled: $viewModel.isInputEnabled,
+            isProcessDialogVisible: $viewModel.isProcessDialogVisible,
             alertType: $viewModel.alertType,
+            attachmentRestrictions: Self.attachmentRestrictions,
             onNewMessage: viewModel.onNewMessage,
             onPullToRefresh: viewModel.onPullToRefresh, 
             onRichMessageElementSelected: viewModel.onRichMessageElementSelected

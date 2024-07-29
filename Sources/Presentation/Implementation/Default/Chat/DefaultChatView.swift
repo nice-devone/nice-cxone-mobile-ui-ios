@@ -61,7 +61,9 @@ struct DefaultChatView: Alertable, View {
                     isAgentTyping: $viewModel.isAgentTyping,
                     isUserTyping: $viewModel.isUserTyping,
                     isInputEnabled: $viewModel.isInputEnabled,
+                    isProcessDialogVisible: $viewModel.isProcessDialogVisible,
                     alertType: $viewModel.alertType,
+                    attachmentRestrictions: viewModel.attachmentRestrictions,
                     onNewMessage: { messageType, attachments in
                         viewModel.onSendMessage(messageType, attachments: attachments)
                     },
@@ -120,7 +122,6 @@ private extension DefaultChatView {
             onBackToConversationTapped: viewModel.onEndConversationBackTapped,
             onCloseChatTapped: viewModel.onEndConversationCloseTapped
         )
-        .ignoresSafeArea()
     }
     
     var toolbarTrailingMenu: some View {

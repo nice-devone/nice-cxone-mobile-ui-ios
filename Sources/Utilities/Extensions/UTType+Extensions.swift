@@ -35,10 +35,10 @@ extension UTType {
         return UTType("public.\(contentType)")
     }
     
-    static func resolve(for allowedFileType: [AllowedFileType]) -> [UTType] {
-        var result = allowedFileType.compactMap { UTType.resolve(for: $0.mimeType) }
+    static func resolve(for allowedFileType: [String]) -> [UTType] {
+        var result = allowedFileType.compactMap(UTType.resolve)
         
-        if allowedFileType.contains(where: { $0.mimeType.contains(UTType.videoPreffix) }) {
+        if allowedFileType.contains(where: { $0.contains(UTType.videoPreffix) }) {
             result.append(UTType.movie)
         }
         

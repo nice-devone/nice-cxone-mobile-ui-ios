@@ -102,4 +102,12 @@ final class ChatAlertType: Identifiable {
             secondary: .cancel()
         )
     }
+    
+    static func downloadFailed(localization: ChatLocalization) -> ChatAlertType? {
+        ChatAlertType(
+            title: localization.commonAttention, 
+            message: localization.chatAttachmentsDownloadFailed,
+            primary: .cancel()
+        )
+    }
 }

@@ -53,7 +53,13 @@ extension View {
             self
             
             if isVisible.wrappedValue {
+                Color(.darkGray)
+                    .opacity(0.5)
+                    .ignoresSafeArea()
+                
                 overlayContent()
+                    .compositingGroup()
+                    .shadow(color: .gray, radius: 4)
             }
         }
     }

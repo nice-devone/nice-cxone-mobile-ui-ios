@@ -32,6 +32,9 @@ class DefaultChatViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isEditPrechatCustomFieldsHidden = true
     @Published var isEndConversationVisible = false
+    @Published var isProcessDialogVisible = false
+    
+    let attachmentRestrictions: AttachmentRestrictions
     
     private let localization: ChatLocalization
     private let coordinator: DefaultChatCoordinator
@@ -46,6 +49,7 @@ class DefaultChatViewModel: ObservableObject {
         self.coordinator = coordinator
         self.isInputEnabled = thread?.state != .closed
         self.localization = localization
+        self.attachmentRestrictions = AttachmentRestrictions.map(from: CXoneChat.shared.connection.channelConfiguration.fileRestrictions)
         
         CXoneChat.shared.delegate = self
     }
@@ -129,13 +133,16 @@ extension DefaultChatViewModel {
             Log.error("Unable to get selected thread")
             return
         }
-        
         guard let prechatCustomFields = CXoneChat.shared.threads.preChatSurvey?.customFields, !prechatCustomFields.isEmpty else {
             LogManager.error(.unableToParse("prechatCustomFields"))
             return
         }
 
-        coordinator.presentForm(title: title, customFields: prechatCustomFields.map(FormCustomFieldTypeMapper.map)) { [weak self] customFields in
+        let customFields = prechatCustomFields.map { definition in
+            FormCustomFieldTypeMapper.map(definition, with: CXoneChat.shared.threads.customFields.get(for: thread.id))
+        }
+        
+        coordinator.presentForm(title: title, customFields: customFields) { [weak self] customFields in
             guard let self else {
                 return
             }
@@ -205,6 +212,8 @@ extension DefaultChatViewModel {
             Log.error("Unable to get selected thread")
             return
         }
+
+        isProcessDialogVisible = !attachments.isEmpty
         
         let message: OutboundMessage
 
@@ -226,6 +235,8 @@ extension DefaultChatViewModel {
                 
                 alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
             }
+            
+            isProcessDialogVisible = false
         }
     }
     

@@ -7,7 +7,7 @@ The CXoneChatUI module provides a default implementation of a Chat User Interfac
 
 ## Requirements
 
-- iOS 14.0+
+- iOS 15.0+
 - Swift 5+
 
 

@@ -19,12 +19,29 @@ import SwiftUI
 struct MessageGroupView: View {
 
     // MARK: - Properties
-    
+
     @EnvironmentObject private var style: ChatStyle
+    
+    @Binding private var isProcessDialogVisible: Bool
+    @Binding private var alertType: ChatAlertType?
 
     @State var group: MessageGroup
 
     let onRichMessageElementSelected: (_ textToSend: String?, RichMessageSubElementType) -> Void
+    
+    // MARK: - Init
+    
+    init(
+        group: MessageGroup,
+        isProcessDialogVisible: Binding<Bool>,
+        alertType: Binding<ChatAlertType?>,
+        onRichMessageElementSelected: @escaping (_: String?, RichMessageSubElementType) -> Void
+    ) {
+        self.group = group
+        self._isProcessDialogVisible = isProcessDialogVisible
+        self._alertType = alertType
+        self.onRichMessageElementSelected = onRichMessageElementSelected
+    }
 
     // MARK: - Builder
     
@@ -38,6 +55,8 @@ struct MessageGroupView: View {
                         ChatMessageCell(
                             message: message,
                             messageGroupPosition: group.position(of: message),
+                            isProcessDialogVisible: $isProcessDialogVisible,
+                            alertType: $alertType,
                             onRichMessageElementTapped: onRichMessageElementSelected
                         )
                     }
@@ -65,7 +84,7 @@ extension MessageGroupView {
 
     var header: some View {
         Group {
-            Text(group.date.formatted())
+            Text(group.date.formatted(format: "MMM d, yyyy"))
                 .font(.footnote.bold())
                 .foregroundColor(style.formTextColor.opacity(0.5))
                 .frame(maxWidth: .infinity)
@@ -145,7 +164,7 @@ struct MessageGroupView_Previews: PreviewProvider {
         ScrollView {
             VStack {
                 ForEach(manager.groupMessages()) { message in
-                    MessageGroupView(group: message) { _, _ in }
+                    MessageGroupView(group: message, isProcessDialogVisible: .constant(false), alertType: .constant(nil)) { _, _ in }
                 }
             }
         }

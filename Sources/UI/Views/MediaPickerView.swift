@@ -24,6 +24,8 @@ struct MediaPickerView: UIViewControllerRepresentable {
     
     @SwiftUI.Environment(\.presentationMode) var presentationMode
     
+    let attachmentRestrictions: AttachmentRestrictions
+    
     var sourceType: UIImagePickerController.SourceType = .photoLibrary
     var onSelected: (AttachmentItem) -> Void
     
@@ -34,7 +36,7 @@ struct MediaPickerView: UIViewControllerRepresentable {
     }
     
     func makeUIViewController(context: UIViewControllerRepresentableContext<MediaPickerView>) -> UIImagePickerController {
-        let validContentTypes = UTType.resolve(for: CXoneChat.shared.connection.channelConfiguration.fileRestrictions.allowedFileTypes)
+        let validContentTypes = UTType.resolve(for: attachmentRestrictions.allowedTypes)
         
         let picker = UIImagePickerController()
         picker.delegate = context.coordinator

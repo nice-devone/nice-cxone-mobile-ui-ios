@@ -38,6 +38,11 @@ public class ListFieldEntity: FormCustomFieldType {
     /// A dictionary that holds a set of options where the keys represent option values and the values represent option labels.
     public let options: [String: String]
 
+    /// The current value associated with the field
+    public var selectedOption: String {
+        options[value] ?? ""
+    }
+    
     // MARK: - Init
 
     /// Initialization of the ListFieldEntity

@@ -20,6 +20,12 @@ enum MockData {
     
     // MARK: - Properties
     
+    static var hyperlinkContent: String {
+        Lorem.words(nbWords: Int.random(in: 0..<5)) + " \(imageUrl.absoluteString) " + Lorem.words(nbWords: Int.random(in: 0..<5))
+    }
+    static var phoneNumberContent: String {
+        Lorem.words(nbWords: Int.random(in: 0..<5)) + " (123) 456-7890 " + Lorem.words(nbWords: Int.random(in: 0..<5))
+    }
     static var imageUrl: URL {
         URL(string: "https://picsum.photos/id/\(Int.random(in: 1...700))/300/300").unsafelyUnwrapped
     }
@@ -58,6 +64,26 @@ enum MockData {
             id: UUID(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(Lorem.sentence())],
+            date: date,
+            status: .seen
+        )
+    }
+    
+    static func hyperlinkMessage(user: ChatUser? = nil, date: Date = Date()) -> ChatMessage {
+        ChatMessage(
+            id: UUID(),
+            user: user ?? [customer, agent].random().unsafelyUnwrapped,
+            types: [.text(hyperlinkContent)],
+            date: date,
+            status: .seen
+        )
+    }
+    
+    static func phoneNumberMessage(user: ChatUser? = nil, date: Date = Date()) -> ChatMessage {
+        ChatMessage(
+            id: UUID(),
+            user: user ?? [customer, agent].random().unsafelyUnwrapped,
+            types: [.text(phoneNumberContent)],
             date: date,
             status: .seen
         )

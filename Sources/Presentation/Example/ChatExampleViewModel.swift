@@ -24,6 +24,7 @@ class ChatExampleViewModel: ObservableObject {
     @Published var isAgentTyping = false
     @Published var isUserTyping = false
     @Published var isInputEnabled = true
+    @Published var isProcessDialogVisible = false
     @Published var alertType: ChatAlertType?
     
     let isChatHistoryEnabled: Bool
@@ -39,15 +40,25 @@ class ChatExampleViewModel: ObservableObject {
                 MockData.textMessage(),
                 MockData.imageMessage(),
                 MockData.emojiMessage(),
+                MockData.hyperlinkMessage(),
                 MockData.textMessage(),
                 MockData.emojiMessage(),
                 MockData.textMessage(),
+                MockData.phoneNumberMessage(),
                 MockData.textMessage()
             ])
         }
     }
     
     func onNewMessage(messageType: ChatMessageType, attachments: [AttachmentItem]) {
+        if !attachments.isEmpty {
+            isProcessDialogVisible = true
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+                self?.isProcessDialogVisible = false
+            }
+        }
+        
         switch messageType {
         case .text(let text):
             if !text.isEmpty {

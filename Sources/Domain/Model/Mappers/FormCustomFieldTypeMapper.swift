@@ -18,19 +18,31 @@ import Foundation
 
 enum FormCustomFieldTypeMapper {
     
-    static func map(_ customField: PreChatSurveyCustomField) -> FormCustomFieldType {
+    static func map(_ customField: PreChatSurveyCustomField, with customFieldValues: [String: String]) -> FormCustomFieldType {
         switch customField.type {
         case .textField(let entity):
-            return TextFieldEntity(label: entity.label, isRequired: customField.isRequired, ident: entity.ident, isEmail: entity.isEmail, value: entity.value)
+            return TextFieldEntity(
+                label: entity.label,
+                isRequired: customField.isRequired,
+                ident: entity.ident,
+                isEmail: entity.isEmail,
+                value: customFieldValues[entity.ident]
+            )
         case .selector(let entity):
-            return ListFieldEntity(label: entity.label, isRequired: customField.isRequired, ident: entity.ident, options: entity.options, value: entity.value)
+            return ListFieldEntity(
+                label: entity.label,
+                isRequired: customField.isRequired,
+                ident: entity.ident,
+                options: entity.options,
+                value: customFieldValues[entity.ident]
+            )
         case .hierarchical(let entity):
             return TreeFieldEntity(
                 label: entity.label,
                 isRequired: customField.isRequired,
                 ident: entity.ident,
                 children: entity.nodes.map(mapChild),
-                value: entity.value
+                value: customFieldValues[entity.ident]
             )
         }
     }

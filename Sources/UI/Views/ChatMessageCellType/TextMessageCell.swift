@@ -22,14 +22,14 @@ struct TextMessageCell: View {
     @EnvironmentObject private var style: ChatStyle
 
     let message: ChatMessage
-    let text: String
+    let text: AttributedString
     let position: MessageGroupPosition
 
     // MARK: - Init
 
     init(message: ChatMessage, text: String, position: MessageGroupPosition) {
         self.message = message
-        self.text = text
+        self.text = text.attributed
         self.position = position
     }
 
@@ -44,12 +44,59 @@ struct TextMessageCell: View {
             Text(text)
                 .padding(.vertical, StyleGuide.Message.paddingVertical)
                 .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
-                .messageChatStyle(message, position: position, text: text)
+                .messageChatStyle(message, position: position, text: text.description)
             
             if message.user.isAgent {
                 Spacer()
             }
         }
+    }
+}
+
+// MARK: - Helpers
+
+private extension String {
+    
+    var attributed: AttributedString {
+        var result = AttributedString(self)
+        
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType(arrayLiteral: .link, .phoneNumber).rawValue) else {
+            Log.error(.failed("Unable to initialize DataDetector to highling link/phone number"))
+            return result
+        }
+        
+        let attributes = AttributeContainer([
+            NSAttributedString.Key.underlineStyle: NSUnderlineStyle.single.rawValue
+        ])
+        
+        for match in detector.matches(in: self, options: [], range: NSRange(location: 0, length: utf16.count)) {
+            guard let range = Range(match.range, in: result) else {
+                continue
+            }
+            
+            result[range].setAttributes(attributes)
+            
+            switch match.resultType {
+            case .phoneNumber:
+                guard let phoneNumber = match.phoneNumber, let url = URL(string: "tel://\(phoneNumber)") else {
+                    Log.error(.failed("Unable to get the phone number"))
+                    break
+                }
+                
+                result[range].link = url
+            case .link:
+                guard let url = match.url else {
+                    Log.error(.failed("Unable to get the URL"))
+                    break
+                }
+                
+                result[range].link = url
+            default:
+                break
+            }
+        }
+        
+        return result
     }
 }
 
@@ -65,9 +112,22 @@ struct TextMessageCell_Previews: PreviewProvider {
                     text: Lorem.sentence(),
                     position: .single
                 )
+                
+                TextMessageCell(
+                    message: MockData.hyperlinkMessage(user: MockData.customer),
+                    text: MockData.hyperlinkContent,
+                    position: .single
+                )
+                
                 TextMessageCell(
                     message: MockData.textMessage(user: MockData.agent),
                     text: Lorem.sentence(),
+                    position: .single
+                )
+                
+                TextMessageCell(
+                    message: MockData.phoneNumberMessage(user: MockData.customer),
+                    text: MockData.phoneNumberContent,
                     position: .single
                 )
             }
@@ -81,8 +141,20 @@ struct TextMessageCell_Previews: PreviewProvider {
                 )
 
                 TextMessageCell(
+                    message: MockData.hyperlinkMessage(user: MockData.customer),
+                    text: MockData.hyperlinkContent,
+                    position: .single
+                )
+                
+                TextMessageCell(
                     message: MockData.textMessage(user: MockData.agent),
                     text: Lorem.sentence(),
+                    position: .single
+                )
+                
+                TextMessageCell(
+                    message: MockData.phoneNumberMessage(user: MockData.customer),
+                    text: MockData.phoneNumberContent,
                     position: .single
                 )
             }

@@ -90,7 +90,9 @@ extension DefaultChatCoordinatorViewModel: CXoneChatDelegate {
                     let chatMode = mode == .liveChat ? ".liveChat" : ".singlethread"
                     LogManager.trace("Chat(\(chatMode)) is ready to use but there is no thread to use but firstly it is need to fill in the prechat")
                     
-                    let fieldEntities = preChatSurvey.customFields.map(FormCustomFieldTypeMapper.map)
+                    let fieldEntities = preChatSurvey.customFields.map { prechatField in
+                        FormCustomFieldTypeMapper.map(prechatField, with: [:])
+                    }
 
                     coordinator.presentForm(
                         title: preChatSurvey.name,
