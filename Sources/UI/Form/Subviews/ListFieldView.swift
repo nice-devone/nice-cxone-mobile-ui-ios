@@ -36,7 +36,7 @@ struct ListFieldView: View {
                     .foregroundColor(style.formTextColor)
                 
                 HStack(spacing: 4) {
-                    Button(entity.value.isEmpty ? localization.commonNoSelection : entity.value) {
+                    Button(entity.value.isEmpty ? localization.commonNoSelection : entity.selectedOption) {
                         isActionSheetVisible.toggle()
                     }
                     
@@ -57,7 +57,7 @@ struct ListFieldView: View {
         }
         .actionSheet(isPresented: $isActionSheetVisible) {
             var options: [ActionSheet.Button] = entity.options.map { option in
-                    .default(Text(option.value)) { entity.value = option.value }
+                .default(Text(option.value)) { entity.value = option.key }
             }
             options.append(.cancel { entity.value = "" })
 
@@ -71,7 +71,13 @@ struct ListFieldView: View {
 
 struct ListFieldView_Previews: PreviewProvider {
 
-    private static let entity = ListFieldEntity(label: "Color", isRequired: true, ident: "color", options: ["blue": "Blue", "yellow": "Yellow"])
+    private static let entity = ListFieldEntity(
+        label: "Color",
+        isRequired: true,
+        ident: "color",
+        options: ["blue": "Blue", "yellow": "Yellow"],
+        value: "yellow"
+    )
 
     static var previews: some View {
         Group {

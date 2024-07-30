@@ -23,6 +23,8 @@ struct DocumentPickerView: UIViewControllerRepresentable {
     
     @SwiftUI.Environment(\.presentationMode) var presentationMode
     
+    let attachmentRestrictions: AttachmentRestrictions
+    
     var onSelected: ([AttachmentItem]) -> Void
 
     // MARK: - Methods
@@ -32,7 +34,7 @@ struct DocumentPickerView: UIViewControllerRepresentable {
     }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let validContentTypes = UTType.resolve(for: CXoneChat.shared.connection.channelConfiguration.fileRestrictions.allowedFileTypes)
+        let validContentTypes = UTType.resolve(for: attachmentRestrictions.allowedTypes)
         
         let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: validContentTypes)
         documentPicker.delegate = context.coordinator

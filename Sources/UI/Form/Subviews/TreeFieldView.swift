@@ -23,8 +23,15 @@ struct TreeFieldView: View {
     @EnvironmentObject private var localization: ChatLocalization
     
     @ObservedObject var entity: TreeFieldEntity
-
-    @State private var selectedNodeId: ObjectIdentifier?
+    
+    @State private var selectedNodeId: UUID?
+    
+    // MARK: - Init
+    
+    init(entity: TreeFieldEntity) {
+        self.entity = entity
+        self.selectedNodeId = entity.children.find(with: entity.value)?.id
+    }
     
     // MARK: - Content
 
@@ -45,11 +52,6 @@ struct TreeFieldView: View {
                     .foregroundColor(style.formErrorColor)
             }
         }
-        .onAppear {
-            if !entity.value.isEmpty, let selectedNode = entity.children.find(by: entity.value) {
-                self.selectedNodeId = selectedNode.id
-            }
-        }
     }
 }
 
@@ -59,9 +61,9 @@ private extension TreeFieldView {
 
     @ViewBuilder
     func cell(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
-        if !node.children.isEmpty {
-            DisclosureGroupView(isExpanded: selectedNodeId != nil) {
-                ForEach(node.children, id: \.id) { child in
+        if let children = node.children, !children.isEmpty {
+            DisclosureGroupView(node: node, isExpanded: !entity.value.isEmpty) {
+                ForEach(children, id: \.id) { child in
                     AnyView(cell(node: child, leadingPadding: leadingPadding + 20))
                 }
             } label: {
@@ -77,7 +79,7 @@ private extension TreeFieldView {
                 
                 Spacer()
 
-                if selectedNodeId == node.id {
+                if entity.value == node.value {
                     Asset.check
                         .foregroundColor(style.formTextColor)
                 }
@@ -85,13 +87,11 @@ private extension TreeFieldView {
             .padding(.vertical, 4)
             .contentShape(Rectangle())
             .onTapGesture {
-                if selectedNodeId != nil, selectedNodeId == node.id {
-                    entity.value = ""
-                    selectedNodeId = nil
-                } else {
-                    entity.value = node.value
-                    selectedNodeId = node.id
-                }
+                node.isSelected.toggle()
+                
+                let shouldDeselectNode = selectedNodeId != nil && selectedNodeId == node.id
+                selectedNodeId = shouldDeselectNode ? nil : node.id
+                entity.value = shouldDeselectNode ? "" : node.value
             }
         }
     }
@@ -103,10 +103,18 @@ private struct DisclosureGroupView<Label, Content>: View where Label: View, Cont
     
     @EnvironmentObject private var style: ChatStyle
     
-    @State var isExpanded: Bool = false
+    @State private var isExpanded: Bool
     
+    let node: TreeNodeFieldEntity
     var content: () -> Content
     var label: () -> Label
+    
+    init(node: TreeNodeFieldEntity, isExpanded: Bool, content: @escaping () -> Content, label: @escaping () -> Label) {
+        self.node = node
+        self.isExpanded = isExpanded
+        self.content = content
+        self.label = label
+    }
     
     // MARK: - Builder
     
@@ -171,17 +179,16 @@ struct TreeFieldView_Previews: PreviewProvider {
         Group {
             ScrollView {
                 TreeFieldView(entity: entity)
-                    .padding(.trailing, 16)
             }
             .previewDisplayName("Light Mode")
             
             ScrollView {
                 TreeFieldView(entity: entity)
-                    .padding(.trailing, 16)
             }
             .preferredColorScheme(.dark)
             .previewDisplayName("Dark Mode")
         }
+        .padding(.horizontal, 16)
         .environmentObject(ChatStyle())
         .environmentObject(ChatLocalization())
     }

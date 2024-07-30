@@ -55,6 +55,9 @@ public class TreeNodeFieldEntity: ObservableObject, Identifiable {
     
     // MARK: - Properties
     
+    /// The unique identifier of the tree node.
+    public let id: UUID
+    
     /// The label or name associated with the tree node.
     public let label: String
     
@@ -62,7 +65,7 @@ public class TreeNodeFieldEntity: ObservableObject, Identifiable {
     public let value: String
     
     /// An array of `TreeNodeFieldEntity` objects, representing child nodes within the tree.
-    public let children: [TreeNodeFieldEntity]
+    public let children: [TreeNodeFieldEntity]?
     
     /// A boolean flag indicating whether the tree node is currently selected.
     public var isSelected: Bool
@@ -75,7 +78,8 @@ public class TreeNodeFieldEntity: ObservableObject, Identifiable {
     /// - `value`: The value or unique identifier of the tree node.
     /// - `children`: An array of `TreeNodeFieldEntity` objects, representing child nodes within the tree.
     /// - `isSelected`: A boolean flag indicating whether the tree node is currently selected.
-    public init(label: String, value: String, children: [TreeNodeFieldEntity] = [], isSelected: Bool = false) {
+    public init(id: UUID = UUID(), label: String, value: String, children: [TreeNodeFieldEntity]? = nil, isSelected: Bool = false) {
+        self.id = id
         self.label = label
         self.value = value
         self.children = children
@@ -87,13 +91,13 @@ public class TreeNodeFieldEntity: ObservableObject, Identifiable {
 
 extension [TreeNodeFieldEntity] {
     
-    func find(by value: String) -> TreeNodeFieldEntity? {
+    func find(with value: String) -> TreeNodeFieldEntity? {
         for node in self {
             if node.value == value {
                 return node
             }
             
-            if let match = node.children.find(by: value) {
+            if let match = node.children?.find(with: value) {
                 return match
             }
         }

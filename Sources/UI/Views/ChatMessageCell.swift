@@ -21,6 +21,9 @@ struct ChatMessageCell: View {
 
     @EnvironmentObject private var style: ChatStyle
 
+    @Binding private var isProcessDialogVisible: Bool
+    @Binding private var alertType: ChatAlertType?
+    
     @State private var forceDateHeader = false
 
     private let message: ChatMessage
@@ -33,10 +36,14 @@ struct ChatMessageCell: View {
     init(
         message: ChatMessage,
         messageGroupPosition: MessageGroupPosition,
+        isProcessDialogVisible: Binding<Bool>,
+        alertType: Binding<ChatAlertType?>,
         onRichMessageElementTapped: @escaping (_ textToSend: String?, RichMessageSubElementType) -> Void
     ) {
         self.message = message
         self.messageGroupPosition = messageGroupPosition
+        self._isProcessDialogVisible = isProcessDialogVisible
+        self._alertType = alertType
         self.onRichMessageElementTapped = onRichMessageElementTapped
         self.isMultiAttachment = message.types.filter(\.isAttachment).count > 1
     }
@@ -76,11 +83,7 @@ private extension ChatMessageCell {
             case .audio(let item):
                 AudioMessageCell(message: message, item: item, isMultiAttachment: false, position: messageGroupPosition)
             case .linkPreview(let item):
-                LinkPreviewCell(message: message, item: item) { url in
-                    if UIApplication.shared.canOpenURL(url) {
-                        UIApplication.shared.open(url)
-                    }
-                }
+                LinkPreviewCell(message: message, item: item, isProcessDialogVisible: $isProcessDialogVisible, alertType: $alertType)
             case .richContent(let content):
                 switch content {
                 case .quickReplies(let item):
@@ -130,24 +133,64 @@ struct DefaultMessageItemPreview: PreviewProvider {
     static var previews: some View {
         Group {
             LazyVStack {
-                ChatMessageCell(message: agentImageMessage, messageGroupPosition: .first) { _, _ in }
+                ChatMessageCell(
+                    message: agentImageMessage,
+                    messageGroupPosition: .first,
+                    isProcessDialogVisible: .constant(false),
+                    alertType: .constant(nil)
+                ) { _, _ in }
                 
-                ChatMessageCell(message: agentTextMessage, messageGroupPosition: .last) { _, _ in }
+                ChatMessageCell(
+                    message: agentTextMessage,
+                    messageGroupPosition: .last,
+                    isProcessDialogVisible: .constant(false),
+                    alertType: .constant(nil)
+                ) { _, _ in }
 
-                ChatMessageCell(message: customerAudioMessage, messageGroupPosition: .first) { _, _ in }
+                ChatMessageCell(
+                    message: customerAudioMessage,
+                    messageGroupPosition: .first,
+                    isProcessDialogVisible: .constant(false),
+                    alertType: .constant(nil)
+                ) { _, _ in }
                 
-                ChatMessageCell(message: customerImageMessage, messageGroupPosition: .last) { _, _ in }
+                ChatMessageCell(
+                    message: customerImageMessage,
+                    messageGroupPosition: .last,
+                    isProcessDialogVisible: .constant(false),
+                    alertType: .constant(nil)
+                ) { _, _ in }
             }
             .previewDisplayName("Light mode")
             
             LazyVStack {
-                ChatMessageCell(message: agentImageMessage, messageGroupPosition: .first) { _, _ in }
+                ChatMessageCell(
+                    message: agentImageMessage,
+                    messageGroupPosition: .first,
+                    isProcessDialogVisible: .constant(false),
+                    alertType: .constant(nil)
+                ) { _, _ in }
                 
-                ChatMessageCell(message: agentTextMessage, messageGroupPosition: .last) { _, _ in }
+                ChatMessageCell(
+                    message: agentTextMessage,
+                    messageGroupPosition: .last,
+                    isProcessDialogVisible: .constant(false),
+                    alertType: .constant(nil)
+                ) { _, _ in }
 
-                ChatMessageCell(message: customerAudioMessage, messageGroupPosition: .first) { _, _ in }
+                ChatMessageCell(
+                    message: customerAudioMessage,
+                    messageGroupPosition: .first,
+                    isProcessDialogVisible: .constant(false),
+                    alertType: .constant(nil)
+                ) { _, _ in }
                 
-                ChatMessageCell(message: customerImageMessage, messageGroupPosition: .last) { _, _ in }
+                ChatMessageCell(
+                    message: customerImageMessage,
+                    messageGroupPosition: .last,
+                    isProcessDialogVisible: .constant(false),
+                    alertType: .constant(nil)
+                ) { _, _ in }
             }
             .preferredColorScheme(.dark)
             .previewDisplayName("Dark mode")

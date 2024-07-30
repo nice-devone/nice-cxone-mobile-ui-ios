@@ -23,18 +23,23 @@ struct LinkPreviewCell: View {
     @EnvironmentObject private var style: ChatStyle
     @EnvironmentObject private var localization: ChatLocalization
 
+    @Binding private var isProcessDialogVisible: Bool
+    @Binding private var alertType: ChatAlertType?
+    
+    @State private var documentURL: URL?
     @State private var isShareSheetVisible = false
+    @State private var showPreview = false
     
     let message: ChatMessage
     let item: AttachmentItem
-    let openLink: (URL) -> Void
     
     // MARK: - Init
     
-    init(message: ChatMessage, item: AttachmentItem, openLink: @escaping (URL) -> Void) {
+    init(message: ChatMessage, item: AttachmentItem, isProcessDialogVisible: Binding<Bool>, alertType: Binding<ChatAlertType?>) {
         self.message = message
         self.item = item
-        self.openLink = openLink
+        self._isProcessDialogVisible = isProcessDialogVisible
+        self._alertType = alertType
     }
     
     // MARK: - Builder
@@ -54,10 +59,18 @@ struct LinkPreviewCell: View {
             }
         }
         .onTapGesture {
-            openLink(item.url)
+            Task { @MainActor in
+                await downloadDocument(url: item.url, fileName: item.fileName)
+            }
+            
         }
         .sheet(isPresented: $isShareSheetVisible) {
             ShareSheet(activityItems: [item.url])
+        }
+        .fullScreenCover(isPresented: $showPreview) {
+            if let documentURL = self.documentURL {
+                QuickLookPreview(url: documentURL, isPresented: $showPreview)
+            }
         }
     }
 }
@@ -133,6 +146,38 @@ private extension LinkPreviewCell {
             .foregroundColor(style.formTextColor)
             .opacity(0.5)
     }
+
+    @MainActor
+    func downloadDocument(url: URL, fileName: String) async {
+        isProcessDialogVisible = true
+        
+        do {
+            let (localURL, _) = try await URLSession.shared.download(from: url)
+            
+            guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                Log.error(.failed("Could not find documents directory to save document attachment."))
+                return
+            }
+            
+            let savedURL = documentsDirectory.appendingPathComponent(fileName)
+            
+            if FileManager.default.fileExists(atPath: savedURL.path) {
+                try FileManager.default.removeItem(at: savedURL)
+            }
+            
+            try FileManager.default.moveItem(at: localURL, to: savedURL)
+            
+            showPreview = true
+            
+            self.documentURL = savedURL
+        } catch {
+            error.logError()
+            
+            alertType = .downloadFailed(localization: localization)
+        }
+        
+        isProcessDialogVisible = false
+    }
 }
 
 // MARK: - Preview
@@ -142,16 +187,36 @@ struct LinkPreviewCell_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             VStack {
-                LinkPreviewCell(message: MockData.linkPreviewMessage(user: MockData.agent), item: MockData.linkPreviewItem) { _ in }
+                LinkPreviewCell(
+                    message: MockData.linkPreviewMessage(user: MockData.agent), 
+                    item: MockData.linkPreviewItem,
+                    isProcessDialogVisible: .constant(false),
+                    alertType: .constant(nil)
+                )
 
-                LinkPreviewCell(message: MockData.linkPreviewMessage(user: MockData.customer), item: MockData.linkPreviewItem) { _ in }
+                LinkPreviewCell(
+                    message: MockData.linkPreviewMessage(user: MockData.customer), 
+                    item: MockData.linkPreviewItem,
+                    isProcessDialogVisible: .constant(false),
+                    alertType: .constant(nil)
+                )
             }
             .previewDisplayName("Light Mode")
             
             VStack {
-                LinkPreviewCell(message: MockData.linkPreviewMessage(user: MockData.agent), item: MockData.linkPreviewItem) { _ in }
+                LinkPreviewCell(
+                    message: MockData.linkPreviewMessage(user: MockData.agent), 
+                    item: MockData.linkPreviewItem,
+                    isProcessDialogVisible: .constant(false),
+                    alertType: .constant(nil)
+                )
                 
-                LinkPreviewCell(message: MockData.linkPreviewMessage(user: MockData.customer), item: MockData.linkPreviewItem) { _ in }
+                LinkPreviewCell(
+                    message: MockData.linkPreviewMessage(user: MockData.customer), 
+                    item: MockData.linkPreviewItem,
+                    isProcessDialogVisible: .constant(false),
+                    alertType: .constant(nil)
+                )
             }
             .previewDisplayName("Dark Mode")
             .preferredColorScheme(.dark)

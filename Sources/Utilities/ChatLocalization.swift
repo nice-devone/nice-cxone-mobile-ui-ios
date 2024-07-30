@@ -140,6 +140,10 @@ public class ChatLocalization: ObservableObject {
     public lazy var chatAttachmentsSelectionMode = lookup(key: "chatui_chat_attachments_selectionMode")
     /// "%1$d item(s) selected"
     public lazy var chatAttachmentsSelectedCount = lookup(key: "chatui_chat_attachments_selectedCount_message")
+    /// "Processing..."
+    public lazy var chatAttachmentsUpload = lookup(key: "chatui_chat_attachments_upload")
+    /// "The document could not be downloaded at this time. Please check your internet connection and try again."
+    public lazy var chatAttachmentsDownloadFailed = lookup(key: "chatui_chat_attachments_download_failed")
     
     // MARK: - Chat - Menu Actions
     

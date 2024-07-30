@@ -62,6 +62,8 @@
 "chatui_chat_attachments_deselect" = "None";
 "chatui_chat_attachments_selectionMode" = "Select items";
 "chatui_chat_attachments_selectedCount_message" = "%1$d item(s) selected";
+"chatui_chat_attachments_upload" = "Sending...";
+"chatui_chat_attachments_download_failed" = "The document could not be downloaded at this time. Please check your internet connection and try again.";
 
 // Chat - Menu Actions
 "chatui_chat_menuOption_disconnect" = "Disconnect";

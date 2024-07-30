@@ -36,13 +36,8 @@ struct AttachmentListView: View {
                     
                     ForEach(0..<attachments.count, id: \.self) { index in
                         ZStack(alignment: .topTrailing) {
-                            Asset.Attachment.file
-                                .padding(14)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(style.formTextColor.opacity(0.5))
-                                )
-                            
+                            thumbnailPreview(for: attachments[index])
+
                             Button {
                                 withAnimation {
                                     _ = attachments.remove(at: index)
@@ -65,5 +60,28 @@ struct AttachmentListView: View {
             }
             .frame(height: 60)
         }
+    }
+    
+    @ViewBuilder
+    private func thumbnailPreview(for attachment: AttachmentItem) -> some View {
+        if attachment.mimeType.starts(with: "image/"), let uiImage = imageFromURL(attachment.url) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .frame(width: 50, height: 50)
+        } else if attachment.mimeType.starts(with: "video/") {
+            VideoThumbnailView(videoURL: attachment.url)
+        } else {
+            Asset.Attachment.file
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 10).fill(style.formTextColor.opacity(0.5)))
+        }
+    }
+    
+    private func imageFromURL(_ url: URL) -> UIImage? {
+        guard let imageData = try? Data(contentsOf: url) else {
+            return nil
+        }
+        return UIImage(data: imageData)
     }
 }

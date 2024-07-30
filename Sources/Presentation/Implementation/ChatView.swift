@@ -26,9 +26,11 @@ struct ChatView: View {
     @Binding private var isAgentTyping: Bool
     @Binding private var isUserTyping: Bool
     @Binding private var isInputEnabled: Bool
+    @Binding private var isProcessDialogVisible: Bool
     @Binding private var alertType: ChatAlertType?
 
     private let chatManager: ChatManager
+    private let attachmentRestrictions: AttachmentRestrictions
     private let onNewMessage: (ChatMessageType, [AttachmentItem]) -> Void
     private let onPullToRefresh: (UIRefreshControl) -> Void
     private let onRichMessageElementSelected: (_ textToSend: String?, RichMessageSubElementType) -> Void
@@ -44,7 +46,9 @@ struct ChatView: View {
         isAgentTyping: Binding<Bool>,
         isUserTyping: Binding<Bool>,
         isInputEnabled: Binding<Bool>,
+        isProcessDialogVisible: Binding<Bool>,
         alertType: Binding<ChatAlertType?>,
+        attachmentRestrictions: AttachmentRestrictions,
         onNewMessage: @escaping (ChatMessageType, [AttachmentItem]) -> Void,
         onPullToRefresh: @escaping (UIRefreshControl) -> Void,
         onRichMessageElementSelected: @escaping (_ textToSend: String?, RichMessageSubElementType) -> Void
@@ -53,7 +57,9 @@ struct ChatView: View {
         self._isAgentTyping = isAgentTyping
         self._isUserTyping = isUserTyping
         self._isInputEnabled = isInputEnabled
+        self._isProcessDialogVisible = isProcessDialogVisible
         self._alertType = alertType
+        self.attachmentRestrictions = attachmentRestrictions
         self.onNewMessage = onNewMessage
         self.onPullToRefresh = onPullToRefresh
         self.onRichMessageElementSelected = onRichMessageElementSelected
@@ -69,8 +75,13 @@ struct ChatView: View {
                     
                     LazyVStack {
                         ForEach(groupedMessages) { group in
-                            MessageGroupView(group: group, onRichMessageElementSelected: onRichMessageElementSelected)
-                                .id(group.id)
+                            MessageGroupView(
+                                group: group,
+                                isProcessDialogVisible: $isProcessDialogVisible,
+                                alertType: $alertType,
+                                onRichMessageElementSelected: onRichMessageElementSelected
+                            )
+                            .id(group.id)
                         }
                         .if(isRefreshableActive) { view in
                             view.onRefresh(onValueChanged: onPullToRefresh)
@@ -94,7 +105,12 @@ struct ChatView: View {
             }
 
             if isInputEnabled {
-                MessageInputView(isEditing: $isUserTyping, alertType: $alertType, onSend: onNewMessage)
+                MessageInputView(
+                    attachmentRestrictions: attachmentRestrictions,
+                    isEditing: $isUserTyping,
+                    alertType: $alertType,
+                    onSend: onNewMessage
+                )
             } else {
                 archivedChatMessage
                     .padding(.bottom, UIDevice.current.hasHomeButton ? 10 : 0)
@@ -111,6 +127,9 @@ struct ChatView: View {
             }
         }
         .background(style.backgroundColor)
+        .overlay(isVisible: $isProcessDialogVisible) {
+            attachmentsUploadOverlay
+        }
     }
     
     // MARK: - Methods
@@ -158,5 +177,75 @@ private extension ChatView {
             .foregroundColor(style.formTextColor)
             .opacity(0.5)
         }
+    }
+
+    var attachmentsUploadOverlay: some View {
+        HStack(spacing: 10) {
+            ProgressView()
+            
+            Text(localization.chatAttachmentsUpload)
+                .foregroundColor(style.formTextColor)
+        }
+        .tint(style.formTextColor.opacity(0.5))
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(style.backgroundColor)
+        )
+    }
+}
+
+// MARK: - Previews
+
+struct ChatView_Previews: PreviewProvider {
+    
+    private static let messages = [
+        MockData.textMessage(user: MockData.agent),
+        MockData.imageMessage(user: MockData.customer),
+        MockData.emojiMessage(user: MockData.agent)
+    ]
+    private static let isAgentTyping = false
+    private static let isInputEnabled = true
+    private static let isProcessDialogVisible = false
+    private static let alertType: ChatAlertType? = nil
+    private static let attachmentRestrictions = AttachmentRestrictions(
+        allowedFileSize: 40,
+        allowedTypes: ["image/*", "video/*", "audio/*"],
+        areAttachmentsEnabled: true
+    )
+    
+    static var previews: some View {
+        Group {
+            ChatView(
+                messages: .constant(messages),
+                isAgentTyping: .constant(isAgentTyping),
+                isUserTyping: .constant(false),
+                isInputEnabled: .constant(isInputEnabled),
+                isProcessDialogVisible: .constant(isProcessDialogVisible),
+                alertType: .constant(alertType),
+                attachmentRestrictions: attachmentRestrictions,
+                onNewMessage: { _, _ in },
+                onPullToRefresh: { _ in },
+                onRichMessageElementSelected: { _, _ in }
+            )
+            .previewDisplayName("Light mode")
+            
+            ChatView(
+                messages: .constant(messages),
+                isAgentTyping: .constant(isAgentTyping),
+                isUserTyping: .constant(false),
+                isInputEnabled: .constant(isInputEnabled),
+                isProcessDialogVisible: .constant(isProcessDialogVisible),
+                alertType: .constant(alertType),
+                attachmentRestrictions: attachmentRestrictions,
+                onNewMessage: { _, _ in },
+                onPullToRefresh: { _ in },
+                onRichMessageElementSelected: { _, _ in }
+            )
+            .preferredColorScheme(.dark)
+            .previewDisplayName("Light mode")
+        }
+        .environmentObject(ChatLocalization())
+        .environmentObject(ChatStyle())
     }
 }

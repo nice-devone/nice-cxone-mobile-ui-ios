@@ -13,7 +13,6 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
-import CXoneChatSDK
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
@@ -38,6 +37,8 @@ struct MessageInputView: View {
     @State private var contentSizeThatFits: CGSize = .zero
     @State private var showAttachmentsSheet = false
     @State private var showDocumentPickerSheet = false
+    
+    private let attachmentRestrictions: AttachmentRestrictions
     
     private var messageEditorHeight: CGFloat {
         min(self.contentSizeThatFits.height, 0.25 * UIScreen.main.bounds.height)
@@ -72,7 +73,13 @@ struct MessageInputView: View {
     
     // MARK: - Init
     
-    init(isEditing: Binding<Bool>, alertType: Binding<ChatAlertType?>, onSend: @escaping (ChatMessageType, [AttachmentItem]) -> Void) {
+    init(
+        attachmentRestrictions: AttachmentRestrictions,
+        isEditing: Binding<Bool>,
+        alertType: Binding<ChatAlertType?>,
+        onSend: @escaping (ChatMessageType, [AttachmentItem]) -> Void
+    ) {
+        self.attachmentRestrictions = attachmentRestrictions
         self._isEditing = isEditing
         self._alertType = alertType
         self._contentSizeThatFits = State(initialValue: .zero)
@@ -88,7 +95,7 @@ struct MessageInputView: View {
             }
             
             HStack(alignment: .center, spacing: 2) {
-                if audioRecorder.state == .idle, CXoneChat.shared.connection.channelConfiguration.fileRestrictions.isAttachmentsEnabled {
+                if audioRecorder.state == .idle, attachmentRestrictions.areAttachmentsEnabled {
                     attachmentsButton
                     
                     if isAnyMimeTypeAllowed([UTType.audioPreffix]) {
@@ -126,9 +133,9 @@ private extension MessageInputView {
             attachmentsSourceActionSheet
         }
         .sheet(isPresented: $attachmentsPickerSheet.visible) {
-            MediaPickerView(sourceType: attachmentsPickerSheet.type) { attachment in
+            MediaPickerView(attachmentRestrictions: attachmentRestrictions, sourceType: attachmentsPickerSheet.type) { attachment in
                 Task { @MainActor in
-                    if attachment.isSizeValid {
+                    if attachment.isSizeValid(allowedFileSize: attachmentRestrictions.allowedFileSize) {
                         attachments.append(attachment)
                     } else {
                         alertType = .invalidAttachmentSize(localization: localization)
@@ -138,9 +145,9 @@ private extension MessageInputView {
             .edgesIgnoringSafeArea(.all)
         }
         .sheet(isPresented: $showDocumentPickerSheet) {
-            DocumentPickerView { attachments in
+            DocumentPickerView(attachmentRestrictions: attachmentRestrictions) { attachments in
                 Task { @MainActor in
-                    if attachments.contains(where: { !$0.isSizeValid }) {
+                    if attachments.contains(where: { !$0.isSizeValid(allowedFileSize: attachmentRestrictions.allowedFileSize) }) {
                         alertType = .invalidAttachmentSize(localization: localization)
                     } else {
                         self.attachments.append(contentsOf: attachments)
@@ -177,7 +184,7 @@ private extension MessageInputView {
                 attachmentsPickerSheet = (true, .photoLibrary)
             })
         }
-        // `.camera` does not allow to have only `video` MIME type, it requires
+        // `.camera` does not allow to have only `video` MIME type, it requires also image
         if isAnyMimeTypeAllowed([UTType.imagePreffix]) {
             buttons.append(.default(Text(localization.chatMessageInputAttachmentsOptionCamera)) {
                 attachmentsPickerSheet = (true, .camera)
@@ -322,9 +329,9 @@ private extension MessageInputView {
 private extension MessageInputView {
 
     func isAnyMimeTypeAllowed(_ mimeTypes: [String]) -> Bool {
-        let allowedMimeTypes = CXoneChat.shared.connection.channelConfiguration.fileRestrictions.allowedFileTypes
+        let allowedMimeTypes = attachmentRestrictions.allowedTypes
         
-        for mimeType in mimeTypes where allowedMimeTypes.contains(where: { $0.mimeType.contains(mimeType) }) {
+        for mimeType in mimeTypes where allowedMimeTypes.contains(where: { $0.contains(mimeType) }) {
             return true
         }
         
@@ -336,10 +343,10 @@ private extension AttachmentItem {
     
     static var megabyte: Int32 = 1024 * 1024
     
-    var isSizeValid: Bool {
+    func isSizeValid(allowedFileSize: Int32) -> Bool {
         do {
             return try url.accessSecurelyScopedResource { url in
-                let allowedFileSize = CXoneChat.shared.connection.channelConfiguration.fileRestrictions.allowedFileSize * Self.megabyte
+                let allowedFileSize = allowedFileSize * Self.megabyte
                 let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
 
                 guard let fileSize = attributes[.size] as? Int32 else {
@@ -364,12 +371,18 @@ struct MessageInputView_Previews: PreviewProvider {
     @State private static var isEditing = false
     @State private static var alertType: ChatAlertType?
     
+    private static let attachmentRestrictions = AttachmentRestrictions(
+        allowedFileSize: 40,
+        allowedTypes: ["image/*", "video/*", "audio/*"],
+        areAttachmentsEnabled: true
+    )
+    
     static var previews: some View {
         Group {
             VStack {
                 Spacer()
                 
-                MessageInputView(isEditing: $isEditing, alertType: $alertType) { _, _ in }
+                MessageInputView(attachmentRestrictions: attachmentRestrictions, isEditing: $isEditing, alertType: $alertType) { _, _ in }
             }
             .alert(item: $alertType, content: alertContent)
             .previewDisplayName("Light Mode")
@@ -377,7 +390,7 @@ struct MessageInputView_Previews: PreviewProvider {
             VStack {
                 Spacer()
                 
-                MessageInputView(isEditing: $isEditing, alertType: $alertType) { _, _ in }
+                MessageInputView(attachmentRestrictions: attachmentRestrictions, isEditing: $isEditing, alertType: $alertType) { _, _ in }
             }
             .preferredColorScheme(.dark)
             .previewDisplayName("Dark Mode")

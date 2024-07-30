@@ -60,6 +60,7 @@ private struct ChatTextStyleModifier: ViewModifier {
             .font(font)
             .background(background)
             .foregroundColor(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
+            .tint(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
             .cornerRadius(topLeftCornerRadius, corners: .topLeft)
             .cornerRadius(topRightCornerRadius, corners: .topRight)
             .cornerRadius(bottomLeftCornerRadius, corners: .bottomLeft)

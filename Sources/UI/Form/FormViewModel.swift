@@ -22,8 +22,6 @@ class FormViewModel: ObservableObject {
     
     @Published var customFields: [FormCustomFieldType]
     
-    var nodeSelected: TreeFieldEntity?
-    
     // MARK: - Init
 
     init(customFields: [FormCustomFieldType]) {
@@ -39,10 +37,6 @@ extension FormViewModel {
         self.customFields.allSatisfy { type in
             type.isRequired ? !type.value.isEmpty : true
         }
-    }
-    
-    func updateView() {
-        self.objectWillChange.send()
     }
 
     func getCustomFields() -> [String: String] {
