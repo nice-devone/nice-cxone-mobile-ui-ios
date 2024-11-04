@@ -17,10 +17,15 @@ import CXoneChatSDK
 import Foundation
 
 extension Array {
-    
+
     /// Returns the element at the specified index if it is within bounds, otherwise nil.
     subscript (safe index: Index) -> Element? {
         indices.contains(index) ? self[index] : nil
+    }
+
+    /// Implements += for a single element as opposed to an array of elements.
+    static func += (lhs: inout Self, item: Element) {
+        lhs.append(item)
     }
 }
 

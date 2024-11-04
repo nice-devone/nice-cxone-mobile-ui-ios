@@ -114,47 +114,35 @@ struct EndConversationView_Previews: PreviewProvider {
     
     static var previews: some View {
         Group {
-            ChatExampleView(withHistory: true)
-                .overlay(isVisible: isOverlayVisible) {
-                    getEndConversationView(agentAvatarUrl: MockData.agent.avatarURL, agentName: MockData.agent.userName)
-                }
+            Color.white
+                .overlay(getEndConversationView(agentAvatarUrl: MockData.agent.avatarURL, agentName: MockData.agent.userName), alignment: .center)
                 .environmentObject(ChatStyle(formTextColor: Color(.darkText)))
                 .previewDisplayName("Agent with image - Light Mode")
             
-            ChatExampleView(withHistory: true)
-                .overlay(isVisible: isOverlayVisible) {
-                    getEndConversationView(agentAvatarUrl: MockData.agent.avatarURL, agentName: MockData.agent.userName)
-                }
+            Color.white
+                .overlay(getEndConversationView(agentAvatarUrl: MockData.agent.avatarURL, agentName: MockData.agent.userName), alignment: .center)
                 .environmentObject(ChatStyle(formTextColor: Color(.lightText)))
                 .preferredColorScheme(.dark)
                 .previewDisplayName("Agent with image - Dark Mode")
             
-            ChatExampleView(withHistory: true)
-                .overlay(isVisible: isOverlayVisible) {
-                    getEndConversationView(agentName: MockData.agent.userName)
-                }
+            Color.white
+                .overlay(getEndConversationView(agentName: MockData.agent.userName), alignment: .center)
                 .environmentObject(ChatStyle(formTextColor: Color(.darkText)))
                 .previewDisplayName("Agent without image - Light Mode")
             
-            ChatExampleView(withHistory: true)
-                .overlay(isVisible: isOverlayVisible) {
-                    getEndConversationView(agentName: MockData.agent.userName)
-                }
+            Color.white
+                .overlay(getEndConversationView(agentName: MockData.agent.userName), alignment: .center)
                 .environmentObject(ChatStyle(formTextColor: Color(.lightText)))
                 .preferredColorScheme(.dark)
                 .previewDisplayName("Agent without image - Dark Mode")
             
-            ChatExampleView(withHistory: true)
-                .overlay(isVisible: isOverlayVisible) {
-                    getEndConversationView()
-                }
+            Color.white
+                .overlay(getEndConversationView(), alignment: .center)
                 .environmentObject(ChatStyle(formTextColor: Color(.darkText)))
                 .previewDisplayName("Agent without name - Light Mode")
             
-            ChatExampleView(withHistory: true)
-                .overlay(isVisible: isOverlayVisible) {
-                    getEndConversationView()
-                }
+            Color.white
+                .overlay(getEndConversationView(), alignment: .center)
                 .environmentObject(ChatStyle(formTextColor: Color(.lightText)))
                 .preferredColorScheme(.dark)
                 .previewDisplayName("Agent without name - Dark Mode")

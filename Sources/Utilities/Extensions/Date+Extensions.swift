@@ -45,10 +45,10 @@ extension Date {
         return dateFormatter.string(from: self)
     }
     
-    func formatted() -> String {
+    func formatted(useRelativeFormat: Bool) -> String {
         let formatter = DateFormatter()
         formatter.timeZone = .current
-        formatter.doesRelativeDateFormatting = true
+        formatter.doesRelativeDateFormatting = useRelativeFormat
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         
