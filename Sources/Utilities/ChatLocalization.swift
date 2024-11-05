@@ -59,6 +59,16 @@ public class ChatLocalization: ObservableObject {
     public lazy var commonUnknownAgent = lookup(key: "chatui_common_unknown_agent")
     /// "Unknown Customer"
     public lazy var commonUnknownCustomer = lookup(key: "chatui_common_unknown_customer")
+    /// "Connecting..."
+    public lazy var commonConnecting = lookup(key: "chatui_common_connecting")
+    /// "Loading..."
+    public lazy var commonLoading = lookup(key: "chatui_common_loading")
+    /// "Fatal Error"
+    public lazy var commonFatalError = lookup(key: "chatui_common_fatalError")
+    /// "Back"
+    public lazy var commonBack = lookup(key: "chatui_common_back")
+    /// "Down"
+    public lazy var commonDown = lookup(key: "chatui_common_down")
 
     // MARK: - Alert
     
@@ -140,7 +150,7 @@ public class ChatLocalization: ObservableObject {
     public lazy var chatAttachmentsSelectionMode = lookup(key: "chatui_chat_attachments_selectionMode")
     /// "%1$d item(s) selected"
     public lazy var chatAttachmentsSelectedCount = lookup(key: "chatui_chat_attachments_selectedCount_message")
-    /// "Processing..."
+    /// "Sending..."
     public lazy var chatAttachmentsUpload = lookup(key: "chatui_chat_attachments_upload")
     /// "The document could not be downloaded at this time. Please check your internet connection and try again."
     public lazy var chatAttachmentsDownloadFailed = lookup(key: "chatui_chat_attachments_download_failed")

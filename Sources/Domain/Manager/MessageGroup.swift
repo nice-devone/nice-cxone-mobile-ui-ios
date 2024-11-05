@@ -21,28 +21,29 @@ struct MessageGroup: Identifiable, Equatable {
     // MARK: Properties
     
     let messages: [ChatMessage]
+    let shouldShowHeader: Bool
+    let shouldShowFooter: Bool
     
     // swiftlint:disable force_unwrapping
-
-    var id: UUID { messages.last!.id }
+    var id: UUID { messages.map(\.id).hash() ?? UUID() }
     var date: Date { messages.first!.date }
     var sender: ChatUser { messages.first!.user }
-    var shouldShowUserName: Bool { !isSender }
     var status: MessageStatus { messages.last!.status }
     var shouldShowAvatar: Bool { !isSender }
     var isSender: Bool { sender.isAgent == false }
-    var shouldShowFooter: Bool { isSender }
     
     // swiftlint:enable force_unwrapping
 
     // MARK: - Initialization
 
-    init?(messages: [ChatMessage]) {
+    init?(messages: [ChatMessage], showHeader: Bool, showFooter: Bool) {
         guard !messages.isEmpty else {
             return nil
         }
 
         self.messages = messages
+        self.shouldShowHeader = showHeader
+        self.shouldShowFooter = messages.first?.user.isAgent == false && showFooter
     }
 
     // MARK: - Methods

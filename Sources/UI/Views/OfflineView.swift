@@ -22,8 +22,6 @@ struct OfflineView: View {
     @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject private var style: ChatStyle
     
-    let onCloseTapped: () -> Void
-    
     // MARK: - Builder
     
     var body: some View {
@@ -45,16 +43,6 @@ struct OfflineView: View {
                 .foregroundColor(style.formTextColor.opacity(0.8))
         }
         .animation(.spring)
-        .navigationBarBackButtonHidden()
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button(action: onCloseTapped) {
-                    Text(localization.commonClose)
-                }
-                .foregroundColor(style.navigationBarElementsColor)
-            }
-        }
     }
 }
 
@@ -64,10 +52,10 @@ struct OfflineView_Previews: PreviewProvider {
     
     static var previews: some View {
         Group {
-            OfflineView { }
+            OfflineView()
                 .previewDisplayName("Light Mode")
             
-            OfflineView { }
+            OfflineView()
                 .preferredColorScheme(.dark)
                 .previewDisplayName("Dark Mode")
         }

@@ -11,16 +11,11 @@ The CXoneChatUI module provides a default implementation of a Chat User Interfac
 - Swift 5+
 
 
-## Installation
+## Modules
 
-### Swift Package Manager
-
-You can use Swift Package Manager to add CXoneChatUI to your Xcode project. Simply follow these steps:
-
-1. Open your Xcode.
-2. Navigate to `File > Swift Packages > Add Package Dependency...`
-3. Enter the SDK repository URL https://github.com/nice-devone/nice-cxone-mobile-ui-ios in the search bar.
-4. Select the version or branch you want to use.
+- [Core](https://github.com/nice-devone/nice-cxone-mobile-sdk-ios)
+- UI (⚠️ still under development, not yet actively supported)
+- [Sample app](https://github.com/nice-devone/nice-cxone-mobile-sample-ios)
 
 
 ## Getting Started

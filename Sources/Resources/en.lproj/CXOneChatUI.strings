@@ -16,6 +16,11 @@
 "chatui_common_unassigned_agent" = "No Agent";
 "chatui_common_unknown_agent" = "Automated Agent";
 "chatui_common_unknown_customer" = "Unknown Customer";
+"chatui_common_connecting" = "Connecting...";
+"chatui_common_loading" = "Loading...";
+"chatui_common_fatalError" = "Fatal Error";
+"chatui_common_back" = "Back";
+"chatui_common_down" = "Down";
 
 // Alert
 "chatui_alert_threadCreationFailed_message" = "Unable to create new thread";

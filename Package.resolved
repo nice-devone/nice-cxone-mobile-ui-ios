@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/wxxsw/GSPlayer.git",
       "state" : {
-        "revision" : "706fc28fcc8e33607993903eca82d9f6c7c3f6d2",
-        "version" : "0.2.27"
+        "revision" : "bdd5da716d665a398ec09706df39252cf55ef492",
+        "version" : "0.2.28"
       }
     },
     {
@@ -23,8 +23,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/onevcat/Kingfisher.git",
       "state" : {
-        "revision" : "add0a87ec4e31e2ca2a0b2085f0559201e4f5918",
-        "version" : "7.10.1"
+        "revision" : "2ef543ee21d63734e1c004ad6c870255e8716c50",
+        "version" : "7.12.0"
+      }
+    },
+    {
+      "identity" : "mockable",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Kolos65/Mockable",
+      "state" : {
+        "revision" : "a9e5e1d222035567069ed6fff8429c327229b5f6",
+        "version" : "0.0.11"
       }
     },
     {
@@ -32,8 +41,26 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git",
       "state" : {
-        "revision" : "7903c360d2e173ecc9a77d1829e30ce24412e65e",
-        "version" : "2.1.0"
+        "revision" : "fbab57b16864896b9729db33d2140df0f3132aa0",
+        "version" : "2.2.0"
+      }
+    },
+    {
+      "identity" : "swift-issue-reporting",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/swift-issue-reporting",
+      "state" : {
+        "revision" : "770f990d3e4eececb57ac04a6076e22f8c97daeb",
+        "version" : "1.4.2"
+      }
+    },
+    {
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-syntax.git",
+      "state" : {
+        "revision" : "2bc86522d115234d1f588efe2bcb4ce4be8f8b82",
+        "version" : "510.0.3"
       }
     },
     {

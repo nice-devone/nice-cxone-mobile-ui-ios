@@ -24,18 +24,18 @@ enum StyleGuide {
     
     enum Message {
         
-        /// "14"
-        static let cornerRadius: CGFloat = 14
-        /// "4"
-        static let cornerRadiusBetweenMessages: CGFloat = 4
+        /// "10"
+        static let cornerRadius: CGFloat = 20
+        /// "0"
+        static let cornerRadiusBetweenMessages: CGFloat = 0
         /// "50"
         static let singleEmojiFontSize: CGFloat = 50
         /// "38"
         static let twoEmojiesFontSize: CGFloat = 38
         /// "25"
         static let threeEmojiesFontSize: CGFloat = 25
-        /// "10"
-        static let paddingVertical: CGFloat = 10
+        /// "14"
+        static let paddingVertical: CGFloat = 14
         /// "12"
         static let paddingHorizontal: CGFloat = 12
         /// "12"

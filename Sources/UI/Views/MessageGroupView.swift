@@ -47,7 +47,9 @@ struct MessageGroupView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            header
+            if group.shouldShowHeader {
+                header
+            }
             
             ZStack {
                 VStack(spacing: 2) {
@@ -71,10 +73,9 @@ struct MessageGroupView: View {
                 footer
             }
         }
-        .padding(.top, StyleGuide.Message.paddingVertical)
         .padding(.leading, 16)
         .padding(.trailing, 10)
-        .padding(.bottom, group.shouldShowFooter ? 0 : 14)
+        .padding(.bottom, group.shouldShowFooter ? 0 : StyleGuide.Message.paddingVertical)
     }
 }
 
@@ -83,20 +84,11 @@ struct MessageGroupView: View {
 extension MessageGroupView {
 
     var header: some View {
-        Group {
-            Text(group.date.formatted(format: "MMM d, yyyy"))
-                .font(.footnote.bold())
-                .foregroundColor(style.formTextColor.opacity(0.5))
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 4)
-
-            if group.shouldShowUserName {
-                Text(group.sender.userName)
-                    .font(.footnote)
-                    .foregroundColor(style.formTextColor.opacity(0.5))
-                    .offset(x: 10)
-            }
-        }
+        Text(group.date.formatted(useRelativeFormat: true))
+            .font(.footnote.bold())
+            .foregroundColor(style.formTextColor.opacity(0.5))
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 8)
     }
 
     var footer: some View {
@@ -111,14 +103,25 @@ extension MessageGroupView {
                 Asset.Message.delivered
                     .foregroundColor(style.customerCellColor)
             case .seen:
-                Asset.Message.delivered
-                    .background(
-                        Circle()
-                            .foregroundColor(style.backgroundColor)
-                    )
-                    .foregroundColor(style.customerCellColor)
+                ZStack {
+                    Asset.Message.delivered
+                        .background(
+                            Circle()
+                                .foregroundColor(style.backgroundColor)
+                        )
+                        .foregroundColor(style.customerCellColor)
+                        .offset(x: -10)
+                    
+                    Asset.Message.delivered
+                        .background(
+                            Circle()
+                                .foregroundColor(style.backgroundColor)
+                        )
+                        .foregroundColor(style.customerCellColor)
+                }
             }
         }
+        .padding(.top, 2)
     }
 
     var avatar: some View {
@@ -151,11 +154,11 @@ struct MessageGroupView_Previews: PreviewProvider {
     
     static let manager = ChatManager(
         messages: [
-            MockData.textMessage(user: MockData.customer),
-            MockData.textMessage(user: MockData.customer),
-            MockData.textMessage(user: MockData.customer),
-            MockData.textMessage(user: MockData.agent),
-            MockData.textMessage(user: MockData.agent),
+            MockData.textMessage(user: MockData.customer, date: Date.now.adding(.day, value: -2)),
+            MockData.textMessage(user: MockData.customer, date: Date.now.adding(.day, value: -1)),
+            MockData.textMessage(user: MockData.customer, date: Date.now.adding(.day, value: -1)),
+            MockData.textMessage(user: MockData.agent, date: Date.now.adding(.minute, value: -2)),
+            MockData.textMessage(user: MockData.customer, date: Date.now.adding(.minute, value: -1)),
             MockData.textMessage(user: MockData.customer)
         ]
     )

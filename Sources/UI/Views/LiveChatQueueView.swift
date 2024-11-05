@@ -60,20 +60,14 @@ struct LiveChatQueueView_Previews: PreviewProvider {
     
     static var previews: some View {
         Group {
-            VStack {
-                LiveChatQueueView(positionInQueue: .constant(3))
-                
-                ChatExampleView()
-            }
-            .previewDisplayName("Light Mode")
+            Color(uiColor: .systemBackground)
+                .overlay(alignment: .top) { LiveChatQueueView(positionInQueue: .constant(3)) }
+                .previewDisplayName("Light Mode")
             
-            VStack {
-                LiveChatQueueView(positionInQueue: .constant(3))
-                
-                ChatExampleView()
-            }
-            .preferredColorScheme(.dark)
-            .previewDisplayName("Dark Mode")
+            Color(uiColor: .systemBackground)
+                .overlay(alignment: .top) { LiveChatQueueView(positionInQueue: .constant(3)) }
+                .preferredColorScheme(.dark)
+                .previewDisplayName("Dark Mode")
         }
         .environmentObject(ChatStyle())
         .environmentObject(ChatLocalization())

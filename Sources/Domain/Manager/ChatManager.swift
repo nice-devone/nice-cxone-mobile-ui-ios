@@ -32,14 +32,21 @@ class ChatManager {
     // MARK: - Methods
 
     func groupMessages() -> [MessageGroup] {
-        messages
-            .group { last, current in
-                !current.richContentMessages
-                    && !last.richContentMessages
-                    && current.user.id == last.user.id
-                    && abs(last.date.timeIntervalSince(current.date)) <= Self.groupInterval
+        let groups = messages.group { last, current in
+            !current.richContentMessages
+                && !last.richContentMessages
+                && current.user.id == last.user.id
+                && abs(last.date.timeIntervalSince(current.date)) <= Self.groupInterval
+        }
+        
+        return groups.enumerated().compactMap { index, messages -> MessageGroup? in
+            var showHeader = true
+            if let previousGroupLastMessageDate = groups[safe: index - 1]?.last?.date, let currentGroupFirstMessageDate = messages.first?.date {
+                showHeader = abs(previousGroupLastMessageDate.timeIntervalSince(currentGroupFirstMessageDate)) > Self.groupInterval
             }
-            .compactMap(MessageGroup.init)
+            
+            return MessageGroup(messages: messages, showHeader: showHeader, showFooter: groups.count == index + 1)
+        }
     }
 }
 
