@@ -12,8 +12,5 @@ local.yml
 *~
 \#*\#
 
-# xcodegen generated, don't record
-Generated/
-
 /* Generated Jazzy documentation
 jazzy_docs/
