@@ -30,7 +30,8 @@ let package = Package(
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "7.0.0"),
         .package(url: "https://github.com/siteline/swiftui-introspect", from: "0.8.0"),
         .package(url: "https://github.com/wxxsw/GSPlayer.git", from: "0.2.25"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "2.2.0")
+        .package(url: "https://github.com/lukepistrol/SwiftLintPlugin", from: "0.2.2"),
+        .package(name: "CXoneChatSDK", path: "../cxone-chat-sdk")
     ],
     targets: [
         .target(
@@ -39,13 +40,15 @@ let package = Package(
                 .byName(name: "Kingfisher"),
                 .product(name: "SwiftUIIntrospect", package: "swiftui-introspect"),
                 .byName(name: "GSPlayer"),
-                .product(name: "CXoneChatSDK", package: "nice-cxone-mobile-sdk-ios")
+                .byName(name: "CXoneChatSDK")
             ],
             path: "Sources",
             resources: [
                 .copy("../PrivacyInfo.xcprivacy")
             ],
-            plugins: []
+            plugins: [
+                .plugin(name: "SwiftLint", package: "SwiftLintPlugin")
+            ]
         )
     ]
 )
