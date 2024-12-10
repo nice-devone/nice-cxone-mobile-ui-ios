@@ -1,6 +1,12 @@
 <a name="unreleased"></a>
 # [Unreleased]
 
+<a name="2.2.1"></a>
+# [2.2.1] - 2024-12-10
+
+## Dependencies
+- Update CXoneChatSDK to 2.2.1
+
 <a name="2.2.0"></a>
 # [2.2.0] - 2024-11-04
 

@@ -30,7 +30,7 @@ let package = Package(
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "7.0.0"),
         .package(url: "https://github.com/siteline/swiftui-introspect", from: "0.8.0"),
         .package(url: "https://github.com/wxxsw/GSPlayer.git", from: "0.2.25"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "2.2.0")
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "2.2.1")
     ],
     targets: [
         .target(
