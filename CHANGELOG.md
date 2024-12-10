@@ -2,12 +2,10 @@
 # [Unreleased]
 
 <a name="2.2.1"></a>
-# [2.2.1] - 2024-12-06
+# [2.2.1] - 2024-12-10
 
-## CXoneChatSDK
-
-### Fixes
-- Set customer custom fields correctly for Livechat mode
+## Dependencies
+- Update CXoneChatSDK to 2.2.1
 
 <a name="2.2.0"></a>
 # [2.2.0] - 2024-11-04
