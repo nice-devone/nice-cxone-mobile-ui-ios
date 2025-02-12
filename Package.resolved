@@ -37,12 +37,21 @@
       }
     },
     {
+      "identity" : "nice-cxone-mobile-sdk-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git",
+      "state" : {
+        "revision" : "8b57dda96c85f0a5872455271d105b9153f1a3aa",
+        "version" : "2.2.1"
+      }
+    },
+    {
       "identity" : "swift-issue-reporting",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-issue-reporting",
       "state" : {
-        "revision" : "27d767d643fa2cf083d0a73d74fa84cacb53e85c",
-        "version" : "1.4.1"
+        "revision" : "770f990d3e4eececb57ac04a6076e22f8c97daeb",
+        "version" : "1.4.2"
       }
     },
     {
@@ -52,15 +61,6 @@
       "state" : {
         "revision" : "2bc86522d115234d1f588efe2bcb4ce4be8f8b82",
         "version" : "510.0.3"
-      }
-    },
-    {
-      "identity" : "swiftlintplugin",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/lukepistrol/SwiftLintPlugin",
-      "state" : {
-        "revision" : "bea71d23db993c58934ee704f798a66d7b8cb626",
-        "version" : "0.57.0"
       }
     },
     {
