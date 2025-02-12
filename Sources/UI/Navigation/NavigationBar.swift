@@ -23,7 +23,6 @@ struct NavigationBar: View {
     // MARK: - Properties
     
     @Binding var left: NavigationItem.Left?
-    @Binding var brand: NavigationItem.Brand?
     @Binding var title: NavigationItem.Title?
     @Binding var right: [NavigationItem.Action]
 
@@ -31,12 +30,10 @@ struct NavigationBar: View {
     
     init(
         left: Binding<NavigationItem.Left?>,
-        brand: Binding<NavigationItem.Brand?>,
         title: Binding<NavigationItem.Title?>,
         right: Binding<[NavigationItem.Action]>
     ) {
         self._left = left
-        self._brand = brand
         self._title = title
         self._right = right
     }
@@ -44,7 +41,6 @@ struct NavigationBar: View {
     init(item: ObservedObject<NavigationItem>.Wrapper) {
         self.init(
             left: item.left,
-            brand: item.brand,
             title: item.title,
             right: item.right
         )
@@ -57,11 +53,6 @@ struct NavigationBar: View {
             HStack {
                 left?
                     .padding(.leading)
-                
-                Spacer()
-                
-                brand?
-                    .padding(.trailing, 4)
                 
                 Spacer()
                 
@@ -105,10 +96,9 @@ struct NavigationBar: View {
 
 // MARK: - Previews
 
-#Preview("Light") {
+#Preview("Back") {
     @ObservedObject var item = NavigationItem(
         left: .back(title: "back") {},
-        brand: Image(systemName: "bolt.slash"),
         title: Text("Title"),
         right: [
             .back(title: "back") {},
@@ -120,6 +110,7 @@ struct NavigationBar: View {
 
     return VStack {
         NavigationBar(item: $item)
+        
         Spacer()
     }
 }
@@ -136,20 +127,4 @@ struct NavigationBar: View {
         
         Spacer()
     }
-}
-
-#Preview("Dark") {
-    @ObservedObject var item = NavigationItem(
-        left: .down(title: "down") {},
-        title: Text("Title")
-    ) {
-        Text("Body")
-    }
-
-    return VStack {
-        NavigationBar(item: $item)
-        
-        Spacer()
-    }
-    .preferredColorScheme(.dark)
 }

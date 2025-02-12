@@ -56,9 +56,6 @@ public class ChatStyle: ObservableObject {
     /// The button background color.
     let buttonBackgroundColor: Color
     
-    /// An optional logo or image for the navigation bar.
-    let navigationBarLogo: Image?
-    
     /// An object that contains the color settings for light and dark modes.
     let colors: StyleColorsManager
     
@@ -74,7 +71,6 @@ public class ChatStyle: ObservableObject {
     ///   - agentFontColor: The font color for chat cells representing chat agents.
     ///   - customerCellColor: The background color for chat cells representing customers or users.
     ///   - customerFontColor: The font color for chat cells representing customers or users.
-    ///   - navigationBarLogo: An optional logo or image for the navigation bar.
     ///   - colors: ``StyleColorsManager`` object that contains the color settings for light and dark modes.
     public init(
         navigationBarColor: Color? = nil,
@@ -88,7 +84,6 @@ public class ChatStyle: ObservableObject {
         formErrorColor: Color? = nil,
         buttonTextColor: Color? = nil,
         buttonBackgroundColor: Color? = nil,
-        navigationBarLogo: Image? = nil,
         colorsManager: StyleColorsManager? = nil
     ) {
         self.navigationBarColor = navigationBarColor ?? Color(.systemBackground)
@@ -102,7 +97,6 @@ public class ChatStyle: ObservableObject {
         self.formErrorColor = formErrorColor ?? .red
         self.buttonTextColor = buttonTextColor ?? .white
         self.buttonBackgroundColor = buttonBackgroundColor ?? .accentColor
-        self.navigationBarLogo = navigationBarLogo
         self.colors = colorsManager ?? StyleColorsManager(
             light: StyleColorsImpl.defaultLight,
             dark: StyleColorsImpl.defaultDark

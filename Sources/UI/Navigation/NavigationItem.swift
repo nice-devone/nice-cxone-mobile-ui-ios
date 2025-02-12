@@ -19,7 +19,6 @@ import SwiftUI
 open class NavigationItem: ObservableObject {
     
     typealias Left = NavigationAction
-    typealias Brand = Image
     typealias Title = Text
     typealias Action = NavigationAction
     typealias Content = AnyView
@@ -27,7 +26,6 @@ open class NavigationItem: ObservableObject {
     // MARK: - Properties
     
     @Published var left: Left?
-    @Published var brand: Brand?
     @Published var title: Title?
     @Published var right: [Action]
     @Published var content: () -> Content
@@ -36,13 +34,11 @@ open class NavigationItem: ObservableObject {
     
     init(
         left: Left? = nil,
-        brand: Brand? = nil,
         title: Title? = nil,
         right: [NavigationAction] = [],
         @ViewBuilder content: @escaping () -> Content = { AnyView(EmptyView()) }
     ) {
         self.left = left
-        self.brand = brand
         self.title = title
         self.right = right
         self.content = content
@@ -50,12 +46,11 @@ open class NavigationItem: ObservableObject {
 
     convenience init<ActualContent: View>(
         left: Left? = nil,
-        brand: Brand? = nil,
         title: Title? = nil,
         right: [NavigationAction] = [],
         @ViewBuilder content: @escaping () -> ActualContent
     ) {
-        self.init(left: left, brand: brand, title: title, right: right) { AnyView(content()) }
+        self.init(left: left, title: title, right: right) { AnyView(content()) }
     }
 
     // MARK: - Methods
