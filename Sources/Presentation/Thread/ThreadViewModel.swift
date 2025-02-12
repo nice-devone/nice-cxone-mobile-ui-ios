@@ -269,10 +269,6 @@ extension ThreadViewModel {
     func onRichMessageElementSelected(textToSend: String?, element: RichMessageSubElementType) {
         LogManager.trace("Did select rich content message")
         
-        if let postback = element.postback {
-            try? chatProvider.analytics.customVisitorEvent(data: .custom(postback))
-        }
-        
         if let textToSend {
             onSendMessage(.text(textToSend), attachments: [], postback: element.postback)
         }

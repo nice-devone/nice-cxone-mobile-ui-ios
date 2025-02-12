@@ -130,16 +130,6 @@ struct ChatView: View, Themed {
                     .padding(.bottom, UIDevice.current.hasHomeButton ? 10 : 0)
             }
         }
-        .ifNotNil(style.navigationBarLogo) { view, logo in
-            view.toolbar {
-                ToolbarItem(placement: .principal) {
-                    logo
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 48, height: 48)
-                }
-            }
-        }
         .background(style.backgroundColor)
         .overlay(isVisible: $isProcessDialogVisible) {
             attachmentsUploadOverlay

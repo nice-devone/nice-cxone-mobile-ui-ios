@@ -25,7 +25,7 @@ struct MessageGroupView: View {
     @Binding private var isProcessDialogVisible: Bool
     @Binding private var alertType: ChatAlertType?
 
-    @State var group: MessageGroup
+    var group: MessageGroup
 
     let onRichMessageElementSelected: (_ textToSend: String?, RichMessageSubElementType) -> Void
     

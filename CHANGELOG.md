@@ -1,11 +1,28 @@
 <a name="unreleased"></a>
 # [Unreleased]
 
-<a name="2.2.1"></a>
-# [2.2.1] - 2024-12-10
+## CXoneChatSDK
 
-## Dependencies
-- Update CXoneChatSDK to 2.2.1
+### Features
+- Add logging for URLSession responses
+- Enhanced SDK create(with:) method to support custom fields with prechat validation and additional contact field storage
+
+### Fixes
+- Increased timeout duration again to match with Android's setting.
+- A copy of the thread is no longer delegated by `sendMessage(_:for:)` method
+
+## CXoneChatUI
+
+### Fixes
+- MessageGroupView no longer store group as a State property
+
+<a name="2.2.1"></a>
+# [2.2.1] - 2024-12-06
+
+## CXoneChatSDK
+
+### Fixes
+- Set customer custom fields correctly for Livechat mode
 
 <a name="2.2.0"></a>
 # [2.2.0] - 2024-11-04
@@ -32,6 +49,7 @@
 
 ### Features
 - Add colors related to the UI redesign
+- Removed branding for a chat
 
 ### Fixes
 - Fix load more messages
@@ -42,6 +60,7 @@
 
 ### Features
 - Fallback to default customer name for guest login
+- Removed branding for a chat
 
 ## CI
 
