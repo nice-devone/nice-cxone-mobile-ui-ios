@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git",
       "state" : {
-        "revision" : "8b57dda96c85f0a5872455271d105b9153f1a3aa",
-        "version" : "2.2.1"
+        "revision" : "e2ba44dc069d8278a6aba219ef43dc1f3138ad2b",
+        "version" : "2.3.0"
       }
     },
     {
