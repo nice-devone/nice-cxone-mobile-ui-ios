@@ -13,9 +13,9 @@ The CXoneChatUI module provides a default implementation of a Chat User Interfac
 
 ## Modules
 
-- [Core](https://github.com/nice-devone/nice-cxone-mobile-sdk-ios)
+- [Core](https://github.com/nice-devone/nice-cxone-mobile-ui-ios/tree/develop/cxone-chat-sdk)
 - UI (⚠️ still under development, not yet actively supported)
-- [Sample app](https://github.com/nice-devone/nice-cxone-mobile-sample-ios)
+- [Sample app](https://github.com/nice-devone/nice-cxone-mobile-ui-ios/tree/develop/sample)
 
 
 ## Getting Started
