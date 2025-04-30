@@ -1,99 +1,44 @@
 <a name="unreleased"></a>
 # [Unreleased]
 
-## CXoneChatUI
-
-### Fixes
+## Fixes
 - Fixes an issue where tapping an image in the chat log would cause the viewer to open briefly and then dismiss. This was caused by incorrect ViewModel lifecycle management.
 - Fixed error when receiving audio messages from agents by improving filename sanitization and handling invalid characters
-- Fixed an issue where the EndConversationView would dismiss prematurely when thread state transitions occurred.
+- Fixed an issue where the EndConversationView would dismiss prematurely when thread state transitions occurred. 
 
-## CXoneChatSDK
-
-### Breaking Changes
-- Message's SenderInfo is optional due to possible automated messages without sender identity (e.g. Welcome Message)
-- SenderInfo attributes `firstName`, `lastName` and `fullName` are optional 
-
-## CXoneChatSDK
-
-### Features
+## Features
 - Add ChatConfiguration to be able to add additional configuration to the CXoneChatSDK
 
-## Sample
+<a name="2.3.1"></a>
+# [2.3.1] - 2025-04-11
 
-### Features
-- Add a picker to the settings to view the chat full screen or modal
-- Update custom environment configuration list
-- Add options to add contact and customer custom fields as an additional CXoneChatSDK configuration
-
-## CI
-
-### Features
-- Faster the Deploy Application workflow 
+## Dependencies
+- Update CXoneChatSDK from 2.3.0 to 2.3.1
 
 <a name="2.3.0"></a>
 # [2.3.0] - 2025-02-12
 
-## CXoneChatSDK
-
-### Features
-- Add logging for URLSession responses
-- Enhanced SDK create(with:) method to support custom fields with prechat validation and additional contact field storage
-
-### Fixes
-- Increased timeout duration again to match with Android's setting.
-- A copy of the thread is no longer delegated by `sendMessage(_:for:)` method
-
-## CXoneChatUI
-
-### Fixes
+## Fixes
 - MessageGroupView no longer stores group as a State property
 
-## CXoneChatUI
-
-### Features
+## Features
 - Update Chat Message Corner Radius
 - Override default avatar image for an agent
 - Update Chat Message Group Messages Spacing
 
-## Sample
-
-### Fixes
-- Settings theme update applies to the chat correctly
+## Dependencies
+- Update CXoneChatSDK from 2.2.1 to 2.3.0
 
 <a name="2.2.1"></a>
 # [2.2.1] - 2024-12-06
 
-## CXoneChatSDK
-
-### Fixes
-- Set customer custom fields correctly for Livechat mode
+## Dependencies
+- Update CXoneChatSDK from 2.2.0 to 2.2.1
 
 <a name="2.2.0"></a>
 # [2.2.0] - 2024-11-04
 
-## CXoneChatSDK
-
-### Features
-- Enhance AuthorizeCustomer of new attributes
-- Map actual agent image URL to Agent's imageUrl
-- Hide `inContactId` from Agent
-- Expanded Unit Testing
-- Deprecate `inContactId`, `loginUsername` and `emailAddress` for an Agent object
-- Improve handling of archiveThread
-- Added additional HTTP headers for `URLRequest`
-- Deprecate CXoneChat.delegate in favor of CXoneChat.add/remove(delegate:)
-- Change `set(_:)` to `set(customer:)` in CustomerProvider
-- Deprecate `CXoneChatDelegate.onAgentTyping(_:threadId:)` in favor of `CXoneChatDelegate.onAgentTyping(_:agent:threadId:)`
-
-### Fixes
-- Increased the timeout duration for the server response during the ping/pong checks.
-- Handle properly chat states after connect and when thread recover fails
-- Handle disconnect based on expectation state (disconnect triggered by host application vs. disconnect due to websocket pong not received)
-
-## CXoneChatUI
-
-### Features
+## Features
 - Update UI elements related to document thumbnails.
 - Redesign live chat popups
 - Redesign elements related to voice messages.
@@ -114,53 +59,19 @@
 - Update UI element that displays hierarchical data on the Precontact Survey.
 - Extend Agent activity indicator of the agent's avatar
 
-### Fixes
+## Fixes
 - Send option content as a message with quick replies option selection 
-
-### Fixes
 - Fix load more messages
 - Fixed issue where messages in the middle of a group might not be displayed.
 - Add/Remove delegate correctly in onAppear/onDisappear methods 
 
-## Sample
-
-### Features
-- Fallback to default customer name for guest login
-- Removed branding for a chat
-
-## CI
-
-### Features
-- Exclude hardcoded versions from workflows to GitHub repository variables
-- Bumps xavierLowmiller/xcodegen-action from 1.2.2 to 1.2.3
-- Integrate Periphery to CI
-
-### Fixes
-- Exclude SwiftGen from workflows to separate script and fix "build", "deploy_app" and "deploy_documentation" workflows
+## Dependencies
+- Update CXoneChatSDK from 2.1.0 to 2.2.0
 
 <a name="2.1.0"></a>
 # [2.1.0] - 2024-07-29
 
-## CXoneChatSDK
-
-### Features
-- Custom Customer ID
-- Remove custom field definitions validation
-- Update minimum iOS deployment target to 15
-
-### Bug Fixes
-- Prefill prechat survey with customer data
-- correct check for locally created thread
-- "properly" handle start/stopSecurelyScopedResource
-- Working Live chat set position in queue
-
-### Chore
-- Change version to 2.1.0
-- Resolve SwiftLint warnings
-
-## CXoneChatUI
-
-### Features
+## Features
 - Attachments upload dialog
 - Highlight text message cell content for links/phone numbers
 - Minimum iOS deployment target
@@ -170,42 +81,29 @@
     - not be dependent on host application UINavigationController
     - host application interface with chat window is greatly simplified and can be integrated into either a UIKit or SwiftUI interface as a sheet or other "presented" view controller.
 
-### Bug Fixes
+## Bug Fixes
 - Prefill prechat survey with customer data
 - Rotation bug on iOS15
 - Incorrect attachment size displayed for single attachment
 - append UTType.movie for all videos
 
-### Chore
+## Chore
 - fix MessageGroupView preview
 - Resolve SwiftLint warnings
 
-## Sample
-
-### Features
-- Move customer details form from UI module to sample app
-- Minimum iOS deployment target
-
-### Chore
-- Resolve SwiftLint warnings
-
-## CI
-- GitHub action to deploy to GitHub Artifactory, Perfecto and TestFlight
-- Bump tarides/changelog-check-action from 2 to 3
-- Update GitHub action runners to macos-latest
+## Dependencies
+- Update CXoneChatSDK from 2.0.1 to 2.1.0
 
 <a name="2.0.1"></a>
 # [2.0.1] - 2024-07-11
 
-## CXoneChatSDK
-
-### Bug Fixes
-- Correct live chat set position in queue
+## Dependencies
+- Update CXoneChatSDK from 2.0.0 to 2.0.1
 
 <a name="2.0.0"></a>
 # [2.0.0] - 2024-05-22
 
-### Bug Fixes
+## Bug Fixes
 - Update ListFieldView behavior for iOS 14
 - Exclude links from multiattachments view
 - correct check for locally created thread
@@ -217,11 +115,11 @@
 - Fix Build/test break
 - "properly" handle start/stopSecurelyScopedResource
 
-### Dependency Change
+## Dependency Change
 - Bump peaceiris/actions-gh-pages from 3 to 4
 - Bump xavierLowmiller/xcodegen-action from 1.1.3 to 1.2.0
 
-### Features
+## Features
 - add Mobile SDK EU1 QA configurations
 - Better welcome message handling
 - Disable modification for archived thread
@@ -242,28 +140,28 @@
 <a name="1.3.3"></a>
 # [1.3.3] - 2024-05-15
 
-### Bug Fixes
+## Bug Fixes
 - make assignedAgent optional for the event
 
 
 <a name="1.3.2"></a>
 # [1.3.2] - 2024-03-21
 
-### Features
+## Features
 - Create SDK's UserDefaults + Better Keychain handling
 
 
 <a name="1.3.1"></a>
 # [1.3.1] - 2024-03-12
 
-### Features
+## Features
 - Privacy Manifest
 
 
 <a name="1.3.0"></a>
 # [1.3.0] - 2024-03-12
 
-### Bug Fixes
+## Bug Fixes
 - Fixed deeplink format
 - Correct CreateOrUpdateVisitor URL
 - Resolve issue with submodules for GitHub Actions
@@ -287,7 +185,7 @@
 - Handle different thread correctly
 - Fix issue when multiple messages with matching ids are received
 
-### Features
+## Features
 - add login error state in case of unreachable API
 - Add basic validation for brandId and channelId
 - Login with Amazon SDK update + fixed Launch screen storyboard
@@ -308,7 +206,7 @@
 <a name="1.2.0"></a>
 # [1.2.0] - 2023-09-22
 
-### Bug Fixes
+## Bug Fixes
 - working Login preview
 - Remove reporting viewPage for chat related
 - duplicate SFSymbol image to SwiftUI + remove conversion from UIImage to Image
@@ -323,7 +221,7 @@
 - Correct title when enter thread detail
 - Fixed problem in hexString where wrong color was being created.
 
-### Features
+## Features
 - change open Chat button background color
 - Login with Amazon SDK update + fixed Launch screen storyboard
 - Update version to 1.2.0
@@ -344,14 +242,14 @@
 <a name="1.1.1"></a>
 # [1.1.1] - 2023-07-10
 
-### Features
+## Features
 - Update decoding of ThreadRecoveredEvent
 
 
 <a name="1.1.0"></a>
 # [1.1.0] - 2023-06-23
 
-### Bug Fixes
+## Bug Fixes
 - Remove not supported fields in ReceivedThreadRecoveredPostbackData
 - Return message with attachments
 - use correct EventDataType for loadThreadData and messageSeenByCustomer
@@ -361,7 +259,7 @@
 - use correct UUID for thread
 - access file stored in Documents
 
-### Features
+## Features
 - SwiftLint explicit init
 - Event Type Unification
 - use Codable only in valid cases + Encodable in test target
@@ -387,7 +285,7 @@
 <a name="1.0.0"></a>
 # 1.0.0 - 2023-01-31
 
-### Features
+## Features
 - Logging PoC
 - Error handling
 - Connection
@@ -448,7 +346,10 @@
     - failure
   - typing start/end
 
-[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.2.0...HEAD
+[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.3.1...HEAD
+[2.3.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.3.0...2.3.1
+[2.3.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.2.1...2.3.0
+[2.2.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.2.0...2.2.1
 [2.2.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.1.0...2.2.0
 [2.1.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.0.1...2.1.0
 [2.0.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.0.0...2.0.1
