@@ -28,23 +28,26 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "3.0.0-rc"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios.git", from: "3.0.0-rc")
+        .package(url: "https://github.com/lukepistrol/SwiftLintPlugin", exact: "0.57.1"),
+        .package(name: "CXoneChatSDK", path: "../cxone-chat-sdk"),
+        .package(name: "CXoneGuideUtility", path: "../cxone-guide-utility")
     ],
     targets: [
         .target(
             name: "CXoneChatUI",
             dependencies: [
                 .byName(name: "Kingfisher"),
-                .product(name: "CXoneChatSDK", package: "nice-cxone-mobile-sdk-ios"),
-                .product(name: "CXoneGuideUtility", package: "nice-cxone-mobile-guide-utility-ios")
+                .byName(name: "CXoneChatSDK"),
+                .byName(name: "CXoneGuideUtility")
             ],
             path: "Sources",
             resources: [
                 .copy("../PrivacyInfo.xcprivacy"),
                 .copy("Resources/images.xcassets")
             ],
-            plugins: []
+            plugins: [
+                .plugin(name: "SwiftLint", package: "SwiftLintPlugin")
+            ]
         )
     ]
 )
