@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -13,21 +13,28 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
-import Kingfisher
 import SwiftUI
 
-struct RichLinkMessageCell: View {
+struct RichLinkMessageCell: View, Themed {
     
     // MARK: - Properties
     
-    @EnvironmentObject private var style: ChatStyle
     @EnvironmentObject private var localization: ChatLocalization
+    @EnvironmentObject var style: ChatStyle
+    
+    @Environment(\.colorScheme) var scheme
 
     @State private var isShareSheetVisible = false
     
     let message: ChatMessage
     let item: RichLinkItem
     let openLink: (URL) -> Void
+    
+    private static let imageMaxHeight: CGFloat = UIScreen.main.bounds.width / 3
+    private static let linkSpacing: CGFloat = 2
+    private static let paddingTop: CGFloat = 8
+    private static let paddingHorizontal: CGFloat = 12
+    private static let paddingBottom: CGFloat = 10
     
     // MARK: - Init
     
@@ -40,59 +47,83 @@ struct RichLinkMessageCell: View {
     // MARK: - Builder
     
     var body: some View {
-        ZStack(alignment: message.user.isAgent ? .bottomLeading : .bottomTrailing) {
-            HStack {
-                VStack(alignment: .leading) {
-                    KFImage(item.imageUrl)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxHeight: 150)
-                        .clipped()
-                    
-                    VStack(alignment: .leading) {
-                        Text(item.title)
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .foregroundColor(style.agentFontColor)
-                        
-                        if let host = item.url.host {
-                            Text(host)
-                                .font(.footnote)
-                                .foregroundColor(style.agentFontColor.opacity(0.5))
-                        }
-                    }
-                    .padding(.vertical, StyleGuide.Message.paddingVertical)
-                    .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
-                }
-                .background(style.agentCellColor)
-                .cornerRadius(StyleGuide.Message.cornerRadius, corners: .allCorners)
-                .contextMenu {
-                    Button {
-                        isShareSheetVisible = true
-                    } label: {
-                        Text(localization.commonShare)
-
-                        Asset.share
-                    }
-                    
-                    Button {
-                        UIPasteboard.general.url = item.url
-                        UIPasteboard.general.string = item.url.absoluteString
-                    } label: {
-                        Text(localization.commonCopy)
-                        
-                        Asset.copy
-                    }
-                }
-                
-                Spacer(minLength: UIScreen.main.bounds.size.width / 3)
+        HStack {
+            Button {
+                openLink(item.url)
+            } label: {
+                buttonContent
             }
-        }
-        .onTapGesture {
-            openLink(item.url)
+            .background(colors.customizable.agentBackground)
+            .cornerRadius(StyleGuide.Message.cornerRadius, corners: .allCorners)
+            .contextMenu {
+                contextMenuContent
+            }
+            
+            Spacer(minLength: UIScreen.main.bounds.size.width / 3)
         }
         .sheet(isPresented: $isShareSheetVisible) {
             ShareSheet(activityItems: [item.url])
+        }
+    }
+}
+
+// MARK: - Subviews
+
+private extension RichLinkMessageCell {
+
+    var buttonContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            AsyncImage(url: item.imageUrl) { image in
+                image
+                    .resizable()
+                    .scaledToFill()
+            } placeholder: {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            }
+            .frame(maxHeight: Self.imageMaxHeight)
+            .clipped()
+            
+            VStack(alignment: .leading) {
+                Text(item.title)
+                    .font(.caption)
+                    .bold()
+                    .foregroundStyle(colors.customizable.agentText)
+                
+                if let host = item.url.host {
+                    HStack(spacing: Self.linkSpacing) {
+                        Text(host)
+                        
+                        Asset.Message.RichContent.link
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(colors.customizable.primary)
+                }
+            }
+            .multilineTextAlignment(.leading)
+            .padding(.horizontal, Self.paddingHorizontal)
+            .padding(.top, Self.paddingTop)
+            .padding(.bottom, Self.paddingBottom)
+        }
+    }
+    
+    @ViewBuilder
+    var contextMenuContent: some View {
+        Button {
+            isShareSheetVisible = true
+        } label: {
+            Text(localization.commonShare)
+
+            Asset.share
+        }
+        
+        Button {
+            UIPasteboard.general.url = item.url
+            UIPasteboard.general.string = item.url.absoluteString
+        } label: {
+            Text(localization.commonCopy)
+            
+            Asset.copy
         }
     }
 }

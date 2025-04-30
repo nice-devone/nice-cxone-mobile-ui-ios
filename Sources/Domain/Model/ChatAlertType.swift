@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -37,57 +37,59 @@ final class ChatAlertType: Identifiable {
     
     // MARK: - Static Methods
     
-    static func genericError(
+    static func genericError(localization: ChatLocalization, primaryAction: Alert.Button? = nil) -> ChatAlertType {
+        if let primaryAction {
+            return ChatAlertType(
+                title: localization.commonAttention,
+                message: localization.alertGenericErrorMessage,
+                primary: primaryAction,
+                secondary: .cancel()
+            )
+        } else {
+            return ChatAlertType(
+                title: localization.commonAttention,
+                message: localization.alertGenericErrorMessage,
+                primary: .cancel(Text(localization.commonConfirm))
+            )
+        }
+    }
+    
+    static func cameraPermissionDenied(
         localization: ChatLocalization,
-        primaryAction: @escaping () -> Void
+        goToSettings: @escaping () -> Void
     ) -> ChatAlertType {
         ChatAlertType(
             title: localization.commonAttention,
-            message: localization.alertGenericErrorMessage,
-            primary: .destructive(Text(localization.alertDisconnectConfirm), action: primaryAction),
+            message: localization.alertCameraPermissionMessage,
+            primary: .default(Text(localization.commonSettings), action: goToSettings),
             secondary: .cancel()
         )
     }
     
-    static func disconnect(
-        localization: ChatLocalization,
-        primaryAction: @escaping () -> Void
-    ) -> ChatAlertType {
+    static func connectionErrorAlert(localization: ChatLocalization, action: @escaping () -> Void) -> ChatAlertType {
         ChatAlertType(
             title: localization.commonAttention,
-            message: localization.alertDisconnectMessage,
-            primary: .destructive(Text(localization.alertDisconnectConfirm), action: primaryAction),
-            secondary: .cancel()
+            message: localization.alertDisconnectErrorMessage,
+            primary: .destructive(Text(localization.alertDisconnectConfirm), action: action)
         )
     }
     
-    static func unableToCreateThread(localization: ChatLocalization) -> ChatAlertType {
+    static func invalidAttachmentType(localization: ChatLocalization) -> ChatAlertType {
         ChatAlertType(
-            title: localization.commonAttention,
-            message: localization.alertThreadCreationFailedMessage,
-            primary: .cancel(),
-            secondary: nil
-        )
-    }
-    
-    static func unknownThreadFromDeeplink(localization: ChatLocalization) -> ChatAlertType {
-        ChatAlertType(
-            title: localization.commonAttention,
-            message: localization.alertDeeplinkUnknownThreadMessage,
-            primary: .cancel(),
-            secondary: nil
+            title: localization.alertFileValidationTitle,
+            message: localization.alertInvalidFileTypeMessage,
+            primary: .cancel()
         )
     }
     
     static func invalidAttachmentSize(localization: ChatLocalization) -> ChatAlertType? {
         ChatAlertType(
-            title: localization.commonAttention,
+            title: localization.alertFileValidationTitle,
             message: String(
                 format: localization.alertInvalidFileSizeMessage,
                 CXoneChat.shared.connection.channelConfiguration.fileRestrictions.allowedFileSize
             ),
-            primary: .cancel(),
-            secondary: nil
+            primary: .cancel()
         )
     }
     
@@ -100,14 +102,6 @@ final class ChatAlertType: Identifiable {
             message: localization.alertEndConversationMessage,
             primary: .destructive(Text(localization.commonConfirm), action: primaryAction),
             secondary: .cancel()
-        )
-    }
-    
-    static func downloadFailed(localization: ChatLocalization) -> ChatAlertType? {
-        ChatAlertType(
-            title: localization.commonAttention, 
-            message: localization.chatAttachmentsDownloadFailed,
-            primary: .cancel()
         )
     }
 }

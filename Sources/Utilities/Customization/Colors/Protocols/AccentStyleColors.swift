@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -15,103 +15,76 @@
 
 import SwiftUI
 
-/// A protocol defining a set of accent style colors.
-public protocol AccentStyleColors {
-    /// The primary accent color.
+protocol AccentStyleColors {
+    
     var accent: Color { get }
-    
-    /// The color used for elements that are on top of the accent color.
     var onAccent: Color { get }
-    
-    /// The primary variant of the accent color.
     var primary: Color { get }
-    
-    /// A muted version of the accent color.
     var muted: Color { get }
-    
-    /// A dimmed version of the accent color.
     var dim: Color { get }
-    
-    /// A bold version of the accent color.
     var bold: Color { get }
-    
-    /// A strong variant of the accent color.
     var strong: Color { get }
-    
-    /// A pop variant of the accent color.
     var pop: Color { get }
 }
 
 // MARK: - Default Colors
 
-/// Default colors for the accent.
-public struct AccentStyleColorsImpl: AccentStyleColors {
+struct AccentStyleColorsImpl: AccentStyleColors {
     
     // MARK: - Properties
     
-    public let accent: Color
-    public let onAccent: Color
-    public let primary: Color
-    public let muted: Color
-    public let dim: Color
-    public let bold: Color
-    public let strong: Color
-    public let pop: Color
+    let accent: Color
+    let onAccent: Color
+    let primary: Color
+    let muted: Color
+    let dim: Color
+    let bold: Color
+    let strong: Color
+    let pop: Color
     
     // MARK: - Init
     
-    /// Initializes the default light colors for the accent.
-    ///
-    /// - Parameters:
-    ///  - accent: The primary accent color.
-    ///  - onAccent: The color used for elements that are on top of the accent color.
-    ///  - primary: The primary variant of the accent color.
-    ///  - muted: A muted version of the accent color.
-    ///  - dim: A dimmed version of the accent color.
-    ///  - bold: A bold version of the accent color.
-    ///  - strong: A strong variant of the accent color.
-    ///  - pop: A pop variant of the accent color
-    public init(
-        accent: Color,
-        onAccent: Color,
-        primary: Color,
-        muted: Color,
-        dim: Color,
-        bold: Color,
-        strong: Color,
-        pop: Color
+    init(
+        onAccent: ColorAsset,
+        primary: ColorAsset,
+        muted: ColorAsset,
+        dim: ColorAsset,
+        accent: ColorAsset,
+        bold: ColorAsset,
+        strong: ColorAsset,
+        pop: ColorAsset
     ) {
-        self.accent = accent
-        self.onAccent = onAccent
-        self.primary = primary
-        self.muted = muted
-        self.dim = dim
-        self.bold = bold
-        self.strong = strong
-        self.pop = pop
+        self.accent = accent.swiftUIColor
+        self.onAccent = onAccent.swiftUIColor
+        self.primary = primary.swiftUIColor
+        self.muted = muted.swiftUIColor
+        self.dim = dim.swiftUIColor
+        self.bold = bold.swiftUIColor
+        self.strong = strong.swiftUIColor
+        self.pop = pop.swiftUIColor
     }
     
     // MARK: - Static Properties
     
     static let defaultLight = AccentStyleColorsImpl(
-        accent: Asset.Colors.brand60.swiftUIColor,
-        onAccent: Asset.Colors.white.swiftUIColor,
-        primary: Asset.Colors.brand20.swiftUIColor,
-        muted: Asset.Colors.brand30.swiftUIColor,
-        dim: Asset.Colors.brand40.swiftUIColor,
-        bold: Asset.Colors.brand70.swiftUIColor,
-        strong: Asset.Colors.brand80.swiftUIColor,
-        pop: Asset.Colors.brand100.swiftUIColor
+        onAccent: Asset.Colors.white,
+        primary: Asset.Colors.brand20,
+        muted: Asset.Colors.brand30,
+        dim: Asset.Colors.brand40,
+        accent: Asset.Colors.brand60,
+        bold: Asset.Colors.brand70,
+        strong: Asset.Colors.brand80,
+        pop: Asset.Colors.accentPop
     )
     
     static let defaultDark = AccentStyleColorsImpl(
-        accent: Asset.Colors.brand60.swiftUIColor,
-        onAccent: Asset.Colors.white.swiftUIColor,
-        primary: Asset.Colors.brand90.swiftUIColor,
-        muted: Asset.Colors.brand80.swiftUIColor,
-        dim: Asset.Colors.brand70.swiftUIColor,
-        bold: Asset.Colors.brand40.swiftUIColor,
-        strong: Asset.Colors.brand30.swiftUIColor,
-        pop: Asset.Colors.accentPop.swiftUIColor
+        onAccent: Asset.Colors.white,
+        primary: Asset.Colors.brand90,
+        muted: Asset.Colors.brand80,
+        dim: Asset.Colors.brand70,
+        accent: Asset.Colors.brand60,
+        bold: Asset.Colors.brand40,
+        strong: Asset.Colors.brand30,
+        pop: Asset.Colors.accentPop
     )
 }

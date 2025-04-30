@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ class AudioPlayer: NSObject, ObservableObject {
     
     // MARK: - Properties
     
+    @Binding var alertType: ChatAlertType?
+    
     @Published var isPlaying = false
     @Published var formattedDuration: String
     @Published var formattedProgress: String
@@ -34,6 +36,7 @@ class AudioPlayer: NSObject, ObservableObject {
         
         return formatter
     }()
+    private let chatLocalization: ChatLocalization
     
     private var avPlayer: AVPlayer
     private var timer: Timer?
@@ -47,9 +50,12 @@ class AudioPlayer: NSObject, ObservableObject {
     
     // MARK: - Lifecycle
     
-    init(url: URL, fileName: String) {
+    init(url: URL, fileName: String, alertType: Binding<ChatAlertType?>, chatLocalization: ChatLocalization) {
         self.url = url
         self.fileName = fileName
+        self._alertType = alertType
+        self.chatLocalization = chatLocalization
+        
         self.avPlayer = AVPlayer()
         self.formattedZeroDuration = formatter.string(from: 0) ?? ""
         self.formattedDuration = formattedZeroDuration
@@ -67,20 +73,29 @@ class AudioPlayer: NSObject, ObservableObject {
             do {
                 let fileUrl = try await downloadAndSaveAudioFile(url)
                 
-                do {
-                    avPlayer.replaceCurrentItem(with: AVPlayerItem(url: fileUrl))
-                    try audioSession.setCategory(.playback, mode: .default)
-                    try audioSession.setActive(true)
+                avPlayer.replaceCurrentItem(with: AVPlayerItem(url: fileUrl))
+                try audioSession.setCategory(.playback, mode: .default)
+                try audioSession.setActive(true)
 
-                    Task { @MainActor in
-                        formattedProgress = formattedZeroDuration
-                        formattedDuration = formatter.string(from: TimeInterval(avPlayer.totalDuration)) ?? formattedZeroDuration
+                _ = await MainActor.run { [weak self] in
+                    guard let self else {
+                        return
                     }
-                } catch {
-                    error.logError()
+                    
+                    self.formattedProgress = self.formattedZeroDuration
+                    self.formattedDuration = self.formatter.string(from: TimeInterval(self.avPlayer.totalDuration)) ?? self.formattedZeroDuration
                 }
             } catch {
                 error.logError()
+                
+                _ = await MainActor.run { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    
+                    self.reset()
+                    self.alertType = .genericError(localization: self.chatLocalization)
+                }
             }
         }
     }
@@ -153,7 +168,9 @@ private extension AudioPlayer {
             throw CommonError.failed("Unable to get Documents directory URL")
         }
 
-        let fileUrl = docDirectoryUrl.appendingPathComponent(fileName)
+        // Sanitize the filename to avoid path issues
+        let sanitizedFilename = sanitizeFilename(fileName)
+        let fileUrl = docDirectoryUrl.appendingPathComponent(sanitizedFilename)
 
         if FileManager().fileExists(atPath: fileUrl.path) {
             return fileUrl
@@ -170,14 +187,42 @@ private extension AudioPlayer {
                     }
 
                     do {
+                        // If destination file already exists, remove it first
+                        if FileManager.default.fileExists(atPath: fileUrl.path) {
+                            try FileManager.default.removeItem(at: fileUrl)
+                        }
+                        
+                        // Now move the temp file to the final destination
                         try FileManager.default.moveItem(at: location, to: fileUrl)
                         continuation.resume(returning: fileUrl)
                     } catch {
+                        LogManager.error("Failed to save audio file: \(error.localizedDescription)")
                         continuation.resume(throwing: error)
                     }
                 }
                 .resume()
             }
         }
+    }
+    
+    func sanitizeFilename(_ filename: String) -> String {
+        // Replace slashes and other problematic characters with underscores
+        let illegalCharacters = CharacterSet(charactersIn: ":/\\?%*|\"<>")
+        let components = filename.components(separatedBy: illegalCharacters)
+        let safeName = components.joined(separator: "_")
+        
+        // Ensure we don't have path traversal issues
+        let lastPathComponent = (safeName as NSString).lastPathComponent
+        
+        // Limit filename length to avoid filesystem issues and UI display problems
+        // while preserving the file extension and most of the original name
+        if lastPathComponent.count > 100 {
+            let fileExtension = (lastPathComponent as NSString).pathExtension
+            let nameWithoutExtension = (lastPathComponent as NSString).deletingPathExtension
+            let truncatedName = String(nameWithoutExtension.prefix(90))
+            return truncatedName + (fileExtension.isEmpty ? "" : "." + fileExtension)
+        }
+        
+        return lastPathComponent
     }
 }

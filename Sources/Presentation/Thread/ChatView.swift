@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -27,43 +27,50 @@ struct ChatView: View, Themed {
     @SwiftUI.Environment(\.colorScheme) var scheme
     
     @Binding private var hasMoreMessagesToLoad: Bool
-    @Binding private var isAgentTyping: Bool
+    @Binding private var typingAgent: ChatUser?
     @Binding private var isUserTyping: Bool
     @Binding private var isInputEnabled: Bool
     @Binding private var isProcessDialogVisible: Bool
     @Binding private var alertType: ChatAlertType?
-    
-    private let chatManager: ChatManager
+    @Binding private var messageGroups: [MessageGroup]
+
     private let attachmentRestrictions: AttachmentRestrictions
     private let onNewMessage: (ChatMessageType, [AttachmentItem]) -> Void
-    private let loadMoreMessages: () -> Void
+    private let loadMoreMessages: () async -> Void
     private let onRichMessageElementSelected: (_ textToSend: String?, RichMessageSubElementType) -> Void
+    private let queuePosition: Int?
     
     static let packageIdentifier = "CXoneChatUI"
-
+    
+    private static let bottomID = "bottom"
+    private static let messageGroupsVerticalSpace: CGFloat = 16
+    private static let typingIndicatorLeadingPadding: CGFloat = 16
+    
     // MARK: - Init
 
     init(
-        messages: Binding<[ChatMessage]>,
+        messageGroups: Binding<[MessageGroup]>,
         hasMoreMessagesToLoad: Binding<Bool>,
-        isAgentTyping: Binding<Bool>,
+        typingAgent: Binding<ChatUser?>,
         isUserTyping: Binding<Bool>,
         isInputEnabled: Binding<Bool>,
         isProcessDialogVisible: Binding<Bool>,
         alertType: Binding<ChatAlertType?>,
         attachmentRestrictions: AttachmentRestrictions,
+        queuePosition: Int? = nil,
         onNewMessage: @escaping (ChatMessageType, [AttachmentItem]) -> Void,
-        loadMoreMessages: @escaping () -> Void,
+        loadMoreMessages: @escaping () async -> Void,
         onRichMessageElementSelected: @escaping (_ textToSend: String?, RichMessageSubElementType) -> Void
     ) {
-        self.chatManager = ChatManager(messages: messages.wrappedValue)
+        self._messageGroups = messageGroups
         self._hasMoreMessagesToLoad = hasMoreMessagesToLoad
-        self._isAgentTyping = isAgentTyping
+        self._typingAgent = typingAgent
         self._isUserTyping = isUserTyping
         self._isInputEnabled = isInputEnabled
         self._isProcessDialogVisible = isProcessDialogVisible
         self._alertType = alertType
         self.attachmentRestrictions = attachmentRestrictions
+        self.queuePosition = queuePosition
         self.onNewMessage = onNewMessage
         self.loadMoreMessages = loadMoreMessages
         self.onRichMessageElementSelected = onRichMessageElementSelected
@@ -73,25 +80,19 @@ struct ChatView: View, Themed {
 
     var body: some View {
         VStack(spacing: 0) {
+            if let queuePosition {
+                LivechatPositionInQueueView(position: queuePosition)
+                    .padding(.top, 32)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 24)
+            }
+            
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
-                    if hasMoreMessagesToLoad {
-                        Button("Load more", action: loadMoreMessages)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 4)
-                            .font(.caption)
-                            .foregroundStyle(colors.foreground.base)
-                            .background(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(colors.background.interactivePrimary)
-                            )
-                            .padding(.bottom, 10)
-                    }
-                    
-                    let groupedMessages = chatManager.groupMessages()
-                    
                     LazyVStack {
-                        ForEach(groupedMessages) { group in
+                        Spacer(minLength: Self.messageGroupsVerticalSpace)
+                        
+                        ForEach(messageGroups) { group in
                             MessageGroupView(
                                 group: group,
                                 isProcessDialogVisible: $isProcessDialogVisible,
@@ -101,21 +102,28 @@ struct ChatView: View, Themed {
                             .id(group.id)
                         }
                     }
-                    .onChange(of: groupedMessages) { group in
+                    .onChange(of: messageGroups) { _ in
                         withAnimation {
-                            proxy.scrollTo(group.last?.id, anchor: .bottom)
+                            proxy.scrollTo(Self.bottomID, anchor: .bottom)
                         }
                     }
                     .onAppear {
-                        proxy.scrollTo(groupedMessages.last?.id, anchor: .bottom)
+                        proxy.scrollTo(messageGroups.last?.id, anchor: .bottom)
                     }
 
-                    if isAgentTyping {
-                        typingIndicator(proxy: proxy)
+                    if let typingAgent {
+                        typingIndicator(agent: typingAgent, proxy: proxy)
+                            .padding(.leading, Self.typingIndicatorLeadingPadding)
+                    }
+                    
+                    Spacer(minLength: Self.messageGroupsVerticalSpace)
+                        .id(Self.bottomID)
+                }
+                .if(hasMoreMessagesToLoad) { view in
+                    view.refreshable {
+                        await loadMoreMessages()
                     }
                 }
-                .frame(maxWidth: .infinity)
-                .clipped()
             }
 
             if isInputEnabled {
@@ -123,17 +131,15 @@ struct ChatView: View, Themed {
                     attachmentRestrictions: attachmentRestrictions,
                     isEditing: $isUserTyping,
                     alertType: $alertType,
+                    localization: localization,
                     onSend: onNewMessage
                 )
             } else {
                 archivedChatMessage
-                    .padding(.bottom, UIDevice.current.hasHomeButton ? 10 : 0)
+                    .padding(.bottom, UIDevice.hasHomeButton ? 10 : 0)
             }
         }
-        .background(style.backgroundColor)
-        .overlay(isVisible: $isProcessDialogVisible) {
-            attachmentsUploadOverlay
-        }
+        .background(colors.customizable.background)
     }
 }
 
@@ -141,14 +147,12 @@ struct ChatView: View, Themed {
 
 private extension ChatView {
 
-    func typingIndicator(proxy: ScrollViewProxy) -> some View {
+    func typingIndicator(agent: ChatUser?, proxy: ScrollViewProxy) -> some View {
         HStack {
-            TypingIndicator()
-                .id("typingIndicator")
-                .padding(.leading, 10)
+            TypingIndicator(agent: agent)
                 .onAppear {
                     withAnimation {
-                        proxy.scrollTo("typingIndicator")
+                        proxy.scrollTo(Self.bottomID)
                     }
                 }
 
@@ -158,91 +162,48 @@ private extension ChatView {
     
     var archivedChatMessage: some View {
         VStack(spacing: 10) {
-            Divider()
+            ColoredDivider(colors.customizable.background.opacity(0.5))
                 .padding(.horizontal, 24)
-                .foregroundColor(style.formTextColor)
-                .opacity(0.5)
             
             HStack {
-                Asset.Message.archived
+                Asset.Message.archiveFill
                 
-                Text(CXoneChat.shared.mode == .liveChat ? localization.chatMessageInputClosed : localization.chatMessageInputArchived)
+                Text(
+                    CXoneChat.shared.mode == .liveChat
+                        ? localization.chatMessageInputClosed
+                        : localization.chatMessageInputArchived
+                )
             }
-            .foregroundColor(style.formTextColor)
+            .foregroundColor(colors.customizable.onBackground)
             .opacity(0.5)
         }
-    }
-
-    var attachmentsUploadOverlay: some View {
-        HStack(spacing: 10) {
-            ProgressView()
-            
-            Text(localization.chatAttachmentsUpload)
-                .foregroundColor(style.formTextColor)
-        }
-        .tint(style.formTextColor.opacity(0.5))
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(style.backgroundColor)
-        )
     }
 }
 
 // MARK: - Previews
 
-struct ChatView_Previews: PreviewProvider {
-    
-    private static let messages = [
+#Preview {
+    let messageGroups = [
         MockData.textMessage(user: MockData.agent),
         MockData.imageMessage(user: MockData.customer),
         MockData.emojiMessage(user: MockData.agent)
-    ]
-    private static let hasMoreMessagesToLoad = true
-    private static let isAgentTyping = false
-    private static let isInputEnabled = true
-    private static let isProcessDialogVisible = false
-    private static let alertType: ChatAlertType? = nil
-    private static let attachmentRestrictions = AttachmentRestrictions(
-        allowedFileSize: 40,
-        allowedTypes: ["image/*", "video/*", "audio/*"],
-        areAttachmentsEnabled: true
+    ].groupMessages(interval: 120)
+    let alertType: ChatAlertType? = nil
+
+    return ChatView(
+        messageGroups: .constant(messageGroups),
+        hasMoreMessagesToLoad: .constant(true),
+        typingAgent: .constant(MockData.agent),
+        isUserTyping: .constant(false),
+        isInputEnabled: .constant(true),
+        isProcessDialogVisible: .constant(false),
+        alertType: .constant(alertType),
+        attachmentRestrictions: MockData.attachmentResrictions,
+        queuePosition: 3,
+        onNewMessage: { _, _ in },
+        loadMoreMessages: { },
+        onRichMessageElementSelected: { _, _ in }
     )
-    
-    static var previews: some View {
-        Group {
-            ChatView(
-                messages: .constant(messages),
-                hasMoreMessagesToLoad: .constant(hasMoreMessagesToLoad),
-                isAgentTyping: .constant(isAgentTyping),
-                isUserTyping: .constant(false),
-                isInputEnabled: .constant(isInputEnabled),
-                isProcessDialogVisible: .constant(isProcessDialogVisible),
-                alertType: .constant(alertType),
-                attachmentRestrictions: attachmentRestrictions,
-                onNewMessage: { _, _ in },
-                loadMoreMessages: { },
-                onRichMessageElementSelected: { _, _ in }
-            )
-            .previewDisplayName("Light mode")
-            
-            ChatView(
-                messages: .constant(messages),
-                hasMoreMessagesToLoad: .constant(hasMoreMessagesToLoad),
-                isAgentTyping: .constant(isAgentTyping),
-                isUserTyping: .constant(false),
-                isInputEnabled: .constant(isInputEnabled),
-                isProcessDialogVisible: .constant(isProcessDialogVisible),
-                alertType: .constant(alertType),
-                attachmentRestrictions: attachmentRestrictions,
-                onNewMessage: { _, _ in },
-                loadMoreMessages: { },
-                onRichMessageElementSelected: { _, _ in }
-            )
-            .preferredColorScheme(.dark)
-            .previewDisplayName("Light mode")
-        }
-        .environmentObject(ChatLocalization())
-        .environmentObject(ChatStyle())
-    }
+    .environmentObject(ChatLocalization())
+    .environmentObject(ChatStyle())
 }

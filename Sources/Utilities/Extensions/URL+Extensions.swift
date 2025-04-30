@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -30,19 +30,29 @@ extension URL {
 
     // MARK: - Methods
 
-    func getVideoThumbnail(maximumSize: CGSize) -> Image? {
+    func getVideoThumbnail() -> Image? {
+        let cacheKey = self.absoluteString + ":videoThumbnail"
+        // 1. Check cache first
+        if let data = AttachmentCache.shared.data(for: cacheKey),
+           let uiImage = UIImage(data: data) {
+            return Image(uiImage: uiImage)
+        }
+
+        // 2. Generate thumbnail
         let asset = AVAsset(url: self)
         let assetImgGenerate = AVAssetImageGenerator(asset: asset)
         assetImgGenerate.appliesPreferredTrackTransform = true
-        assetImgGenerate.maximumSize = maximumSize
 
         do {
             let img = try assetImgGenerate.copyCGImage(at: CMTimeMakeWithSeconds(1.0, preferredTimescale: 600), actualTime: nil)
-
-            return Image(uiImage: UIImage(cgImage: img))
+            let uiImage = UIImage(cgImage: img)
+            // 3. Cache the thumbnail
+            if let data = uiImage.pngData() {
+                AttachmentCache.shared.set(data, for: cacheKey)
+            }
+            return Image(uiImage: uiImage)
         } catch {
             error.logError()
-
             return nil
         }
     }

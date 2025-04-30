@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -15,18 +15,26 @@
 
 import SwiftUI
 
-struct SelectableAudioMessageCell: View {
+struct SelectableAudioMessageCell: View, Themed {
 
     // MARK: - Properties
 
     @ObservedObject private var attachmentsViewModel: AttachmentsViewModel
     @ObservedObject private var audioPlayer: AudioPlayer
 
-    @EnvironmentObject private var style: ChatStyle
+    @EnvironmentObject var style: ChatStyle
+    
+    @Environment(\.colorScheme) var scheme
 
     @Binding private var inSelectionMode: Bool
 
     private let item: SelectableAttachment
+    
+    static private let audioCellControlButtonSize: CGFloat = 10
+    static private let selectableAudioCellProgressBarHeight: CGFloat = 6
+    static private let selectableCircleEdgePadding: CGFloat = 10
+    static private let progressBarBottomPadding: CGFloat = 14
+    static private let playButtonHorizontalPadding: CGFloat = 35
 
     private var width: CGFloat {
         UIScreen.main.messageCellWidth
@@ -37,14 +45,18 @@ struct SelectableAudioMessageCell: View {
     init(
         item: SelectableAttachment,
         attachmentsViewModel: AttachmentsViewModel,
-        inSelectionMode: Binding<Bool>
+        inSelectionMode: Binding<Bool>,
+        alertType: Binding<ChatAlertType?>,
+        localization: ChatLocalization
     ) {
         self.attachmentsViewModel = attachmentsViewModel
         self.item = item
         self._inSelectionMode = inSelectionMode
         self.audioPlayer = AudioPlayer(
             url: AttachmentItemMapper.map(item.messageType)?.url ?? URL(fileURLWithPath: ""), 
-            fileName: AttachmentItemMapper.map(item.messageType)?.fileName ?? ""
+            fileName: AttachmentItemMapper.map(item.messageType)?.fileName ?? "",
+            alertType: alertType,
+            chatLocalization: localization
         )
         self.audioPlayer.prepare()
     }
@@ -54,14 +66,15 @@ struct SelectableAudioMessageCell: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             VStack {
-                progressBar
+                progressBarContainer
                     .padding(.top, StyleGuide.Message.paddingVertical)
                     .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
+                    .padding(.bottom, Self.progressBarBottomPadding)
                 
                 controlButtons
             }
             .frame(width: width, height: width)
-            .background(style.agentCellColor)
+            .background(colors.customizable.agentBackground)
             .cornerRadius(StyleGuide.Message.cornerRadius, corners: .allCorners)
             .onTapGesture {
                 if inSelectionMode {
@@ -71,7 +84,7 @@ struct SelectableAudioMessageCell: View {
 
             if inSelectionMode {
                 SelectableCircle(isSelected: item.isSelected)
-                    .padding([.top, .trailing], 10)
+                    .padding([.top, .trailing], Self.selectableCircleEdgePadding)
             }
         }
         .onAppear(perform: audioPlayer.prepare)
@@ -82,93 +95,121 @@ struct SelectableAudioMessageCell: View {
 
 private extension SelectableAudioMessageCell {
 
-    var progressBar: some View {
+    var progressBarContainer: some View {
+        HStack {
+            startingCounter
+            
+            progressBarIndicator
+            
+            countdownTimer
+        }
+    }
+    
+    var progressBarIndicator: some View {
         ZStack {
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color(.systemGray3))
-
+                        .fill(colors.customizable.customerText)
+                    
                     if !audioPlayer.progress.isNaN {
                         Capsule()
-                            .fill(style.agentFontColor)
-                            .frame(width: proxy.size.width * CGFloat(audioPlayer.progress), height: 4)
+                            .fill(colors.customizable.agentText)
+                            .frame(
+                                width: proxy.size.width * CGFloat(audioPlayer.progress),
+                                height: Self.selectableAudioCellProgressBarHeight
+                            )
                     }
                 }
             }
-            .frame( height: 4)
-
-            HStack {
-                Text(audioPlayer.formattedProgress)
-                    .font(.caption)
-                    .foregroundColor(style.agentFontColor)
-
-                Spacer()
-
-                Text(audioPlayer.formattedDuration)
-                    .font(.caption)
-                    .foregroundColor(style.agentFontColor)
-            }
-            .offset(y: 12)
+            .frame( height: Self.selectableAudioCellProgressBarHeight)
         }
+    }
+    
+    var startingCounter: some View {
+        Text(audioPlayer.formattedProgress)
+            .font(.caption)
+            .foregroundColor(colors.customizable.agentText)
+    }
+    
+    var countdownTimer: some View {
+        Text(audioPlayer.formattedDuration)
+            .font(.caption)
+            .foregroundColor(colors.customizable.agentText)
     }
 
     var controlButtons: some View {
         HStack {
-            Button {
-                audioPlayer.seek(-10)
-            } label: {
-                Asset.Attachment.rewind
-                    .imageScale(.large)
-            }
-            .frame(width: 44, height: 44)
-            .foregroundColor(style.agentFontColor)
+            rewindButton
 
-            Button {
-                if inSelectionMode {
-                    attachmentsViewModel.selectAttachment(uuid: item.id)
-                } else {
-                    if audioPlayer.isPlaying {
-                        audioPlayer.pause()
-                    } else {
-                        audioPlayer.play()
-                    }
-                }
+            playPauseButton
 
-            } label: {
-                (audioPlayer.isPlaying ? Asset.Attachment.pause : Asset.Attachment.play)
-                    .imageScale(.large)
-            }
-            .frame(width: 44, height: 44)
-            .foregroundColor(style.agentFontColor)
-
-            Button {
-                audioPlayer.seek(10)
-            } label: {
-                Asset.Attachment.advance
-                    .imageScale(.large)
-            }
-            .frame(width: 44, height: 44)
-            .foregroundColor(style.agentFontColor)
+            fwdButton
         }
+    }
+    
+    var rewindButton: some View {
+        Button {
+            audioPlayer.seek(-10)
+        } label: {
+            Asset.Attachment.rewind
+                .imageScale(.large)
+        }
+        .frame(
+            width: Self.audioCellControlButtonSize,
+            height: Self.audioCellControlButtonSize
+        )
+        .foregroundColor(colors.customizable.agentText)
+    }
+    
+    var playPauseButton: some View {
+        Button {
+            if inSelectionMode {
+                attachmentsViewModel.selectAttachment(uuid: item.id)
+            } else {
+                if audioPlayer.isPlaying {
+                    audioPlayer.pause()
+                } else {
+                    audioPlayer.play()
+                }
+            }
+
+        } label: {
+            (audioPlayer.isPlaying ? Asset.Attachment.pause : Asset.Attachment.play)
+                .imageScale(.large)
+        }
+        .frame(
+            width: Self.audioCellControlButtonSize,
+            height: Self.audioCellControlButtonSize
+        )
+        .foregroundColor(colors.customizable.agentText)
+        .padding(.horizontal, Self.playButtonHorizontalPadding)
+    }
+    
+    var fwdButton: some View {
+        Button {
+            audioPlayer.seek(10)
+        } label: {
+            Asset.Attachment.advance
+                .imageScale(.large)
+        }
+        .frame(
+            width: Self.audioCellControlButtonSize,
+            height: Self.audioCellControlButtonSize
+        )
+        .foregroundColor(colors.customizable.agentText)
     }
 }
 
 // MARK: - Preview
 
-struct SelectableAudioMessageCell_Previews: PreviewProvider {
-    
-    static let viewModel = AttachmentsViewModel(messageTypes: [])
-
-    static var previews: some View {
-        Group {
-            SelectableAudioMessageCell(item: MockData.selectableAudioAttachment, attachmentsViewModel: viewModel, inSelectionMode: .constant(false))
-                .previewDisplayName("Light Mode")
-
-            SelectableAudioMessageCell(item: MockData.selectableAudioAttachment, attachmentsViewModel: viewModel, inSelectionMode: .constant(false))
-                .previewDisplayName("Dark Mode")
-                .preferredColorScheme(.dark)
-        }
-        .environmentObject(ChatStyle())
-    }
+#Preview {
+    SelectableAudioMessageCell(
+        item: MockData.selectableAudioAttachment,
+        attachmentsViewModel: AttachmentsViewModel(messageTypes: []),
+        inSelectionMode: .constant(false),
+        alertType: .constant(nil),
+        localization: ChatLocalization()
+    )
+    .environmentObject(ChatStyle())
 }

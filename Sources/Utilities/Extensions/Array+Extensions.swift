@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -21,11 +21,6 @@ extension Array {
     /// Returns the element at the specified index if it is within bounds, otherwise nil.
     subscript (safe index: Index) -> Element? {
         indices.contains(index) ? self[index] : nil
-    }
-
-    /// Implements += for a single element as opposed to an array of elements.
-    static func += (lhs: inout Self, item: Element) {
-        lhs.append(item)
     }
 }
 
@@ -59,18 +54,5 @@ extension Array {
                 result.append([element])
             }
         }
-    }
-}
-
-// MARK: - ChatThread
-
-extension Array where Element == ChatThread {
-    
-    func thread(by id: UUID) -> ChatThread? {
-        self.first { $0.id == id }
-    }
-    
-    func index(of id: UUID) -> Int? {
-        self.firstIndex { $0.id == id }
     }
 }

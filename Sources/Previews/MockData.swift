@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -30,168 +30,257 @@ enum MockData {
         URL(string: "https://picsum.photos/id/\(Int.random(in: 1...700))/300/300").unsafelyUnwrapped
     }
     static var imageItem: AttachmentItem {
-        AttachmentItem(url: imageUrl, friendlyName: "Photo", mimeType: imageUrl.mimeType, fileName: imageUrl.lastPathComponent)
+        AttachmentItem(url: imageUrl, friendlyName: "photo_300/300", mimeType: imageUrl.mimeType, fileName: "\(imageUrl.lastPathComponent).jpg")
     }
     
     static let selectableVideoAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .video(videoItem))
     static let selectableImageAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .image(imageItem))
     static let selectableAudioAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .audio(audioItem))
+    static let selectableDocumentAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .documentPreview(docPreviewItem))
 
-    static let audioUrl = URL(string: "https://www2.cs.uic.edu/~i101/SoundFiles/gettysburg10.wav").unsafelyUnwrapped
-    static let audioItem = AttachmentItem(url: audioUrl, friendlyName: "Gettysburg", mimeType: audioUrl.mimeType, fileName: audioUrl.lastPathComponent)
+    static let audioUrl = URL(string: "https://file-examples.com/storage/fe11f9541a67d9f2f9b2038/2017/11/file_example_MP3_700KB.mp3").unsafelyUnwrapped
+    static let audioItem = AttachmentItem(
+        url: audioUrl,
+        friendlyName: "file_example_MP3_700KB",
+        mimeType: audioUrl.mimeType,
+        fileName: audioUrl.lastPathComponent
+    )
     
     static let videoUrl = URL(string: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4").unsafelyUnwrapped
     static let videoItem = AttachmentItem(url: videoUrl, friendlyName: "Big Buck Bunny", mimeType: videoUrl.mimeType, fileName: videoUrl.lastPathComponent)
     
-    static let linkPreviewUrl = URL(string: "https://www.soundczech.cz/temp/lorem-ipsum.pdf").unsafelyUnwrapped
-    static let linkPreviewItem = AttachmentItem(
-        url: linkPreviewUrl,
-        friendlyName: "Lorem Ipsum",
-        mimeType: linkPreviewUrl.mimeType,
-        fileName: linkPreviewUrl.lastPathComponent
+    static let pdfPreviewUrl = URL(string: "https://www.soundczech.cz/temp/lorem-ipsum.pdf").unsafelyUnwrapped
+    static let pdfPreviewItem = AttachmentItem(
+        url: pdfPreviewUrl,
+        friendlyName: "sample PDF",
+        mimeType: pdfPreviewUrl.mimeType,
+        fileName: pdfPreviewUrl.lastPathComponent
+    )
+    static let docPreviewURL = URL(string: "https://file-examples.com/wp-content/storage/2017/02/file-sample_100kB.doc").unsafelyUnwrapped
+    static let docPreviewItem = AttachmentItem(
+        url: docPreviewURL, 
+        friendlyName: "sample DOC",
+        mimeType: docPreviewURL.mimeType,
+        fileName: docPreviewURL.lastPathComponent
+    )
+    static let xlsPreviewURL = URL(string: "https://file-examples.com/wp-content/storage/2017/02/file_example_XLS_10.xls").unsafelyUnwrapped
+    static let xlsPreviewItem = AttachmentItem(
+        url: xlsPreviewURL,
+        friendlyName: "sample XLS",
+        mimeType: xlsPreviewURL.mimeType,
+        fileName: xlsPreviewURL.lastPathComponent
+    )
+    static let pptPreviewURL = URL(string: "https://file-examples.com/wp-content/storage/2017/08/file_example_PPT_250kB.ppt").unsafelyUnwrapped
+    static let pptPreviewItem = AttachmentItem(
+        url: pptPreviewURL,
+        friendlyName: "sample PPT",
+        mimeType: pptPreviewURL.mimeType,
+        fileName: pptPreviewURL.lastPathComponent
     )
     static let listPickerItem = ListPickerItem(title: Lorem.word(), message: Lorem.sentence(), buttons: richMessageOptions())
-    static let quickRepliesItem = QuickRepliesItem(title: Lorem.word(), message: Lorem.sentence(), options: quickReplyOptions())
+    static let quickRepliesItem = QuickRepliesItem(title: Lorem.sentence(), message: Lorem.sentence(), options: quickReplyOptions())
     static let richLinkItem = RichLinkItem(title: Lorem.words(), url: videoUrl, imageUrl: imageUrl)
     
     static let customer = ChatUser(id: UUID().uuidString, userName: "Peter Parker", avatarURL: nil, isAgent: false)
     static let agent = ChatUser(id: UUID().uuidString, userName: "John Doe", avatarURL: imageUrl, isAgent: true)
     
+    static let attachmentResrictions = AttachmentRestrictions(
+        allowedFileSize: 40,
+        allowedTypes: ["image/*", "video/*", "audio/*"],
+        areAttachmentsEnabled: true
+    )
+    
     // MARK: - Methods
     
-    static func textMessage(user: ChatUser? = nil, date: Date = Date()) -> ChatMessage {
+    static func textMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
             id: UUID(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(Lorem.sentence())],
             date: date,
-            status: .seen
+            status: status
         )
     }
     
-    static func hyperlinkMessage(user: ChatUser? = nil, date: Date = Date()) -> ChatMessage {
+    static func hyperlinkMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
             id: UUID(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(hyperlinkContent)],
             date: date,
-            status: .seen
+            status: status
         )
     }
     
-    static func phoneNumberMessage(user: ChatUser? = nil, date: Date = Date()) -> ChatMessage {
+    static func phoneNumberMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
             id: UUID(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(phoneNumberContent)],
             date: date,
-            status: .seen
+            status: status
         )
     }
     
-    static func emojiMessage(count: Int = .zero, user: ChatUser? = nil, date: Date = Date()) -> ChatMessage {
+    static func emojiMessage(count: Int = .zero, user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
             id: UUID(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(randomEmoji(count: count).joined())],
             date: date,
-            status: .seen
+            status: status
         )
     }
     
-    static func imageMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date()) -> ChatMessage {
+    static func imageMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
             id: UUID(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .image(imageItem) },
             date: date,
-            status: .seen
+            status: status
         )
     }
     
-    static func imageMessageWithText(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date()) -> ChatMessage {
-        ChatMessage(
+    static func imageMessageWithText(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+        var content: [ChatMessageType] = [.text(Lorem.sentence())]
+        content.append(contentsOf: (1...(elementsCount ?? 1)).map { _ in .image(imageItem) })
+        
+        return ChatMessage(
             id: UUID(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
-            types: [.text(Lorem.sentence()), .image(imageItem)],
+            types: content,
             date: date,
-            status: .seen
+            status: status
         )
     }
     
-    static func videoMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date()) -> ChatMessage {
+    static func videoMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
             id: UUID(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .video(videoItem) },
             date: date,
-            status: .seen
+            status: status
         )
     }
     
-    static func audioMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date()) -> ChatMessage {
+    static func audioMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
             id: UUID(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .audio(audioItem) },
             date: date,
-            status: .seen
+            status: status
         )
     }
     
-    static func linkPreviewMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date()) -> ChatMessage {
-        ChatMessage(
-            id: UUID(),
-            user: user ?? [customer, agent].random().unsafelyUnwrapped,
-            types: (1...(elementsCount ?? 1)).map { _ in .linkPreview(linkPreviewItem) },
-            date: date,
-            status: .seen
-        )
-    }
-    
-    static func multiAttachmentsMessage(user: ChatUser? = nil, date: Date = Date()) -> ChatMessage {
+    static func multipleMediaAttachmentsMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
             id: UUID(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [
+                .text(Lorem.sentence()),
                 .image(imageItem),
-                .video(videoItem),
+                .documentPreview(pdfPreviewItem),
                 .image(imageItem),
                 .audio(audioItem),
                 .image(imageItem)
             ],
             date: date,
-            status: .seen
+            status: status
         )
     }
     
-    static func quickRepliesMessage(date: Date = Date()) -> ChatMessage {
-        ChatMessage(id: UUID(), user: agent, types: [.richContent(.quickReplies(quickRepliesItem))], date: date, status: .seen)
+    static func multipleDocumentAttachmentsMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+        ChatMessage(
+            id: UUID(),
+            user: user ?? [customer, agent].random().unsafelyUnwrapped,
+            types: [
+                .text(Lorem.sentence()),
+                .documentPreview(pdfPreviewItem),
+                .documentPreview(docPreviewItem),
+                .documentPreview(pptPreviewItem),
+                .documentPreview(xlsPreviewItem),
+                .documentPreview(docPreviewItem)
+            ],
+            date: date,
+            status: status
+        )
     }
     
-    static func listPickerMessage(date: Date = Date()) -> ChatMessage {
-        ChatMessage(id: UUID(), user: agent, types: [.richContent(.listPicker(listPickerItem))], date: date, status: .seen)
+    static func quickRepliesMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+        ChatMessage(id: UUID(), user: agent, types: [.richContent(.quickReplies(quickRepliesItem))], date: date, status: status)
     }
     
-    static func richLinkMessage(date: Date = Date()) -> ChatMessage {
-        ChatMessage(id: UUID(), user: agent, types: [.richContent(.richLink(richLinkItem))], date: date, status: .seen)
+    static func listPickerMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+        ChatMessage(id: UUID(), user: agent, types: [.richContent(.listPicker(listPickerItem))], date: date, status: status)
     }
     
-    static let chatHistory: [ChatMessage] = [
-        textMessage(user: customer, date: Date.from(year: 2023, month: 1, day: 24, hour: 12, minute: 30)),
-        textMessage(user: customer, date: Date.from(year: 2023, month: 1, day: 24, hour: 12, minute: 34)),
-        textMessage(user: customer, date: Date.from(year: 2023, month: 1, day: 24, hour: 12, minute: 34, second: 1)),
-        textMessage(user: customer, date: Date.from(year: 2023, month: 1, day: 24, hour: 12, minute: 39)),
-        textMessage(user: customer, date: Date.from(year: 2023, month: 1, day: 24, hour: 12, minute: 39, second: 1)),
-        textMessage(user: customer, date: Date.from(year: 2023, month: 1, day: 24, hour: 12, minute: 39, second: 2)),
-        textMessage(user: agent, date: Date.from(year: 2023, month: 1, day: 24, hour: 12, minute: 40)),
-        textMessage(user: agent, date: Date.from(year: 2023, month: 1, day: 24, hour: 12, minute: 40, second: 1)),
-        textMessage(user: customer, date: Date.from(year: 2023, month: 1, day: 24, hour: 12, minute: 41)),
-        textMessage(user: customer, date: Date().adding(.day, value: -1).adding(.hour, value: -1).adding(.minute, value: -2)),
-        textMessage(user: agent, date: Date().adding(.day, value: -1).adding(.hour, value: -1)),
-        textMessage(user: customer, date: Date().adding(.minute, value: -2)),
-        textMessage(user: agent, date: Date())
-    ]
+    static func richLinkMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+        ChatMessage(id: UUID(), user: agent, types: [.richContent(.richLink(richLinkItem))], date: date, status: status)
+    }
+
+    static func textFieldEntity() -> TextFieldEntity {
+        TextFieldEntity(label: "First Name", isRequired: true, ident: "firstName", isEmail: false)
+    }
+
+    static func listFieldEntity() -> ListFieldEntity {
+        ListFieldEntity(label: "Color", isRequired: false, ident: "color", options: ["blue": "Blue", "yellow": "Yellow"])
+    }
+
+    static func treeFieldEntity() -> TreeFieldEntity {
+        TreeFieldEntity(
+            label: "Devices",
+            isRequired: true,
+            ident: "devices",
+            children: treeNodeFieldEntityChildren(),
+            value: "iphone_14"
+        )
+    }
+    
+    static func treeNodeFieldEntityChildren() -> [TreeNodeFieldEntity] {
+        [
+            TreeNodeFieldEntity(label: "Mobile Phone", value: "phone", children: [
+                TreeNodeFieldEntity(label: "Apple", value: "apple", children: [
+                    TreeNodeFieldEntity(label: "iPhone 14", value: "iphone_14"),
+                    TreeNodeFieldEntity(label: "iPhone 14 Pro", value: "iphone_14_pro"),
+                    TreeNodeFieldEntity(label: "iPhone 15", value: "iphone_15"),
+                    TreeNodeFieldEntity(label: "iPhone 15 Pro", value: "iphone_15_pro")
+                ]),
+                TreeNodeFieldEntity(label: "Android", value: "android", children: [
+                    TreeNodeFieldEntity(label: "Samsung", value: "samsung", children: [
+                        TreeNodeFieldEntity(label: "Galaxy A5", value: "samsung_galaxy_a5"),
+                        TreeNodeFieldEntity(label: "Galaxy A51", value: "samsung_galaxy_a51"),
+                        TreeNodeFieldEntity(label: "Galaxy S5", value: "samsung_galaxy_s5")
+                    ]),
+                    TreeNodeFieldEntity(label: "Xiaomi", value: "xiaomi", children: [
+                        TreeNodeFieldEntity(label: "mi 5", value: "xiaomi_mi_5"),
+                        TreeNodeFieldEntity(label: "mi 6", value: "xiaomi_mi_6"),
+                        TreeNodeFieldEntity(label: "mi 7", value: "xiaomi_mi_7")
+                    ])
+                ])
+            ]),
+            TreeNodeFieldEntity(label: "Laptop", value: "laptop", children: [
+                TreeNodeFieldEntity(label: "Windows", value: "windows", children: [
+                    TreeNodeFieldEntity(label: "Acer", value: "acer", children: [
+                        TreeNodeFieldEntity(label: "Aspire E5", value: "acer_aspire_e5"),
+                        TreeNodeFieldEntity(label: "Aspire E5 Pro", value: "acer_aspire_e5_pro")
+                    ]),
+                    TreeNodeFieldEntity(label: "Asus", value: "asus", children: [
+                        TreeNodeFieldEntity(label: "ZenBook", value: "zenbook"),
+                        TreeNodeFieldEntity(label: "ZenBook Pro", value: "zenbook_pro")
+                    ])
+                ]),
+                TreeNodeFieldEntity(label: "MacOS", value: "macos", children: [
+                    TreeNodeFieldEntity(label: "MacBook", value: "macbook"),
+                    TreeNodeFieldEntity(label: "MacBook Air", value: "macbook_air"),
+                    TreeNodeFieldEntity(label: "MacBook Pro", value: "macbook_pro")
+                ])
+            ]),
+            TreeNodeFieldEntity(label: "Other", value: "other")
+        ]
+    }
 }
 
 // MARK: - Helpers
@@ -218,14 +307,18 @@ extension MockData {
     static func quickReplyOptions() -> [RichMessageButton] {
         (0..<Int.random(in: 2...5))
             .map { _ -> RichMessageButton in
-                RichMessageButton(title: Lorem.words(nbWords: Int.random(in: 1..<3)), iconUrl: imageUrl)
+                RichMessageButton(title: Lorem.words(nbWords: Int.random(in: 1..<3)), iconUrl: nil)
             }
     }
     
-    static func richMessageOptions() -> [RichMessageSubElementType] {
+    static func richMessageOptions() -> [RichMessageButton] {
         (0..<Int.random(in: 2...5))
-            .map { _ -> RichMessageSubElementType in
-                .button(RichMessageButton(title: Lorem.words(nbWords: Int.random(in: 1..<3)), iconUrl: imageUrl))
+            .map { _ -> RichMessageButton in
+                RichMessageButton(
+                    title: Lorem.words(nbWords: Int.random(in: 1..<3)),
+                    description: Bool.random() ? Lorem.sentence() : nil,
+                    iconUrl: Bool.random() ? imageUrl : nil
+                )
             }
     }
 }

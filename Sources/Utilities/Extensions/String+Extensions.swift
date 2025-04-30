@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -19,56 +19,20 @@ extension String {
     
     // MARK: - Properties
     
-    var isSingleEmoji: Bool {
-        count == 1 && containsEmoji
-    }
+    private static let maxEmojiCountForLargeTitle = 3
     
-    var containsEmoji: Bool {
-        contains(where: \.isEmoji)
+    var isLargeEmoji: Bool {
+        self.containsOnlyEmoji && self.count <= Self.maxEmojiCountForLargeTitle
     }
     
     var containsOnlyEmoji: Bool {
         !isEmpty && !contains { !$0.isEmoji }
     }
     
-    var emojiString: String {
-        emojis.map(\.description).reduce("", +)
-    }
-    
-    var emojis: [Character] {
-        filter(\.isEmoji)
-    }
-    
-    var emojiScalars: [UnicodeScalar] {
-        filter(\.isEmoji)
-            .flatMap(\.unicodeScalars)
-    }
-    
     // MARK: - Methods
     
     func nilIfEmpty() -> String? {
         isEmpty ? nil : self
-    }
-    
-    func contains(pattern: String) -> Bool {
-        guard let regex = try? NSRegularExpression(pattern: pattern) else {
-            return false
-        }
-        
-        return regex.firstMatch(in: self, options: [], range: NSRange(location: 0, length: self.utf16.count)) != nil
-    }
-}
-
-// MARK: - Optional
-
-extension String? {
-
-    var isNilOrEmpty: Bool {
-        self?.isEmpty != false
-    }
-    
-    func nilIfEmpty() -> String? {
-        isNilOrEmpty ? nil : self
     }
 }
 

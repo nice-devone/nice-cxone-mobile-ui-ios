@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import Foundation
 /// This struct is designed for representing attachments or files with associated metadata,
 /// making it suitable for various use cases, such as sharing files, resources, or documents.
 /// The `url` points to the attachment, and the `mimeType` and `fileName` provide additional information about the attachment's content.
-public struct AttachmentItem: Hashable {
+public struct AttachmentItem: Hashable, Equatable {
 
     // MARK: - Properties
     
@@ -36,6 +36,9 @@ public struct AttachmentItem: Hashable {
     /// The file name of the attachment.
     public let fileName: String
     
+    /// Indicates whether this attachment requires security-scoped resource access
+    public let requiresSecurityScope: Bool
+    
     // MARK: - Init
     
     /// Initialization of the AttachmentItem
@@ -45,10 +48,11 @@ public struct AttachmentItem: Hashable {
     ///   - friendlyName: A user-friendly name or label for the attachment.
     ///   - mimeType: The MIME type of the attachment, specifying its content type.
     ///   - fileName: The file name of the attachment.
-    public init(url: URL, friendlyName: String, mimeType: String, fileName: String) {
+    public init(url: URL, friendlyName: String, mimeType: String, fileName: String, requiresSecurityScope: Bool = false) {
         self.url = url
         self.friendlyName = friendlyName
         self.mimeType = mimeType
         self.fileName = fileName
+        self.requiresSecurityScope = requiresSecurityScope
     }
 }

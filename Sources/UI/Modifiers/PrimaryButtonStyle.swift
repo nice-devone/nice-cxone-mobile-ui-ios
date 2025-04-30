@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -15,40 +15,37 @@
 
 import SwiftUI
 
-struct PrimaryButtonStyle: ButtonStyle {
-    
-    // MARK: - Properties
-    
-    // Note: Apparently this can't be accessed via @EnvironmentObject on iOS 14,
-    // so we have to pass it in from somewhere else that has it.
-    private let chatStyle: ChatStyle
+extension ButtonStyle where Self == PrimaryButtonStyle {
 
-    // MARK: - Constructors
-
-    init(chatStyle: ChatStyle) {
-        self.chatStyle = chatStyle
-    }
-    
-    // MARK: - Methods
-    
-    func makeBody(configuration: ButtonStyle.Configuration) -> some View {
-        configuration.label
-            .adjustForA11y()
-            .frame(maxWidth: .infinity)
-            .foregroundColor(chatStyle.buttonTextColor)
-            .background(configuration.isPressed ? chatStyle.buttonBackgroundColor.opacity(0.8) : chatStyle.buttonBackgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+    static var primary: PrimaryButtonStyle {
+        PrimaryButtonStyle()
     }
 }
 
-// MARK: - Preview
-
-struct PrimaryButtonStyle_Previews: PreviewProvider {
+struct PrimaryButtonStyle: ButtonStyle, Themed {
     
-    static var previews: some View {
-        Button("Button") { }
-            .padding()
-            .buttonStyle(PrimaryButtonStyle(chatStyle: ChatStyle()))
-            .environmentObject(ChatStyle())
+    // MARK: - Properties
+    
+    @EnvironmentObject var style: ChatStyle
+    
+    @Environment(\.colorScheme) var scheme
+    
+    // MARK: - Builder
+    
+    func makeBody(configuration: Configuration) -> some View {
+        CustomButton(
+            configuration: configuration,
+            foregroundColor: colors.customizable.onPrimary,
+            backgroundColor: colors.customizable.primary
+        )
     }
+}
+
+// MARK: - Previews
+
+#Preview {
+    Button("Button") { }
+        .padding()
+        .buttonStyle(.primary)
+        .environmentObject(ChatStyle())
 }

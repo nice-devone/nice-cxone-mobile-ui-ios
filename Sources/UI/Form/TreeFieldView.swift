@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -15,42 +15,37 @@
 
 import SwiftUI
 
-struct TreeFieldView: View {
+struct TreeFieldView: View, Themed {
 
     // MARK: - Properties
 
-    @EnvironmentObject private var style: ChatStyle
-    @EnvironmentObject private var localization: ChatLocalization
+    @EnvironmentObject var style: ChatStyle
+    @EnvironmentObject var localization: ChatLocalization
+    
+    @Environment(\.colorScheme) var scheme
     
     @ObservedObject var entity: TreeFieldEntity
-    
-    @State private var selectedNodeId: UUID?
+
+    static let disclosureIndicatorTrailingPadding: CGFloat = 13
+    static let paddingBottomTitle: CGFloat = 20
+    static let paddingLeadingIndentation: CGFloat = 22
+    static let paddingVerticalCell: CGFloat = 10
     
     // MARK: - Init
     
     init(entity: TreeFieldEntity) {
         self.entity = entity
-        self.selectedNodeId = entity.children.find(with: entity.value)?.id
     }
     
     // MARK: - Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(entity.label)
-                .font(.caption)
-                .foregroundColor(style.formTextColor)
+        VStack(alignment: .leading, spacing: .zero) {
+            titleView
             
-            ForEach(entity.children, id: \.id) { node in
-                cell(node: node, leadingPadding: 0)
-                    .padding(.vertical, 4)
-            }
-            
-            if entity.isRequired {
-                Text(localization.commonRequired)
-                    .font(.caption)
-                    .foregroundColor(style.formErrorColor)
-            }
+            nodeListView
+
+            requiredFieldView
         }
     }
 }
@@ -58,69 +53,113 @@ struct TreeFieldView: View {
 // MARK: - Subviews
 
 private extension TreeFieldView {
-
-    @ViewBuilder
+    
     func cell(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
-        if let children = node.children, !children.isEmpty {
-            DisclosureGroupView(node: node, isExpanded: !entity.value.isEmpty) {
-                ForEach(children, id: \.id) { child in
-                    AnyView(cell(node: child, leadingPadding: leadingPadding + 20))
-                }
-            } label: {
-                Text(node.label)
-                    .padding(.leading, leadingPadding)
-                    .foregroundColor(style.formTextColor)
-            }
-        } else {
-            HStack {
-                Text(node.label)
-                    .padding(.leading, leadingPadding)
-                    .foregroundColor(style.formTextColor)
-                
-                Spacer()
-
-                if entity.value == node.value {
-                    Asset.check
-                        .foregroundColor(style.formTextColor)
-                }
-            }
-            .padding(.vertical, 4)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                node.isSelected.toggle()
-                
-                let shouldDeselectNode = selectedNodeId != nil && selectedNodeId == node.id
-                selectedNodeId = shouldDeselectNode ? nil : node.id
-                entity.value = shouldDeselectNode ? "" : node.value
+        VStack(spacing: 0) {
+            if let children = node.children, !children.isEmpty {
+                parentNodeView(node: node, leadingPadding: leadingPadding)
+            } else {
+                leafNodeView(node: node, leadingPadding: leadingPadding)
             }
         }
     }
-}
-
-private struct DisclosureGroupView<Label, Content>: View where Label: View, Content: View {
-    
-    // MARK: - Properties
-    
-    @EnvironmentObject private var style: ChatStyle
-    
-    @State private var isExpanded: Bool
-    
-    let node: TreeNodeFieldEntity
-    var content: () -> Content
-    var label: () -> Label
-    
-    init(node: TreeNodeFieldEntity, isExpanded: Bool, content: @escaping () -> Content, label: @escaping () -> Label) {
-        self.node = node
-        self.isExpanded = isExpanded
-        self.content = content
-        self.label = label
+        
+    func parentNodeView(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
+        DisclosureGroupView(isExpanded: !entity.value.isEmpty) {
+            childrenListView(children: node.children ?? [], leadingPadding: leadingPadding)
+        } label: {
+            nodeLabelView(node: node, leadingPadding: leadingPadding)
+        }
     }
     
-    // MARK: - Builder
+    func leafNodeView(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(node.label)
+                    .padding(.leading, leadingPadding)
+                    .foregroundStyle(colors.customizable.onBackground)
+                
+                Spacer()
+                
+                if entity.value == node.value {
+                    Asset.check
+                        .foregroundStyle(colors.customizable.primary)
+                        .padding(.trailing, Self.disclosureIndicatorTrailingPadding)
+                }
+            }
+            .contentShape(Rectangle())
+            
+            ColoredDivider(colors.customizable.onBackground.opacity(0.1))
+                .padding(.vertical, Self.paddingVerticalCell)
+        }
+        .onTapGesture {
+            node.isSelected.toggle()
+        
+            if entity.value == node.value {
+                entity.value = ""
+            } else {
+                entity.value = node.value
+            }
+        }
+    }
+
+    func nodeLabelView(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(node.label)
+                    .foregroundStyle(colors.customizable.onBackground)
+                    .padding(.leading, leadingPadding)
+                
+                Spacer()
+            }
+            
+            conditionalDividerView
+        }
+        .background(colors.customizable.background)
+    }
+
+    func childrenListView(children: [TreeNodeFieldEntity], leadingPadding: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            ForEach(children.indices, id: \.self) { index in
+                let child = children[index]
+                AnyView(
+                    cell(node: child, leadingPadding: leadingPadding + Self.paddingLeadingIndentation)
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    var conditionalDividerView: some View {
+        if #unavailable(iOS 16) {
+            ColoredDivider(colors.customizable.onBackground.opacity(0.1))
+                .padding(.vertical, Self.paddingVerticalCell)
+        }
+    }
     
-    var body: some View {
-        DisclosureGroup(isExpanded: $isExpanded, content: content, label: label)
-            .foregroundColor(style.formTextColor)
+    var titleView: some View {
+        Text(entity.formattedTitle)
+            .font(.callout)
+            .bold()
+            .foregroundStyle(colors.customizable.onBackground)
+            .padding(.bottom, Self.paddingBottomTitle)
+    }
+    
+    var nodeListView: some View {
+        ForEach(entity.children, id: \.id) { node in
+            cell(node: node, leadingPadding: 0)
+        }
+    }
+    
+    @ViewBuilder
+    var requiredFieldView: some View {
+        if entity.isRequired {
+            Text(localization.commonRequired)
+                .font(.caption)
+                .foregroundStyle(colors.background.errorContrast)
+        } else {
+            EmptyView()
+        }
     }
 }
 
@@ -128,67 +167,13 @@ private struct DisclosureGroupView<Label, Content>: View where Label: View, Cont
 
 struct TreeFieldView_Previews: PreviewProvider {
     
-    private static let entity = TreeFieldEntity(
-        label: "Devices",
-        isRequired: true,
-        ident: "devices",
-        children: [
-            TreeNodeFieldEntity(label: "Mobile Phone", value: "phone", children: [
-                TreeNodeFieldEntity(label: "Apple", value: "apple", children: [
-                    TreeNodeFieldEntity(label: "iPhone 14", value: "iphone_14"),
-                    TreeNodeFieldEntity(label: "iPhone 14 Pro", value: "iphone_14_pro"),
-                    TreeNodeFieldEntity(label: "iPhone 15", value: "iphone_15"),
-                    TreeNodeFieldEntity(label: "iPhone 15 Pro", value: "iphone_15_pro")
-                ]),
-                TreeNodeFieldEntity(label: "Android", value: "android", children: [
-                    TreeNodeFieldEntity(label: "Samsung", value: "samsung", children: [
-                        TreeNodeFieldEntity(label: "Galaxy A5", value: "samsung_galaxy_a5"),
-                        TreeNodeFieldEntity(label: "Galaxy A51", value: "samsung_galaxy_a51"),
-                        TreeNodeFieldEntity(label: "Galaxy S5", value: "samsung_galaxy_s5")
-                    ]),
-                    TreeNodeFieldEntity(label: "Xiaomi", value: "xiaomi", children: [
-                        TreeNodeFieldEntity(label: "mi 5", value: "xiaomi_mi_5"),
-                        TreeNodeFieldEntity(label: "mi 6", value: "xiaomi_mi_6"),
-                        TreeNodeFieldEntity(label: "mi 7", value: "xiaomi_mi_7")
-                    ])
-                ])
-            ]),
-            TreeNodeFieldEntity(label: "Laptop", value: "laptop", children: [
-                TreeNodeFieldEntity(label: "Windows", value: "windows", children: [
-                    TreeNodeFieldEntity(label: "Acer", value: "acer", children: [
-                        TreeNodeFieldEntity(label: "Aspire E5", value: "acer_aspire_e5"),
-                        TreeNodeFieldEntity(label: "Aspire E5 Pro", value: "acer_aspire_e5_pro")
-                    ]),
-                    TreeNodeFieldEntity(label: "Asus", value: "asus", children: [
-                        TreeNodeFieldEntity(label: "ZenBook", value: "zenbook"),
-                        TreeNodeFieldEntity(label: "ZenBook Pro", value: "zenbook_pro")
-                    ])
-                ]),
-                TreeNodeFieldEntity(label: "MacOS", value: "macos", children: [
-                    TreeNodeFieldEntity(label: "MacBook", value: "macbook"),
-                    TreeNodeFieldEntity(label: "MacBook Air", value: "macbook_air"),
-                    TreeNodeFieldEntity(label: "MacBook Pro", value: "macbook_pro")
-                ])
-            ]),
-            TreeNodeFieldEntity(label: "Other", value: "other")
-        ],
-        value: "iphone_14"
-    )
-    
     static var previews: some View {
         Group {
             ScrollView {
-                TreeFieldView(entity: entity)
+                TreeFieldView(entity: MockData.treeFieldEntity())
             }
             .previewDisplayName("Light Mode")
-            
-            ScrollView {
-                TreeFieldView(entity: entity)
-            }
-            .preferredColorScheme(.dark)
-            .previewDisplayName("Dark Mode")
         }
-        .padding(.horizontal, 16)
         .environmentObject(ChatStyle())
         .environmentObject(ChatLocalization())
     }

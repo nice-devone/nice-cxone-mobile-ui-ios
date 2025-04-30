@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -14,117 +14,96 @@
 //
 
 import AVFoundation
-import Kingfisher
+import AVKit
 import SwiftUI
 
-struct VideoMessageCell: View {
+struct VideoMessageCell: View, Themed {
 
     // MARK: - Properties
     
-    @ObservedObject private var viewModel: VideoMessageCellViewModel
+    @StateObject private var viewModel: VideoMessageCellViewModel
 
-    @EnvironmentObject private var style: ChatStyle
+    @EnvironmentObject var style: ChatStyle
+    @EnvironmentObject var localization: ChatLocalization
 
-    @Environment(\.colorScheme) var colorScheme
-    
-    @State private var isSelected: Bool = false
+    @Environment(\.colorScheme) var scheme
+
     @State private var isVideoSheetVisible = false
     
-    private let isMultiAttachment: Bool
+    private let displayMode: VideoThumbnailDisplayMode
     private let message: ChatMessage
     private let position: MessageGroupPosition
-
-    private var width: CGFloat {
-        UIScreen.main.messageCellWidth
-    }
     
     // MARK: - Init
     
-    init(message: ChatMessage, item: AttachmentItem, isMultiAttachment: Bool, position: MessageGroupPosition) {
+    init(
+        message: ChatMessage,
+        item: AttachmentItem,
+        displayMode: VideoThumbnailDisplayMode,
+        position: MessageGroupPosition,
+        alertType: Binding<ChatAlertType?>,
+        localization: ChatLocalization
+    ) {
         self.message = message
-        self.isMultiAttachment = isMultiAttachment
-        self.viewModel = VideoMessageCellViewModel(item: item)
+        self.displayMode = displayMode
+        _viewModel = StateObject(wrappedValue: VideoMessageCellViewModel(item: item, alertType: alertType, localization: localization))
         self.position = position
     }
     
     // MARK: - Builder
     
     var body: some View {
-        ZStack(alignment: message.user.isAgent ? .bottomLeading : .bottomTrailing) {
-            thumbnail
-                .frame(width: !isMultiAttachment ? width : MultipleAttachmentContainer.cellDimension, height: MultipleAttachmentContainer.cellDimension)
-                .scaledToFill()
-                .overlay(
-                    thumbnailOverlay
-                        .imageScale(.large)
-                        .foregroundColor(style.formTextColor.opacity(0.5))
-                        .padding(10)
-                        .background(
-                            Circle()
-                                .fill(style.backgroundColor.opacity(0.5))
-                        )
+        ZStack(alignment: message.isUserAgent ? .bottomLeading : .bottomTrailing) {
+            if viewModel.isLoading {
+                AttachmentLoadingView(title: localization.loadingVideo)
+                    .frame(width: displayMode.width, height: displayMode.height)
+            } else {
+                VideoThumbnailView(
+                    url: viewModel.cachedVideoURL,
+                    displayMode: displayMode
                 )
-                .messageChatStyle(message, position: position)
                 .sheet(isPresented: $isVideoSheetVisible) {
                     if let videoURL = viewModel.cachedVideoURL {
-                        VideoPlayerContainer(videoUrl: videoURL, isPresented: $isVideoSheetVisible)
+                        VideoPlayer(player: AVPlayer(url: videoURL))
                     }
                 }
                 .onTapGesture {
                     isVideoSheetVisible = true
                 }
-                .if(!isMultiAttachment) { view in
-                    view.shareable(message, attachments: [viewModel.item], spacerLength: 0)
-                }
+            }
         }
-    }
-}
-
-// MARK: - Subviews
-
-private extension VideoMessageCell {
-    
-    @ViewBuilder
-    var thumbnail: some View {
-        if let thumbnail = viewModel.cachedVideoURL?.getVideoThumbnail(maximumSize: CGSize(width: width, height: MultipleAttachmentContainer.cellDimension)) {
-            thumbnail
-                .resizable()
-        } else {
-            RoundedRectangle(cornerRadius: StyleGuide.Message.cornerRadius)
-        }
-    }
-    
-    @ViewBuilder
-    var thumbnailOverlay: some View {
-        if isVideoSheetVisible {
-            Asset.Attachment.videoInFullScreen
-        } else {
-            Asset.Attachment.play
+        .if(displayMode == .large) { view in
+            view
+                .messageChatStyle(message, position: position)
+                .shareable(message, attachments: [viewModel.item], spacerLength: 0)
         }
     }
 }
 
 // MARK: - Preview
 
-struct VideoMessageCell_Previews: PreviewProvider {
+#Preview {
+    let localization = ChatLocalization()
     
-    static var previews: some View {
-        Group {
-            VStack(spacing: 4) {
-                VideoMessageCell(message: MockData.videoMessage(user: MockData.agent), item: MockData.videoItem, isMultiAttachment: false, position: .single)
+    VStack(spacing: 4) {
+        VideoMessageCell(
+            message: MockData.videoMessage(user: MockData.agent),
+            item: MockData.videoItem,
+            displayMode: .large,
+            position: .single,
+            alertType: .constant(nil),
+            localization: localization
+        )
 
-                VideoMessageCell(message: MockData.videoMessage(user: MockData.customer), item: MockData.videoItem, isMultiAttachment: false, position: .single)
-            }
-            .previewDisplayName("Light Mode")
-
-            VStack(spacing: 4) {
-                VideoMessageCell(message: MockData.videoMessage(user: MockData.agent), item: MockData.videoItem, isMultiAttachment: false, position: .single)
-
-                VideoMessageCell(message: MockData.videoMessage(user: MockData.customer), item: MockData.videoItem, isMultiAttachment: false, position: .single)
-            }
-            .previewDisplayName("Dark Mode")
-            .preferredColorScheme(.dark)
-        }
-        .environmentObject(ChatStyle())
+        VideoMessageCell(
+            message: MockData.videoMessage(user: MockData.customer),
+            item: MockData.videoItem,
+            displayMode: .large,
+            position: .single,
+            alertType: .constant(nil),
+            localization: localization
+        )
     }
+    .padding(.horizontal, 10)
+    .environmentObject(ChatStyle())
 }
