@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ struct ChatMessageCell: View {
 
     // MARK: - Properties
 
-    @EnvironmentObject private var style: ChatStyle
-
+    @EnvironmentObject private var localization: ChatLocalization
+    
     @Binding private var isProcessDialogVisible: Bool
     @Binding private var alertType: ChatAlertType?
     
@@ -53,7 +53,7 @@ struct ChatMessageCell: View {
     var body: some View {
         VStack {
             if isMultiAttachment {
-                MultipleAttachmentContainer(message, position: messageGroupPosition)
+                MultipleAttachmentContainer(message, position: messageGroupPosition, alertType: $alertType)
             } else {
                 messageContent
             }
@@ -77,22 +77,42 @@ private extension ChatMessageCell {
                         }
                     }
             case .video(let item):
-                VideoMessageCell(message: message, item: item, isMultiAttachment: false, position: messageGroupPosition)
+                VideoMessageCell(
+                    message: message,
+                    item: item,
+                    displayMode: .large,
+                    position: messageGroupPosition,
+                    alertType: $alertType,
+                    localization: localization
+                )
             case .image(let item):
-                ImageMessageCell(message: message, item: item, isMultiAttachment: false, position: messageGroupPosition)
+                ImageMessageCell(
+                    message: message,
+                    item: item,
+                    isMultiAttachment: false,
+                    position: messageGroupPosition,
+                    alertType: $alertType,
+                    localization: localization
+                )
             case .audio(let item):
-                AudioMessageCell(message: message, item: item, isMultiAttachment: false, position: messageGroupPosition)
-            case .linkPreview(let item):
-                LinkPreviewCell(message: message, item: item, isProcessDialogVisible: $isProcessDialogVisible, alertType: $alertType)
+                AudioMessageCell(message: message, item: item, position: messageGroupPosition, alertType: $alertType, localization: localization)
+            case .documentPreview(let item):
+                ApplicationMimeTypeThumbnailView(
+                    item: item,
+                    message: message,
+                    width: StyleGuide.Attachment.xtraLargeWidth,
+                    height: StyleGuide.Attachment.xtraLargeHeight,
+                    alertType: $alertType
+                )
             case .richContent(let content):
                 switch content {
                 case .quickReplies(let item):
-                    QuickRepliesMessageCell(message: message, item: item) { option in
+                    QuickRepliesMessageCell(item: item) { option in
                         onRichMessageElementTapped(option.title, .button(option))
                     }
                 case .listPicker(let item):
-                    ListPickerMessageCell(message: message, item: item) { option in
-                        onRichMessageElementTapped(option.textToSend, option)
+                    ListPickerMessageCell(item: item) { option in
+                        onRichMessageElementTapped(option.title, .button(option))
                     }
                 case .richLink(let item):
                     RichLinkMessageCell(message: message, item: item) { url in
@@ -106,97 +126,39 @@ private extension ChatMessageCell {
     }
 }
 
-// MARK: - Helpers
-
-private extension RichMessageSubElementType {
-
-    var textToSend: String {
-        // Only interaction with button is enabled
-        guard case .button(let entity) = self else {
-            return ""
-        }
-
-        return entity.title
-    }
-}
-
 // MARK: - Preview
 
-struct DefaultMessageItemPreview: PreviewProvider {
-    
-    static let agentTextMessage = MockData.textMessage(user: MockData.agent)
-    static let agentImageMessage = MockData.imageMessage(user: MockData.agent, elementsCount: 1)
-    static let customerAudioMessage = MockData.audioMessage(user: MockData.customer)
-    static let customerImageMessage = MockData.imageMessage(user: MockData.customer, elementsCount: 5)
-    static let manager = ChatManager(messages: [customerAudioMessage, agentImageMessage, agentTextMessage, customerImageMessage])
-    
-    static var previews: some View {
-        Group {
-            LazyVStack {
-                ChatMessageCell(
-                    message: agentImageMessage,
-                    messageGroupPosition: .first,
-                    isProcessDialogVisible: .constant(false),
-                    alertType: .constant(nil)
-                ) { _, _ in }
-                
-                ChatMessageCell(
-                    message: agentTextMessage,
-                    messageGroupPosition: .last,
-                    isProcessDialogVisible: .constant(false),
-                    alertType: .constant(nil)
-                ) { _, _ in }
-
-                ChatMessageCell(
-                    message: customerAudioMessage,
-                    messageGroupPosition: .first,
-                    isProcessDialogVisible: .constant(false),
-                    alertType: .constant(nil)
-                ) { _, _ in }
-                
-                ChatMessageCell(
-                    message: customerImageMessage,
-                    messageGroupPosition: .last,
-                    isProcessDialogVisible: .constant(false),
-                    alertType: .constant(nil)
-                ) { _, _ in }
-            }
-            .previewDisplayName("Light mode")
-            
-            LazyVStack {
-                ChatMessageCell(
-                    message: agentImageMessage,
-                    messageGroupPosition: .first,
-                    isProcessDialogVisible: .constant(false),
-                    alertType: .constant(nil)
-                ) { _, _ in }
-                
-                ChatMessageCell(
-                    message: agentTextMessage,
-                    messageGroupPosition: .last,
-                    isProcessDialogVisible: .constant(false),
-                    alertType: .constant(nil)
-                ) { _, _ in }
-
-                ChatMessageCell(
-                    message: customerAudioMessage,
-                    messageGroupPosition: .first,
-                    isProcessDialogVisible: .constant(false),
-                    alertType: .constant(nil)
-                ) { _, _ in }
-                
-                ChatMessageCell(
-                    message: customerImageMessage,
-                    messageGroupPosition: .last,
-                    isProcessDialogVisible: .constant(false),
-                    alertType: .constant(nil)
-                ) { _, _ in }
-            }
-            .preferredColorScheme(.dark)
-            .previewDisplayName("Dark mode")
-        }
-        .padding(.horizontal, 12)
-        .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
+#Preview {
+    LazyVStack {
+        ChatMessageCell(
+            message: MockData.imageMessage(user: MockData.agent, elementsCount: 1),
+            messageGroupPosition: .first,
+            isProcessDialogVisible: .constant(false),
+            alertType: .constant(nil)
+        ) { _, _ in }
+        
+        ChatMessageCell(
+            message: MockData.textMessage(user: MockData.agent),
+            messageGroupPosition: .last,
+            isProcessDialogVisible: .constant(false),
+            alertType: .constant(nil)
+        ) { _, _ in }
+        
+        ChatMessageCell(
+            message: MockData.audioMessage(user: MockData.customer),
+            messageGroupPosition: .first,
+            isProcessDialogVisible: .constant(false),
+            alertType: .constant(nil)
+        ) { _, _ in }
+        
+        ChatMessageCell(
+            message: MockData.imageMessage(user: MockData.customer, elementsCount: 5),
+            messageGroupPosition: .last,
+            isProcessDialogVisible: .constant(false),
+            alertType: .constant(nil)
+        ) { _, _ in }
     }
+    .padding(.horizontal, 12)
+    .environmentObject(ChatStyle())
+    .environmentObject(ChatLocalization())
 }

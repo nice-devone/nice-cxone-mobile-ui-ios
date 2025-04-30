@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,17 @@ import UIKit
 
 extension UIDevice {
     
-    var hasHomeButton: Bool {
-        guard let window = UIApplication.shared.windows.first else {
+    static var hasHomeButton: Bool {
+        let keyWindow = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow)
+        
+        guard let safeAreaBottom = keyWindow?.safeAreaInsets.bottom else {
             return false
         }
         
-        return window.safeAreaInsets.bottom == 0
+        return safeAreaBottom <= 0
     }
     
     static var isLandscape: Bool {

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ private extension Attachment {
             case _ where attachment.mimeType.contains("audio"):
                 return .audio(attachmentItem)
             default:
-                return .linkPreview(attachmentItem)
+                return .documentPreview(attachmentItem)
             }
         }
     }
@@ -72,17 +72,18 @@ private extension ChatMessageTypeMapper {
             return .richContent(.richLink(RichLinkItem(title: content.title, url: content.url, imageUrl: content.fileUrl)))
         case .quickReplies(let content):
             let options = content.buttons.map { button in
-                RichMessageButton(title: button.text, iconUrl: button.iconUrl, url: nil, postback: button.postback)
+                RichMessageButton(title: button.text, description: button.description, iconUrl: button.iconUrl, url: nil, postback: button.postback)
             }
             
             return .richContent(.quickReplies(QuickRepliesItem(title: content.title, message: nil, options: options)))
         case .listPicker(let content):
-            let richMessageButtons = content.buttons.map { type -> RichMessageSubElementType in
+            let richMessageButtons = content.buttons.map { type -> RichMessageButton in
                 switch type {
                 case .replyButton(let button):
-                    return .button(RichMessageButton(title: button.text, iconUrl: button.iconUrl, url: nil, postback: button.postback))
+                    return RichMessageButton(title: button.text, description: button.description, iconUrl: button.iconUrl, url: nil, postback: button.postback)
                 }
             }
+            
             return .richContent(.listPicker(ListPickerItem(title: content.title, message: content.text, buttons: richMessageButtons)))
         default:
             return textMessage.map(ChatMessageType.text)

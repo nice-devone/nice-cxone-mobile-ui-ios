@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -24,38 +24,43 @@ extension View {
 
 // MARK: - ShareableModifier
 
-private struct ShareableModifier: ViewModifier {
+private struct ShareableModifier: ViewModifier, Themed {
 
     // MARK: - Properties
-    
-    @EnvironmentObject private var style: ChatStyle
-    
+
     @State private var showShareSheet = false
+
+    @EnvironmentObject var style: ChatStyle
+    
+    @Environment(\.colorScheme) var scheme
     
     let message: ChatMessage
     let attachments: [AttachmentItem]
     let spacerLength: CGFloat
     
+    private static let shareableHorizontalSpacing: CGFloat = 12
+    private static let iconPadding: CGFloat = 10
+    
     // MARK: - Builder
     
     func body(content: Content) -> some View {
-        HStack {
-            if !message.user.isAgent {
+        HStack(spacing: Self.shareableHorizontalSpacing) {
+            if !message.isUserAgent {
                 Spacer(minLength: spacerLength)
                 
                 shareButton
             }
             
             content
-                .sheet(isPresented: $showShareSheet) {
-                    ShareSheet(activityItems: attachments.map(\.url))
-                }
 
-            if message.user.isAgent {
+            if message.isUserAgent {
                 shareButton
                 
                 Spacer(minLength: spacerLength)
             }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheet(activityItems: attachments.map(\.url))
         }
     }
 }
@@ -65,45 +70,52 @@ private struct ShareableModifier: ViewModifier {
 private extension ShareableModifier {
     
     var shareButton: some View {
-        Button(
-            action: {
-                showShareSheet = true
-            }, label: {
-                Asset.share
-                    .imageScale(.small)
-                    .foregroundColor(style.backgroundColor)
-                    .offset(y: -1)
-            }
-        )
-        .padding(6)
+        Button {
+            showShareSheet = true
+        } label: {
+            Asset.share
+                .font(.subheadline.bold())
+                .foregroundStyle(colors.customizable.primary)
+                .offset(y: -1)
+        }
+        .padding(Self.iconPadding)
         .background(
-            Circle()
-                .fill(style.formTextColor.opacity(0.5))
+            ZStack {
+                Circle()
+                    .stroke(colors.customizable.onBackground)
+                    .opacity(0.10)
+                
+                Circle()
+                    .fill(colors.customizable.onBackground)
+                    .opacity(0.05)
+            }
         )
     }
 }
 
 // MARK: - Preview
 
-struct ShareableView_Previews: PreviewProvider {
-    
-    static var previews: some View {
-        Group {
-            VStack(spacing: 4) {
-                ImageMessageCell(message: MockData.imageMessage(user: MockData.agent), item: MockData.imageItem, isMultiAttachment: false, position: .first)
-                
-                ImageMessageCell(message: MockData.imageMessage(user: MockData.customer), item: MockData.imageItem, isMultiAttachment: false, position: .last)
-            }
-            .previewDisplayName("Light Mode")
-            
-            VStack(spacing: 4) {
-                ImageMessageCell(message: MockData.imageMessage(user: MockData.agent), item: MockData.imageItem, isMultiAttachment: false, position: .first)
-
-                ImageMessageCell(message: MockData.imageMessage(user: MockData.customer), item: MockData.imageItem, isMultiAttachment: false, position: .last)
-            }
-            .previewDisplayName("Dark Mode")
-            .preferredColorScheme(.dark)
-        }
-        .environmentObject(ChatStyle())
+#Preview {
+    VStack(spacing: 4) {
+        ImageMessageCell(
+            message: MockData.imageMessage(user: MockData.agent),
+            item: MockData.imageItem,
+            isMultiAttachment: false,
+            position: .single,
+            alertType: .constant(nil),
+            localization: ChatLocalization()
+        )
+        
+        ImageMessageCell(
+            message: MockData.imageMessage(user: MockData.customer),
+            item: MockData.imageItem,
+            isMultiAttachment: false,
+            position: .single,
+            alertType: .constant(nil),
+            localization: ChatLocalization()
+        )
     }
+    .padding(.horizontal, 10)
+    .environmentObject(ChatStyle())
+    .environmentObject(ChatLocalization())
 }

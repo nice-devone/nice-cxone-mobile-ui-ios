@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -16,64 +16,52 @@
 import SwiftUI
 
 /// A protocol that defines the color properties for the borders.
-public protocol BorderStyleColors {
-    /// The subtle color.
+protocol BorderStyleColors {
+    
     var subtle: Color { get }
-    /// The muted color.
     var muted: Color { get }
-    /// The contrast color.
     var contrast: Color { get }
-    /// The disabled color.
     var disabled: Color { get }
-    /// The error color.
     var error: Color { get }
 }
 
-// MARK: - Light Default Colors
+// MARK: - Default Colors
 
-public struct BorderStyleColorsImpl: BorderStyleColors {
+struct BorderStyleColorsImpl: BorderStyleColors {
     
     // MARK: - Properties
     
-    public let subtle: Color
-    public let muted: Color
-    public let contrast: Color
-    public let disabled: Color
-    public let error: Color
+    let subtle: Color
+    let muted: Color
+    let contrast: Color
+    let disabled: Color
+    let error: Color
     
     // MARK: - Init
     
-    /// Initializes the default light colors for the borders.
-    ///
-    /// - Parameters:
-    ///  - subtle: The subtle color.
-    ///  - muted: The muted color.
-    ///  - contrast: The contrast color.
-    ///  - disabled: The disabled color.
-    ///  - error: The error color.
-    public init(subtle: Color, muted: Color, contrast: Color, disabled: Color, error: Color) {
-        self.subtle = subtle
-        self.muted = muted
-        self.contrast = contrast
-        self.disabled = disabled
-        self.error = error
+    init(subtle: ColorAsset, muted: ColorAsset, contrast: ColorAsset, disabled: ColorAsset, error: ColorAsset) {
+        self.subtle = subtle.swiftUIColor
+        self.muted = muted.swiftUIColor
+        self.contrast = contrast.swiftUIColor
+        self.disabled = disabled.swiftUIColor
+        self.error = error.swiftUIColor
     }
     
     // MARK: - Static Properties
     
     static let defaultLight = BorderStyleColorsImpl(
-        subtle: Asset.Colors.grey20.swiftUIColor,
-        muted: Asset.Colors.grey30.swiftUIColor,
-        contrast: Asset.Colors.grey100.swiftUIColor,
-        disabled: Asset.Colors.grey40.swiftUIColor,
-        error: Asset.Colors.red40.swiftUIColor
+        subtle: Asset.Colors.grey20,
+        muted: Asset.Colors.grey30,
+        contrast: Asset.Colors.grey100,
+        disabled: Asset.Colors.grey40,
+        error: Asset.Colors.red40
     )
     
     static let defaultDark = BorderStyleColorsImpl(
-        subtle: Asset.Colors.grey80.swiftUIColor,
-        muted: Asset.Colors.grey70.swiftUIColor,
-        contrast: Asset.Colors.white.swiftUIColor,
-        disabled: Asset.Colors.grey60.swiftUIColor,
-        error: Asset.Colors.red70.swiftUIColor
+        subtle: Asset.Colors.grey80,
+        muted: Asset.Colors.grey70,
+        contrast: Asset.Colors.white,
+        disabled: Asset.Colors.grey60,
+        error: Asset.Colors.red70
     )
 }

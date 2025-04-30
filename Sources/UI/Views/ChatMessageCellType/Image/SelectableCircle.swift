@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ struct SelectableCircle: View {
                 .strokeBorder(.white, lineWidth: 2)
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(isSelected ? .blue : .clear))
+                .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
             if isSelected {
                 Asset.check
                     .resizable()
@@ -42,8 +43,6 @@ struct SelectableCircle: View {
 // MARK: - Preview
 
 struct SelectableCircle_Previews: PreviewProvider {
-    
-    static let viewModel = AttachmentsViewModel(messageTypes: [.image(MockData.imageItem)])
     
     static var previews: some View {
         Group {

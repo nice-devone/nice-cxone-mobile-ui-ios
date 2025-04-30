@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -15,49 +15,52 @@
 
 import SwiftUI
 
-struct AudioMessageCell: View {
+struct AudioMessageCell: View, Themed {
 
     // MARK: - Properties
 
-    @EnvironmentObject private var style: ChatStyle
-
+    @EnvironmentObject var style: ChatStyle
+    
+    @Environment(\.colorScheme) var scheme
+    
     @ObservedObject var audioPlayer: AudioPlayer
-
+    
     private let message: ChatMessage
     private let item: AttachmentItem
-    private let isMultiAttachment: Bool
     private let position: MessageGroupPosition
+    
+    static let progressBarHeight: CGFloat = 6
+    static let controlButtonsSpacing: CGFloat = 20
+    static let paddingTop: CGFloat = 14
+    static let paddingHorizontal: CGFloat = 14
+    static let paddingBottom: CGFloat = 8
+    static let progressBarElementsSpacing: CGFloat = 6
     
     // MARK: - Init
 
-    init(message: ChatMessage, item: AttachmentItem, isMultiAttachment: Bool, position: MessageGroupPosition) {
+    init(message: ChatMessage, item: AttachmentItem, position: MessageGroupPosition, alertType: Binding<ChatAlertType?>, localization: ChatLocalization) {
         self.message = message
         self.item = item
-        self.isMultiAttachment = isMultiAttachment
         self.position = position
         
-        self.audioPlayer = AudioPlayer(url: item.url, fileName: item.fileName)
+        self.audioPlayer = AudioPlayer(url: item.url, fileName: item.fileName, alertType: alertType, chatLocalization: localization)
         self.audioPlayer.prepare()
     }
 
     // MARK: - Builder
 
     var body: some View {
-        ZStack(alignment: message.user.isAgent ? .bottomLeading : .bottomTrailing) {
-            VStack {
+        ZStack(alignment: message.isUserAgent ? .bottomLeading : .bottomTrailing) {
+            VStack(spacing: 0) {
                 progressBar
 
                 controlButtons
             }
-            .padding(.top, isMultiAttachment ? 0 : StyleGuide.Message.paddingVertical)
-            .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
+            .padding(.top, Self.paddingTop)
+            .padding(.horizontal, Self.paddingHorizontal)
+            .padding(.bottom, Self.paddingBottom)
             .messageChatStyle(message, position: position)
-            .if(isMultiAttachment) { view in
-                view.frame(width: MultipleAttachmentContainer.cellDimension, height: MultipleAttachmentContainer.cellDimension)
-            }
-            .if(!isMultiAttachment) { view in
-                view.shareable(message, attachments: [item], spacerLength: 0)
-            }
+            .shareable(message, attachments: [item], spacerLength: 0)
         }
     }
 }
@@ -67,49 +70,62 @@ struct AudioMessageCell: View {
 private extension AudioMessageCell {
 
     var progressBar: some View {
-        ZStack {
+        HStack(spacing: Self.progressBarElementsSpacing) {
+            Text(audioPlayer.formattedProgress)
+                .font(.caption)
+                .foregroundColor(
+                    message.isUserAgent
+                    ? colors.customizable.agentText
+                    : colors.customizable.customerText
+                )
+            
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color(.systemGray3))
-
+                        .fill(
+                            message.isUserAgent
+                            ? colors.customizable.agentText
+                            : colors.customizable.customerText
+                        )
+                        .opacity(0.5)
+                    
                     if !audioPlayer.progress.isNaN {
                         Capsule()
-                            .fill(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
-                            .if(!audioPlayer.progress.isNaN) { view in
-                                view.frame(width: proxy.size.width * CGFloat(audioPlayer.progress), height: 4)
-                            }
+                            .fill(message.isUserAgent ? colors.customizable.agentText : colors.customizable.customerText)
+                            .frame(
+                                width: proxy.size.width * CGFloat(audioPlayer.progress),
+                                height: Self.progressBarHeight
+                            )
                     }
                 }
             }
-            .frame(height: 4)
-
-            HStack {
-                Text(audioPlayer.formattedProgress)
-                    .font(.caption)
-                    .foregroundColor(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
-
-                Spacer()
-
-                Text(audioPlayer.formattedDuration)
-                    .font(.caption)
-                    .foregroundColor(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
-            }
-            .offset(y: 12)
+            .frame(height: Self.progressBarHeight)
+            
+            Text(audioPlayer.formattedDuration)
+                .font(.caption)
+                .foregroundColor(
+                    message.isUserAgent
+                    ? colors.customizable.agentText
+                    : colors.customizable.customerText
+                )
         }
     }
 
     var controlButtons: some View {
-        HStack(spacing: 0) {
+        HStack(alignment: .center, spacing: Self.controlButtonsSpacing) {
             Button {
                 audioPlayer.seek(-10)
             } label: {
                 Asset.Attachment.rewind
-                    .imageScale(isMultiAttachment ? .medium : .large)
+                    .font(.title)
             }
-            .foregroundColor(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
+            .foregroundColor(
+                message.isUserAgent
+                    ? colors.customizable.agentText
+                    : colors.customizable.customerText
+            )
             .frame(
-                width: isMultiAttachment ? StyleGuide.buttonSmallerDimension : StyleGuide.buttonDimension,
+                width: StyleGuide.buttonDimension,
                 height: StyleGuide.buttonDimension
             )
 
@@ -121,11 +137,15 @@ private extension AudioMessageCell {
                 }
             } label: {
                 (audioPlayer.isPlaying ? Asset.Attachment.pause : Asset.Attachment.play)
-                    .imageScale(isMultiAttachment ? .medium : .large)
+                    .font(.title)
             }
-            .foregroundColor(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
+            .foregroundColor(
+                message.isUserAgent
+                    ? colors.customizable.agentText
+                    : colors.customizable.customerText
+            )
             .frame(
-                width: isMultiAttachment ? StyleGuide.buttonSmallerDimension : StyleGuide.buttonDimension,
+                width: StyleGuide.buttonDimension,
                 height: StyleGuide.buttonDimension
             )
 
@@ -133,41 +153,41 @@ private extension AudioMessageCell {
                 audioPlayer.seek(10)
             } label: {
                 Asset.Attachment.advance
-                    .imageScale(isMultiAttachment ? .medium : .large)
+                    .font(.title)
             }
-            .foregroundColor(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
+            .foregroundColor(
+                message.isUserAgent
+                    ? colors.customizable.agentText
+                    : colors.customizable.customerText
+            )
             .frame(
-                width: isMultiAttachment ? StyleGuide.buttonSmallerDimension : StyleGuide.buttonDimension,
+                width: StyleGuide.buttonDimension,
                 height: StyleGuide.buttonDimension
             )
         }
     }
 }
 
-// MARK: - Preview
+// MARK: - Previews
 
-struct AudioMessageCell_Previews: PreviewProvider {
-
-    static var previews: some View {
-        Group {
-            VStack(spacing: 4) {
-                AudioMessageCell(message: MockData.audioMessage(user: MockData.customer), item: MockData.audioItem, isMultiAttachment: true, position: .single)
-                    .background(Color.blue)
-
-                AudioMessageCell(message: MockData.audioMessage(user: MockData.agent), item: MockData.audioItem, isMultiAttachment: false, position: .single)
-            }
-            .previewDisplayName("Light Mode")
-
-            VStack(spacing: 4) {
-                AudioMessageCell(message: MockData.audioMessage(user: MockData.customer), item: MockData.audioItem, isMultiAttachment: false, position: .single)
-                    .background(Color.blue)
-
-                AudioMessageCell(message: MockData.audioMessage(user: MockData.agent), item: MockData.audioItem, isMultiAttachment: false, position: .single)
-            }
-            .previewDisplayName("Dark Mode")
-            .preferredColorScheme(.dark)
-        }
-        .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
+#Preview {
+    VStack(spacing: 4) {
+        AudioMessageCell(
+            message: MockData.audioMessage(user: MockData.customer),
+            item: MockData.audioItem,
+            position: .single,
+            alertType: .constant(nil),
+            localization: ChatLocalization()
+        )
+        
+        AudioMessageCell(
+            message: MockData.audioMessage(user: MockData.agent),
+            item: MockData.audioItem,
+            position: .single,
+            alertType: .constant(nil),
+            localization: ChatLocalization()
+        )
     }
+    .padding(.horizontal, 10)
+    .environmentObject(ChatStyle())
 }

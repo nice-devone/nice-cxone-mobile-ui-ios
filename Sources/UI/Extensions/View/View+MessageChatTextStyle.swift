@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -24,12 +24,13 @@ extension View {
 
 // MARK: - ChatBubbleModifier
 
-private struct ChatTextStyleModifier: ViewModifier {
+private struct ChatTextStyleModifier: ViewModifier, Themed {
 
-    @EnvironmentObject private var style: ChatStyle
+	// MARK: - Properties
+
+    @EnvironmentObject var style: ChatStyle
     
-    private let customerCorners = UIRectCorner([.topLeft, .topRight, .bottomLeft])
-    private let agentCorners = UIRectCorner([.topLeft, .topRight, .bottomRight])
+    @Environment(\.colorScheme) var scheme
     
     let message: ChatMessage
     let text: String?
@@ -39,75 +40,71 @@ private struct ChatTextStyleModifier: ViewModifier {
         guard let text else {
             return nil
         }
-        guard text.containsOnlyEmoji else {
-            return .body
-        }
         
-        switch text.count {
-        case 1:
-            return .system(size: StyleGuide.Message.singleEmojiFontSize)
-        case 2:
-            return .system(size: StyleGuide.Message.twoEmojiesFontSize)
-        case 3:
-            return .system(size: StyleGuide.Message.threeEmojiesFontSize)
-        default:
-            return .body
-        }
+        return text.isLargeEmoji ? .largeTitle : .callout
     }
+    
+    // MARK: - Builder
     
     func body(content: Content) -> some View {
         content
             .font(font)
             .background(background)
-            .foregroundColor(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
-            .tint(message.user.isAgent ? style.agentFontColor : style.customerFontColor)
+            .foregroundColor(message.isUserAgent ? colors.customizable.agentText : colors.customizable.customerText)
+            .tint(message.isUserAgent ? colors.customizable.agentText : colors.customizable.customerText)
             .cornerRadius(topLeftCornerRadius, corners: .topLeft)
             .cornerRadius(topRightCornerRadius, corners: .topRight)
             .cornerRadius(bottomLeftCornerRadius, corners: .bottomLeft)
             .cornerRadius(bottomRightCornerRadius, corners: .bottomRight)
-            
     }
+}
 
+// MARK: - Helpers
+
+private extension ChatTextStyleModifier {
+    
     @ViewBuilder
-    private var background: some View {
-        if let text, text.containsOnlyEmoji {
+    var background: some View {
+        if text?.isLargeEmoji == true {
             Color.clear
         } else {
-            message.user.isAgent ? style.agentCellColor : style.customerCellColor
+            message.isUserAgent ? colors.customizable.agentBackground : colors.customizable.customerBackground
         }
     }
+    
+    private static let cornerRadiusBetweenMessages: CGFloat = 4
     
     // MARK: - Helpers
     
-    private var topLeftCornerRadius: CGFloat {
-        guard position != .single, message.user.isAgent else {
+    var topLeftCornerRadius: CGFloat {
+        guard position != .single, message.isUserAgent else {
             return StyleGuide.Message.cornerRadius
         }
         
-        return position == .first ? StyleGuide.Message.cornerRadius : StyleGuide.Message.cornerRadiusBetweenMessages
+        return position == .first ? StyleGuide.Message.cornerRadius : Self.cornerRadiusBetweenMessages
     }
     
-    private var topRightCornerRadius: CGFloat {
-        guard position != .single, !message.user.isAgent else {
+    var topRightCornerRadius: CGFloat {
+        guard position != .single, !message.isUserAgent else {
             return StyleGuide.Message.cornerRadius
         }
         
-        return position == .first ? StyleGuide.Message.cornerRadius : StyleGuide.Message.cornerRadiusBetweenMessages
+        return position == .first ? StyleGuide.Message.cornerRadius : Self.cornerRadiusBetweenMessages
     }
     
-    private var bottomLeftCornerRadius: CGFloat {
-        guard position != .single, message.user.isAgent else {
+    var bottomLeftCornerRadius: CGFloat {
+        guard position != .single, message.isUserAgent else {
             return StyleGuide.Message.cornerRadius
         }
         
-        return [.first, .inside].contains(position) ? StyleGuide.Message.cornerRadiusBetweenMessages : StyleGuide.Message.cornerRadius
+        return [.first, .inside].contains(position) ? Self.cornerRadiusBetweenMessages : StyleGuide.Message.cornerRadius
     }
     
-    private var bottomRightCornerRadius: CGFloat {
-        guard position != .single, !message.user.isAgent else {
+    var bottomRightCornerRadius: CGFloat {
+        guard position != .single, !message.isUserAgent else {
             return StyleGuide.Message.cornerRadius
         }
         
-        return [.first, .inside].contains(position) ? StyleGuide.Message.cornerRadiusBetweenMessages : StyleGuide.Message.cornerRadius
+        return [.first, .inside].contains(position) ? Self.cornerRadiusBetweenMessages : StyleGuide.Message.cornerRadius
     }
 }

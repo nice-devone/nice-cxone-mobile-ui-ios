@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
+import CXoneChatSDK
 import SwiftUI
 
 struct EndConversationView: View {
@@ -20,149 +21,43 @@ struct EndConversationView: View {
     // MARK: - Properties
     
     @EnvironmentObject private var localization: ChatLocalization
-    @EnvironmentObject private var style: ChatStyle
     
-    let agentAvatarUrl: URL?
-    let agentName: String?
     let onStartNewTapped: () -> Void
     let onBackToConversationTapped: () -> Void
     let onCloseChatTapped: () -> Void
-    
-    private var agentNameInitials: String {
-        guard let agentName else {
-            return "??"
-        }
-        
-        let formatter = PersonNameComponentsFormatter()
-        
-        return formatter.personNameComponents(from: agentName).map { components in
-            formatter.style = .abbreviated
-            
-            return formatter.string(from: components)
-        } ?? "??"
-    }
+    let thread: ChatThread
     
     // MARK: - Builder
     
     var body: some View {
-        VStack(spacing: 0) {
-            if let agentName {
-                MessageAvatarView(avatarUrl: agentAvatarUrl, initials: agentNameInitials)
-                    .frame(width: 80, height: 80, alignment: .center)
-                    .shadow(radius: 4, x: 2, y: 2)
-                    .padding(.bottom, 12)
-                
-                Text(localization.liveChatEndConversationAssignedAgent)
-                    .foregroundColor(style.formTextColor)
-                
-                Text(agentName)
-                    .font(.title)
-                    .bold()
-                    .foregroundColor(style.formTextColor)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 24)
+        ChatDefaultOverlayView(
+            title: thread.assignedAgent?.fullName ?? thread.lastAssignedAgent?.fullName != nil
+                ? self.localization.liveChatEndConversationAssignedAgent
+                : self.localization.liveChatEndConversationDefaultTitle,
+            subtitle: thread.assignedAgent?.fullName
+                ?? thread.lastAssignedAgent?.fullName
+                ?? nil,
+            cardImage: Asset.LiveChat.personWithClock) { _ in
+                VStack {
+                    Button(action: self.onStartNewTapped) {
+                        Text(self.localization.liveChatEndConversationNew)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.primary)
+                    
+                    Button(action: self.onBackToConversationTapped) {
+                        Text(self.localization.liveChatEndConversationBack)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.primary)
+                    
+                    Button(action: self.onCloseChatTapped) {
+                        Text(self.localization.liveChatEndConversationClose)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.destructive)
+                }
+                .frame(maxHeight: .infinity, alignment: .top)
             }
-            
-            VStack {
-                Button(action: onStartNewTapped) {
-                    HStack {
-                        Asset.LiveChat.newChat
-                        
-                        Text(localization.liveChatEndConversationNew)
-                    }
-                }
-                .buttonStyle(PrimaryButtonStyle(chatStyle: style))
-                
-                Button(action: onBackToConversationTapped) {
-                    HStack {
-                        Asset.back
-                        
-                        Text(localization.liveChatEndConversationBack)
-                    }
-                }
-                .buttonStyle(PrimaryButtonStyle(chatStyle: style))
-                
-                Button(action: onCloseChatTapped) {
-                    HStack {
-                        Asset.disconnect
-                        
-                        Text(localization.liveChatEndConversationClose)
-                    }
-                }
-                .buttonStyle(PrimaryButtonStyle(chatStyle: style))
-            }
-            .padding(.horizontal, 24)
-        }
-        .padding(.vertical, 20)
-        .background(
-            RoundedRectangle(cornerRadius: 24)
-                .fill(style.backgroundColor)
-        )
-        .padding(.horizontal, 40)
-    }
-}
-
-// MARK: - Previews
-
-struct EndConversationView_Previews: PreviewProvider {
-
-    // MARK: - Properties
-
-    private static let isOverlayVisible: Binding<Bool> = .constant(true)
-    // MARK: - Previews
-    
-    static var previews: some View {
-        Group {
-            Color.white
-                .overlay(getEndConversationView(agentAvatarUrl: MockData.agent.avatarURL, agentName: MockData.agent.userName), alignment: .center)
-                .environmentObject(ChatStyle(formTextColor: Color(.darkText)))
-                .previewDisplayName("Agent with image - Light Mode")
-            
-            Color.white
-                .overlay(getEndConversationView(agentAvatarUrl: MockData.agent.avatarURL, agentName: MockData.agent.userName), alignment: .center)
-                .environmentObject(ChatStyle(formTextColor: Color(.lightText)))
-                .preferredColorScheme(.dark)
-                .previewDisplayName("Agent with image - Dark Mode")
-            
-            Color.white
-                .overlay(getEndConversationView(agentName: MockData.agent.userName), alignment: .center)
-                .environmentObject(ChatStyle(formTextColor: Color(.darkText)))
-                .previewDisplayName("Agent without image - Light Mode")
-            
-            Color.white
-                .overlay(getEndConversationView(agentName: MockData.agent.userName), alignment: .center)
-                .environmentObject(ChatStyle(formTextColor: Color(.lightText)))
-                .preferredColorScheme(.dark)
-                .previewDisplayName("Agent without image - Dark Mode")
-            
-            Color.white
-                .overlay(getEndConversationView(), alignment: .center)
-                .environmentObject(ChatStyle(formTextColor: Color(.darkText)))
-                .previewDisplayName("Agent without name - Light Mode")
-            
-            Color.white
-                .overlay(getEndConversationView(), alignment: .center)
-                .environmentObject(ChatStyle(formTextColor: Color(.lightText)))
-                .preferredColorScheme(.dark)
-                .previewDisplayName("Agent without name - Dark Mode")
-        }
-        .environmentObject(ChatLocalization())
-    }
-    
-    static func getEndConversationView(
-        agentAvatarUrl: URL? = nil,
-        agentName: String? = nil,
-        onStartNewTapped: @escaping () -> Void = { },
-        onBackToConversationTapped: @escaping () -> Void = { },
-        onCloseChatTapped: @escaping () -> Void = { }
-    ) -> some View {
-        EndConversationView(
-            agentAvatarUrl: agentAvatarUrl,
-            agentName: agentName,
-            onStartNewTapped: onStartNewTapped,
-            onBackToConversationTapped: onBackToConversationTapped,
-            onCloseChatTapped: onCloseChatTapped
-        )
     }
 }

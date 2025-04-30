@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -31,14 +31,26 @@ extension View {
         }
     }
     
-    /// Closure given view and unwrapped optional value if optional is set.
-    /// - Parameters:
-    ///   - conditional: Optional value.
-    ///   - content: Closure to run on view with unwrapped optional.
     @ViewBuilder
-    func ifNotNil<Content: View, T>(_ conditional: T?, @ViewBuilder _ content: (Self, _ value: T) -> Content) -> some View {
-        if let value = conditional {
-            content(self, value)
+    func ifNotNil<Content: View, T>(
+        _ conditional: T?,
+        @ViewBuilder _ content: (Self, _ value: T) -> Content
+    ) -> some View {
+        if let conditional {
+            content(self, conditional)
+        } else {
+            self
+        }
+    }
+    
+    @ViewBuilder
+    func ifNotNil<Content: View, T, U>(
+        _ conditional1: T?,
+        _ conditional2: U?,
+        @ViewBuilder _ content: (Self, _ value1: T, _ value2: U) -> Content
+    ) -> some View {
+        if let value1 = conditional1, let value2 = conditional2 {
+            content(self, value1, value2)
         } else {
             self
         }
@@ -46,21 +58,5 @@ extension View {
     
     func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
-    
-    func overlay(isVisible: Binding<Bool>, @ViewBuilder overlayContent: () -> some View) -> some View {
-        ZStack {
-            self
-            
-            if isVisible.wrappedValue {
-                Color(.darkGray)
-                    .opacity(0.5)
-                    .ignoresSafeArea()
-                
-                overlayContent()
-                    .compositingGroup()
-                    .shadow(color: .gray, radius: 4)
-            }
-        }
     }
 }

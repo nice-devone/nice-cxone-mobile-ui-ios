@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -14,19 +14,19 @@
 //
 
 import AVFoundation
-import Kingfisher
+import AVKit
 import SwiftUI
 
-struct SelectableVideoMessageCell: View {
+struct SelectableVideoMessageCell: View, Themed {
 
     // MARK: - Properties
 
-    @EnvironmentObject private var style: ChatStyle
+    @EnvironmentObject var style: ChatStyle
     
     @ObservedObject private var viewModel: VideoMessageCellViewModel
     @ObservedObject private var attachmentsViewModel: AttachmentsViewModel
 
-    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.colorScheme) var scheme
 
     @Binding var inSelectionMode: Bool
     
@@ -34,20 +34,24 @@ struct SelectableVideoMessageCell: View {
 
     private let item: SelectableAttachment
 
-    private var width: CGFloat {
-        UIScreen.main.messageCellWidth
-    }
+    static private let selectableCircleEdgePadding: CGFloat = 10
 
     // MARK: - Init
 
-    init?(item: SelectableAttachment, attachmentsViewModel: AttachmentsViewModel, inSelectionMode: Binding<Bool>) {
+    init?(
+        item: SelectableAttachment,
+        attachmentsViewModel: AttachmentsViewModel,
+        inSelectionMode: Binding<Bool>,
+        alertType: Binding<ChatAlertType?>,
+        localization: ChatLocalization
+    ) {
         guard let attachmentItem = AttachmentItemMapper.map(item.messageType) else {
             return nil
         }
 
-        self.viewModel = VideoMessageCellViewModel(item: attachmentItem)
-        self.attachmentsViewModel = attachmentsViewModel
         self.item = item
+        self.attachmentsViewModel = attachmentsViewModel
+        self.viewModel = VideoMessageCellViewModel(item: attachmentItem, alertType: alertType, localization: localization)
         self._inSelectionMode = inSelectionMode
     }
 
@@ -55,10 +59,7 @@ struct SelectableVideoMessageCell: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            thumbnail
-                .scaledToFill()
-                .frame(width: width, height: width)
-                .clipped()
+            VideoThumbnailView(url: viewModel.cachedVideoURL, displayMode: .attachmentsOverflow)
                 .onTapGesture {
                     if inSelectionMode {
                         attachmentsViewModel.selectAttachment(uuid: item.id)
@@ -66,70 +67,30 @@ struct SelectableVideoMessageCell: View {
                         isVideoSheetVisible.toggle()
                     }
                 }
-                .overlay(
-                    thumbnailOverlay
-                        .imageScale(.large)
-                        .foregroundColor(style.formTextColor.opacity(0.5))
-                        .padding(10)
-                        .background(
-                            Circle()
-                                .fill(style.backgroundColor.opacity(0.5))
-                        )
-                )
                 .sheet(isPresented: $isVideoSheetVisible) {
                     if let videoURL = viewModel.cachedVideoURL {
-                        VideoPlayerContainer(videoUrl: videoURL, isPresented: $isVideoSheetVisible)
+                        VideoPlayer(player: AVPlayer(url: videoURL))
                     }
                 }
             
             if inSelectionMode {
                 SelectableCircle(isSelected: item.isSelected)
-                    .padding([.top, .trailing], 10)
+                    .padding([.top, .trailing], Self.selectableCircleEdgePadding)
             }
         }
-        .cornerRadius(StyleGuide.Message.cornerRadius)
-    }
-}
-
-// MARK: - Subviews
-
-private extension SelectableVideoMessageCell {
-
-    @ViewBuilder
-    var thumbnail: some View {
-        if let thumbnail = viewModel.cachedVideoURL?.getVideoThumbnail(maximumSize: CGSize(width: width, height: MultipleAttachmentContainer.cellDimension)) {
-            thumbnail
-                .resizable()
-                .scaledToFill()
-        } else {
-            RoundedRectangle(cornerRadius: StyleGuide.Message.cornerRadius)
-        }
-    }
-
-    @ViewBuilder
-    var thumbnailOverlay: some View {
-        if isVideoSheetVisible {
-            Asset.Attachment.videoInFullScreen
-        } else {
-            Asset.Attachment.play
-        }
+        .cornerRadius(StyleGuide.Attachment.cornerRadius)
     }
 }
 
 // MARK: - Preview
 
-struct SelectableVideoMessageCell_Previews: PreviewProvider {
-    static let viewModel = AttachmentsViewModel(messageTypes: [])
-
-    static var previews: some View {
-        Group {
-            SelectableVideoMessageCell(item: MockData.selectableVideoAttachment, attachmentsViewModel: viewModel, inSelectionMode: .constant(false))
-                .previewDisplayName("Light Mode")
-
-            SelectableVideoMessageCell(item: MockData.selectableVideoAttachment, attachmentsViewModel: viewModel, inSelectionMode: .constant(false))
-                .previewDisplayName("Dark Mode")
-                .preferredColorScheme(.dark)
-        }
-        .environmentObject(ChatStyle())
-    }
+#Preview {
+    SelectableVideoMessageCell(
+        item: MockData.selectableVideoAttachment,
+        attachmentsViewModel: AttachmentsViewModel(messageTypes: []),
+        inSelectionMode: .constant(false),
+        alertType: .constant(nil),
+        localization: ChatLocalization()
+    )
+    .environmentObject(ChatStyle())
 }

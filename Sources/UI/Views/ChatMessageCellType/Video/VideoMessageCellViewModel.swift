@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -19,14 +19,20 @@ class VideoMessageCellViewModel: ObservableObject {
     
     // MARK: - Properties
     
+    @Binding var alertType: ChatAlertType?
+    
     @Published var cachedVideoURL: URL?
+    @Published var isLoading: Bool = false
     
     let item: AttachmentItem
+    let localization: ChatLocalization
     
     // MARK: - Init
     
-    init(item: AttachmentItem) {
+    init(item: AttachmentItem, alertType: Binding<ChatAlertType?>, localization: ChatLocalization) {
         self.item = item
+        self._alertType = alertType
+        self.localization = localization
         
         Task { @MainActor in
             await cacheVideoFromURL()
@@ -38,18 +44,24 @@ class VideoMessageCellViewModel: ObservableObject {
     @MainActor
     func cacheVideoFromURL() async {
         LogManager.trace("Caching video locally")
-        
-        guard let docDirectoryURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            LogManager.error(.failed("Unable to get Documents directory URL"))
+        guard let cacheDirectoryURL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
+            LogManager.error(.failed("Unable to get Caches directory URL"))
             return
         }
-        
-        let fileURL = docDirectoryURL.appendingPathComponent(item.fileName)
-        
-        if !FileManager.default.fileExists(atPath: fileURL.path) {
-            await downloadVideo(url: item.url, fileURL: fileURL)
-        } else {
-            self.cachedVideoURL = fileURL
+        let fileURL = cacheDirectoryURL.appendingPathComponent(item.fileName)
+        do {
+            if !FileManager.default.fileExists(atPath: fileURL.path) {
+                isLoading = true
+                try await downloadVideo(url: item.url, fileURL: fileURL)
+                isLoading = false
+            } else {
+                self.cachedVideoURL = fileURL
+                isLoading = false
+            }
+        } catch {
+            error.logError()
+            alertType = .genericError(localization: localization)
+            isLoading = false
         }
     }
 }
@@ -59,16 +71,12 @@ class VideoMessageCellViewModel: ObservableObject {
 private extension VideoMessageCellViewModel {
     
     @MainActor
-    func downloadVideo(url: URL, fileURL: URL) async {
+    func downloadVideo(url: URL, fileURL: URL) async throws {
         LogManager.trace("Downloading video")
         
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            try data.write(to: fileURL, options: .atomic)
-            
-            cachedVideoURL = fileURL
-        } catch {
-            error.logError()
-        }
+        let (data, _) = try await URLSession.shared.data(from: url)
+        try data.write(to: fileURL, options: .atomic)
+        
+        cachedVideoURL = fileURL
     }
 }

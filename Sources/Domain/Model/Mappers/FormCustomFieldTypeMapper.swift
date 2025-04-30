@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -44,17 +44,6 @@ enum FormCustomFieldTypeMapper {
                 children: entity.nodes.map(mapChild),
                 value: customFieldValues[entity.ident]
             )
-        }
-    }
-    
-    static func map(_ type: CustomFieldType) -> FormCustomFieldType {
-        switch type {
-        case .textField(let entity):
-            return TextFieldEntity(label: entity.label, isRequired: false, ident: entity.ident, isEmail: entity.isEmail, value: entity.value)
-        case .selector(let entity):
-            return ListFieldEntity(label: entity.label, isRequired: false, ident: entity.ident, options: entity.options, value: entity.value)
-        case .hierarchical(let entity):
-            return TreeFieldEntity(label: entity.label, isRequired: false, ident: entity.ident, children: entity.nodes.map(mapChild), value: entity.value)
         }
     }
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -23,38 +23,44 @@ public struct StyleColorsManager {
     
     // MARK: - Properties
     
-    /// The color styles for light mode.
-    public let light: StyleColors
+    let light: StyleColors
     
-    /// The color styles for dark mode.
-    public let dark: StyleColors
+    let dark: StyleColors
     
     // MARK: - Init
     
     /// Initializes a new instance of `StyleColorsManager` with the specified light and dark mode color styles.
     ///
     /// - Parameters:
-    ///   - light: The color styles for light mode.
-    ///   - dark: The color styles for dark mode.
-    public init(light: StyleColors, dark: StyleColors) {
-        self.light = light
-        self.dark = dark
+    ///   - light: The customizable color styles for light mode.
+    ///   - dark: The customizable color styles for dark mode.
+    public init(light: CustomizableStyleColors, dark: CustomizableStyleColors) {
+        self.light = StyleColorsImpl(
+            customizable: light,
+            foreground: ForegroundStyleColorsImpl.defaultLight,
+            background: BackgroundStyleColorsImpl.defaultLight,
+            accent: AccentStyleColorsImpl.defaultLight,
+            border: BorderStyleColorsImpl.defaultLight
+        )
+        self.dark = StyleColorsImpl(
+            customizable: dark,
+            foreground: ForegroundStyleColorsImpl.defaultDark,
+            background: BackgroundStyleColorsImpl.defaultDark,
+            accent: AccentStyleColorsImpl.defaultDark,
+            border: BorderStyleColorsImpl.defaultDark
+        )
     }
     
     // MARK: - Methods
-    
-    /// Returns the appropriate color styles based on the provided color scheme.
-    ///
-    /// - Parameter scheme: The color scheme for which the color styles are needed.
-    /// - Returns: The color styles for the specified color scheme.
-    public func callAsFunction(for scheme: ColorScheme) -> StyleColors {
+
+    func callAsFunction(for scheme: ColorScheme) -> StyleColors {
         scheme == .dark ? dark : light
     }
 }
 
 // MARK: - Previews
 
-private struct TestView: View, Themed {
+private struct TestViewPreview: View, Themed {
     
     // MARK: - Properties
     
@@ -84,12 +90,12 @@ private struct TestView: View, Themed {
 }
 
 #Preview("Light Mode") {
-    TestView()
+    TestViewPreview()
         .environmentObject(ChatStyle())
 }
 
 #Preview("Dark Mode") {
-    TestView()
+    TestViewPreview()
         .environmentObject(ChatStyle())
         .preferredColorScheme(.dark)
 }

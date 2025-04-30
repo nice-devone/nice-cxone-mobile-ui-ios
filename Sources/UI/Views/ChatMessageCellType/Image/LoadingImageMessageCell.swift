@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -15,73 +15,75 @@
 
 import SwiftUI
 
-struct LoadingImageMessageCell: View {
+struct LoadingImageMessageCell: View, Themed {
 
     // MARK: - Properties
-
-    @ObservedObject var viewModel: ImageMessageCellViewModel
-
-    @State private var isImagePresented = false
-
-    private let isMultiAttachment: Bool
-    private var image: Image?
     
-    private var width: CGFloat {
-        UIScreen.main.messageCellWidth
-    }
-
+    typealias Styling = StyleGuide.Attachment
+    
+    @StateObject var viewModel: ImageMessageCellViewModel
+    
+    @EnvironmentObject var style: ChatStyle
+    
+    @Environment(\.colorScheme) var scheme
+    
+    @State private var isImagePresented = false
+    
+    let isMultiAttachment: Bool
+    
+    private static let largeWidth: CGFloat = 242
+    private static let largeHeight: CGFloat = 285
+    
     // MARK: - Init
-
-    init(item: AttachmentItem, isMultiAttachment: Bool) {
-        self.viewModel = ImageMessageCellViewModel(item: item)
+    
+    init(item: AttachmentItem, isMultiAttachment: Bool, alertType: Binding<ChatAlertType?>, localization: ChatLocalization) {
+        _viewModel = StateObject(wrappedValue: ImageMessageCellViewModel(item: item, alertType: alertType, localization: localization))
         self.isMultiAttachment = isMultiAttachment
     }
-
+    
     // MARK: - Builder
-
+    
     var body: some View {
-        if let uiImage = viewModel.image {
-            let image = Image(uiImage: uiImage)
-
-            image
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(
-                    width: isMultiAttachment ? MultipleAttachmentContainer.cellDimension : width,
-                    height: isMultiAttachment ? MultipleAttachmentContainer.cellDimension : width
-                )
-                .contentShape(Rectangle())
-                .onTapGesture {
+        let displayImage = viewModel.image.map(Image.init(uiImage:)) ?? Asset.Attachment.placeholder
+        
+        displayImage
+            .resizable()
+            .aspectRatio(contentMode: .fill)
+            .frame(
+                width: isMultiAttachment ? Styling.largeDimension : Self.largeWidth,
+                height: isMultiAttachment ? Styling.largeDimension : Self.largeHeight
+            )
+            .clipped()
+            .background {
+                if viewModel.image == nil {
+                    colors.foreground.subtle
+                }
+            }
+            .foregroundColor(
+                viewModel.image == nil 
+                    ? colors.foreground.staticDark
+                    : Color.clear
+            )
+            .contentShape(Rectangle())
+            .if(viewModel.image != nil) {
+                $0.onTapGesture {
                     isImagePresented = true
                 }
                 .sheet(isPresented: $isImagePresented) {
-                    ImageViewer(image: image, viewerShown: $isImagePresented)
+                    ImageViewer(image: displayImage, viewerShown: $isImagePresented)
                 }
-        } else {
-            Asset.Attachment.placeholder
-                .frame(
-                    width: isMultiAttachment ? MultipleAttachmentContainer.cellDimension : width,
-                    height: MultipleAttachmentContainer.cellDimension
-                )
-                .background(Color.gray)
-                .foregroundColor(Color.black)
-        }
+            }
     }
 }
 
 // MARK: - Preview
 
-struct LoadingImageCell_Previews: PreviewProvider {
+#Preview {
+    let localization = ChatLocalization()
     
-    static var previews: some View {
-        VStack {
-            LoadingImageMessageCell(item: MockData.imageItem, isMultiAttachment: false)
-                .previewDisplayName("Light Mode")
-                .preferredColorScheme(.light)
-
-            LoadingImageMessageCell(item: MockData.imageItem, isMultiAttachment: true)
-                .previewDisplayName("Dark Mode")
-                .preferredColorScheme(.dark)
-        }
+    VStack(spacing: 100) {
+        LoadingImageMessageCell(item: MockData.imageItem, isMultiAttachment: true, alertType: .constant(nil), localization: localization)
+        LoadingImageMessageCell(item: MockData.imageItem, isMultiAttachment: false, alertType: .constant(nil), localization: localization)
     }
+    .environmentObject(ChatStyle())
 }

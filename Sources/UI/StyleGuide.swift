@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -13,34 +13,27 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
-import Foundation
+import SwiftUI
 
 enum StyleGuide {
-    
-    /// "32"
     static let buttonSmallerDimension: CGFloat = 32
-    /// "44"
     static let buttonDimension: CGFloat = 44
     
+    // nav bar is typically 44 points + 20 points for sheet inset + 32 points for positioning
+    static let containerVerticalOffset: CGFloat = 96
+
+    enum Attachment {
+        static let regularDimension: CGFloat = 72
+        static let largeDimension: CGFloat = 112
+        static let xtraLargeHeight: CGFloat = 319
+        static let xtraLargeWidth: CGFloat = 242
+        static let cornerRadius: CGFloat = 10
+    }
+    
     enum Message {
-        
-        /// "10"
         static let cornerRadius: CGFloat = 20
-        /// "0"
-        static let cornerRadiusBetweenMessages: CGFloat = 0
-        /// "50"
-        static let singleEmojiFontSize: CGFloat = 50
-        /// "38"
-        static let twoEmojiesFontSize: CGFloat = 38
-        /// "25"
-        static let threeEmojiesFontSize: CGFloat = 25
-        /// "14"
         static let paddingVertical: CGFloat = 14
-        /// "12"
         static let paddingHorizontal: CGFloat = 12
-        /// "12"
-        static let paddingLeading: CGFloat = 12
-        /// "4"
-        static let paddingTrailing: CGFloat = 4
+        static let groupCellSpacing: CGFloat = 2
     }
 }

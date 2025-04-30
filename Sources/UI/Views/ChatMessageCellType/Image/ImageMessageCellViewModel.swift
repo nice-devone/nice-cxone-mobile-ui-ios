@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,10 @@ class ImageMessageCellViewModel: ObservableObject {
     
     @Published var image: KFCrossPlatformImage?
     
+    @Binding var alertType: ChatAlertType?
+    
     let item: AttachmentItem
+    let localization: ChatLocalization
     
     private lazy var kingfisherManager = KingfisherManager(
         downloader: ImageDownloader(name: ChatView.packageIdentifier),
@@ -32,19 +35,25 @@ class ImageMessageCellViewModel: ObservableObject {
     
     // MARK: - Init
     
-    init(item: AttachmentItem) {
+    init(item: AttachmentItem, alertType: Binding<ChatAlertType?>, localization: ChatLocalization) {
         self.item = item
+        self._alertType = alertType
+        self.localization = localization
         
-        loadImageFromURL()
+        Task {
+            await loadImageFromURL()
+        }
     }
     
     // MARK: - Functions
     
-    func loadImageFromURL() {
-        if !kingfisherManager.cache.isCached(forKey: item.fileName) {
-            downloadImage()
+    func loadImageFromURL() async {
+        let cacheKey = item.url.absoluteString
+        
+        if !kingfisherManager.cache.isCached(forKey: cacheKey) {
+            await downloadImage(cacheKey: cacheKey)
         } else {
-            retrieveImage()
+            await retrieveImage(cacheKey: cacheKey)
         }
     }
 }
@@ -53,30 +62,57 @@ class ImageMessageCellViewModel: ObservableObject {
 
 private extension ImageMessageCellViewModel {
     
-    func downloadImage() {
-        kingfisherManager.downloader.downloadImage(with: item.url, options: .none) { [weak self] result in
-            guard let self else {
-                return
+    func downloadImage(cacheKey: String) async {
+        LogManager.trace("Downloading image from URL")
+        do {
+            // Explicitly use Kingfisher.ImageResource to avoid SwiftUI's ImageResource
+            let resource = Kingfisher.KF.ImageResource(downloadURL: item.url, cacheKey: cacheKey)
+            let result = try await kingfisherManager.retrieveImage(
+                with: resource,
+                options: [
+                    .targetCache(kingfisherManager.cache)
+                ]
+            )
+            await MainActor.run { [weak self] in
+                self?.image = result.image.fixOrientation()
             }
-            
-            switch result {
-            case .success(let value):
-                kingfisherManager.cache.storeToDisk(value.originalData, forKey: self.item.fileName)
-
-                self.image = value.image
-            case .failure(let error):
-                error.logError()
+        } catch {
+            error.logError()
+            await MainActor.run { [weak self] in
+                guard let self else {
+                    return
+                }
+                
+                self.alertType = .genericError(localization: self.localization)
             }
         }
     }
 
-    func retrieveImage() {
-        kingfisherManager.cache.retrieveImage(forKey: item.fileName) { [weak self] result in
-            switch result {
-            case .success(let value):
-                self?.image = value.image
-            case .failure(let error):
-                error.logError()
+    func retrieveImage(cacheKey: String) async {
+        LogManager.trace("Retrieving image from cache")
+        do {
+            let result = try await kingfisherManager.cache.retrieveImage(forKey: cacheKey)
+            await MainActor.run { [weak self] in
+                guard let self else {
+                    return
+                }
+                
+                if let image = result.image {
+                    self.image = image.fixOrientation()
+                } else {
+                    LogManager.error("Image not found in cache")
+                    
+                    self.alertType = .genericError(localization: self.localization)
+                }
+            }
+        } catch {
+            error.logError()
+            await MainActor.run { [weak self] in
+                guard let self else {
+                    return
+                }
+                
+                self.alertType = .genericError(localization: self.localization)
             }
         }
     }

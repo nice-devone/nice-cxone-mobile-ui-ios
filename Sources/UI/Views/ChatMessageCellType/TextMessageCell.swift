@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -19,17 +19,19 @@ struct TextMessageCell: View {
 
     // MARK: - Properties
 
-    @EnvironmentObject private var style: ChatStyle
+    private let message: ChatMessage
+    private let attributedText: AttributedString
+    private let text: String
+    private let position: MessageGroupPosition
 
-    let message: ChatMessage
-    let text: AttributedString
-    let position: MessageGroupPosition
-
+    private static let paddingLargeEmojiVertical: CGFloat = 6
+    
     // MARK: - Init
 
     init(message: ChatMessage, text: String, position: MessageGroupPosition) {
         self.message = message
-        self.text = text.attributed
+        self.text = text
+        self.attributedText = text.attributed
         self.position = position
     }
 
@@ -37,16 +39,18 @@ struct TextMessageCell: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            if !message.user.isAgent {
+            let isLargeEmojiText = text.isLargeEmoji
+            
+            if !message.isUserAgent {
                 Spacer()
             }
             
-            Text(text)
-                .padding(.vertical, StyleGuide.Message.paddingVertical)
-                .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
-                .messageChatStyle(message, position: position, text: text.description)
+            Text(attributedText)
+                .padding(.vertical, isLargeEmojiText ? Self.paddingLargeEmojiVertical : StyleGuide.Message.paddingVertical)
+                .padding(.horizontal, isLargeEmojiText ? 0 : StyleGuide.Message.paddingHorizontal)
+                .messageChatStyle(message, position: position, text: text)
             
-            if message.user.isAgent {
+            if message.isUserAgent {
                 Spacer()
             }
         }
@@ -61,7 +65,7 @@ private extension String {
         var result = AttributedString(self)
         
         guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType(arrayLiteral: .link, .phoneNumber).rawValue) else {
-            Log.error(.failed("Unable to initialize DataDetector to highling link/phone number"))
+            LogManager.error(.failed("Unable to initialize DataDetector to highling link/phone number"))
             return result
         }
         
@@ -79,14 +83,14 @@ private extension String {
             switch match.resultType {
             case .phoneNumber:
                 guard let phoneNumber = match.phoneNumber, let url = URL(string: "tel://\(phoneNumber)") else {
-                    Log.error(.failed("Unable to get the phone number"))
+                    LogManager.error(.failed("Unable to get the phone number"))
                     break
                 }
                 
                 result[range].link = url
             case .link:
                 guard let url = match.url else {
-                    Log.error(.failed("Unable to get the URL"))
+                    LogManager.error(.failed("Unable to get the URL"))
                     break
                 }
                 
@@ -102,66 +106,32 @@ private extension String {
 
 // MARK: - Preview
 
-struct TextMessageCell_Previews: PreviewProvider {
-    
-    static var previews: some View {
-        Group {
-            VStack(spacing: 4) {
-                TextMessageCell(
-                    message: MockData.textMessage(user: MockData.customer),
-                    text: Lorem.sentence(),
-                    position: .single
-                )
-                
-                TextMessageCell(
-                    message: MockData.hyperlinkMessage(user: MockData.customer),
-                    text: MockData.hyperlinkContent,
-                    position: .single
-                )
-                
-                TextMessageCell(
-                    message: MockData.textMessage(user: MockData.agent),
-                    text: Lorem.sentence(),
-                    position: .single
-                )
-                
-                TextMessageCell(
-                    message: MockData.phoneNumberMessage(user: MockData.customer),
-                    text: MockData.phoneNumberContent,
-                    position: .single
-                )
-            }
-            .previewDisplayName("Light Mode")
-            
-            VStack(spacing: 4) {
-                TextMessageCell(
-                    message: MockData.textMessage(user: MockData.customer),
-                    text: Lorem.sentence(),
-                    position: .single
-                )
+#Preview {
+    VStack(spacing: 2) {
+        TextMessageCell(
+            message: MockData.textMessage(user: MockData.customer),
+            text: Lorem.sentence(),
+            position: .first
+        )
 
-                TextMessageCell(
-                    message: MockData.hyperlinkMessage(user: MockData.customer),
-                    text: MockData.hyperlinkContent,
-                    position: .single
-                )
-                
-                TextMessageCell(
-                    message: MockData.textMessage(user: MockData.agent),
-                    text: Lorem.sentence(),
-                    position: .single
-                )
-                
-                TextMessageCell(
-                    message: MockData.phoneNumberMessage(user: MockData.customer),
-                    text: MockData.phoneNumberContent,
-                    position: .single
-                )
-            }
-            .previewDisplayName("Dark Mode")
-            .preferredColorScheme(.dark)
-        }
-        .padding(.horizontal, 10)
-        .environmentObject(ChatStyle())
+        TextMessageCell(
+            message: MockData.hyperlinkMessage(user: MockData.customer),
+            text: MockData.hyperlinkContent,
+            position: .last
+        )
+        
+        TextMessageCell(
+            message: MockData.textMessage(user: MockData.agent),
+            text: Lorem.sentence(),
+            position: .single
+        )
+        
+        TextMessageCell(
+            message: MockData.phoneNumberMessage(user: MockData.customer),
+            text: MockData.phoneNumberContent,
+            position: .single
+        )
     }
+    .padding(.horizontal, 10)
+    .environmentObject(ChatStyle())
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -15,11 +15,13 @@
 
 import SwiftUI
 
-struct AnimatedDotsView: View {
+struct AnimatedDotsView: View, Themed {
     
     // MARK: - Properties
     
-    @EnvironmentObject private var style: ChatStyle
+    @EnvironmentObject var style: ChatStyle
+    
+    @Environment(\.colorScheme) var scheme
     
     @State private var dotsCount = 1
 
@@ -30,13 +32,23 @@ struct AnimatedDotsView: View {
     var body: some View {
         HStack(spacing: 0) {
             Text(text)
-                .foregroundColor(style.formTextColor.opacity(0.5))
+                .truncationMode(.tail)
             
             Text(String(repeating: ".", count: dotsCount))
-                .foregroundColor(style.formTextColor.opacity(0.5))
         }
+        .foregroundColor(colors.customizable.onBackground.opacity(0.5))
         .onReceive(Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()) { _ in
             dotsCount = (dotsCount + 1) % 4
         }
     }
+}
+
+// MARK: - Previews
+
+#Preview {
+    let localization = ChatLocalization()
+    
+    AnimatedDotsView(text: localization.chatMessageInputAudioRecorderRecording)
+        .environmentObject(localization)
+        .environmentObject(ChatStyle())
 }

@@ -89,7 +89,8 @@ internal enum Asset {
     internal static let yellow90 = ColorAsset(name: "yellow90")
   }
   internal enum Images {
-    internal static let image = ImageAsset(name: "Image")
+    internal static let blankFile = ImageAsset(name: "blankFile")
+    internal static let listPickerIcon = ImageAsset(name: "listPickerIcon")
   }
 }
 // swiftlint:enable identifier_name line_length nesting type_body_length type_name

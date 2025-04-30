@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -15,80 +15,108 @@
 
 import SwiftUI
 
-struct ListFieldView: View {
+struct ListFieldView: View, Themed {
 
     // MARK: - Properties
 
-    @EnvironmentObject private var style: ChatStyle
+    @EnvironmentObject var style: ChatStyle
     @EnvironmentObject private var localization: ChatLocalization
+    
+    @Environment(\.colorScheme) var scheme
     
     @ObservedObject var entity: ListFieldEntity
 
     @State private var isActionSheetVisible = false
+    @State private var hStackWidth: CGFloat = 0
     
+    static let paddingBottomTitle: CGFloat = 10
+    static let paddingLeadingChevron: CGFloat = 2
+    static let paddingBottomSelectionButton: CGFloat = 10
+    static let paddingTopRequiredText: CGFloat = 4
+    static let dividerHeight: CGFloat = 1
+    static let dividerFocusedHeight: CGFloat = 2
+    static let placeholderOpacity: CGFloat = 0.5
+    static let valueDisclosureSpacing: CGFloat = 16
+
     // MARK: - Content
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(entity.label)
-                    .font(.caption)
-                    .foregroundColor(style.formTextColor)
-                
-                HStack(spacing: 4) {
-                    Button(entity.value.isEmpty ? localization.commonNoSelection : entity.selectedOption) {
-                        isActionSheetVisible.toggle()
+            VStack(alignment: .leading, spacing: 0) {
+                Text(entity.formattedTitle)
+                    .font(.callout)
+                    .bold()
+                    .foregroundStyle(colors.customizable.onBackground)
+                    .padding(.bottom, Self.paddingBottomTitle)
+                 
+                Button {
+                    isActionSheetVisible.toggle()
+                } label: {
+                    HStack(spacing: Self.valueDisclosureSpacing) {
+                        Text(entity.value.isEmpty ? localization.commonNoSelection : entity.selectedOption)
+                            .foregroundStyle(colors.customizable.onBackground)
+                            .opacity(entity.value.isEmpty ? Self.placeholderOpacity : 1)
+                        
+                        Asset.down
+                            .font(.footnote)
+                            .foregroundStyle(colors.customizable.primary)
+                            .padding(.leading, Self.paddingLeadingChevron)
                     }
-                    
-                    Asset.disclosure
-                        .font(.caption)
-                        .rotationEffect(.degrees(isActionSheetVisible ? 90 : .zero))
                 }
-                .foregroundColor(style.formTextColor)
-
+                .overlay(
+                    GeometryReader { geometry in
+                        Color.clear
+                            .preference(key: PreferenceKeys.ContentSizeThatFitsKey.self, value: geometry.size)
+                    }
+                )
+                .foregroundStyle(colors.customizable.onBackground)
+                .padding(.bottom, Self.paddingBottomSelectionButton)
+                
+                ColoredDivider(
+                    isActionSheetVisible ? colors.customizable.primary : colors.customizable.onBackground.opacity(0.1),
+                    width: hStackWidth,
+                    height: isActionSheetVisible ? Self.dividerFocusedHeight : Self.dividerHeight
+                )
+                
                 if entity.isRequired {
                     Text(localization.commonRequired)
                         .font(.caption)
-                        .foregroundColor(style.formErrorColor)
+                        .foregroundStyle(colors.background.errorContrast)
+                        .padding(.top, Self.paddingTopRequiredText)
                 }
             }
             
             Spacer()
         }
+        .onPreferenceChange(PreferenceKeys.ContentSizeThatFitsKey.self) { size in
+            self.hStackWidth = size.width
+        }
         .actionSheet(isPresented: $isActionSheetVisible) {
             var options: [ActionSheet.Button] = entity.options.map { option in
                 .default(Text(option.value)) { entity.value = option.key }
             }
+            
             options.append(.cancel { entity.value = "" })
 
             return ActionSheet(title: Text(entity.label), buttons: options)
         }
-        .animation(.bouncy, value: isActionSheetVisible)
+        .animation(.default, value: isActionSheetVisible)
+        .animation(.default, value: hStackWidth)
     }
 }
 
 // MARK: - Previews
 
-struct ListFieldView_Previews: PreviewProvider {
-
-    private static let entity = ListFieldEntity(
+#Preview {
+    let entity = ListFieldEntity(
         label: "Color",
         isRequired: true,
         ident: "color",
-        options: ["blue": "Blue", "yellow": "Yellow"],
+        options: ["blue": "Blue", "yellow": "Yellow", "experimental_green": "Experimental Green"],
         value: "yellow"
     )
-
-    static var previews: some View {
-        Group {
-            ListFieldView(entity: entity)
-                .previewDisplayName("Light Mode")
-            
-            ListFieldView(entity: entity)
-                .previewDisplayName("Dark Mode")
-                .preferredColorScheme(.dark)
-        }
+    
+    return ListFieldView(entity: entity)
         .environmentObject(ChatStyle())
         .environmentObject(ChatLocalization())
-    }
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -16,20 +16,30 @@
 import Combine
 import SwiftUI
 
-struct ValidatedTextField: View {
+struct ValidatedTextField: View, Themed {
     
     // MARK: - Properties
+
+    @EnvironmentObject var style: ChatStyle
     
-    @EnvironmentObject private var style: ChatStyle
+    @Environment(\.colorScheme) var scheme
+    
+    @FocusState private var isFocused: Bool
     
     @Binding var text: String
     
-    @State var error: String?
+    @State private var error: String?
+    @State private var textColor: Color = .black
+    
+    private static let spacingBetweenElements: CGFloat = 10
+    private static let errorTextPaddingBottom: CGFloat = 4
+    private static let dividerFocusedHeight: CGFloat = 2
+    private static let dividerHeight: CGFloat = 1
     
     let label: String?
     let title: String
     let validator: ((String) -> String?)?
-
+    
     // MARK: - Init
     
     init(
@@ -50,34 +60,47 @@ struct ValidatedTextField: View {
     
     var body: some View {
         let error = validator?(text)
-        
-        VStack(alignment: .leading, spacing: 4) {
+
+        VStack(alignment: .leading, spacing: Self.spacingBetweenElements) {
             if let label {
                 Text(label)
                     .font(.caption)
-                    .foregroundColor(style.formTextColor)
+                    .foregroundColor(textColor)
+                    .bold()
             }
             
             VStack(alignment: .leading) {
                 TextField("", text: $text)
                     .placeholder(when: text.isEmpty) {
                         Text(title)
-                            .foregroundColor(style.formTextColor.opacity(0.5))
+                            .foregroundColor(colors.customizable.onBackground.opacity(0.5))
                     }
-                    .font(.body)
-                    .foregroundColor(style.formTextColor)
-                    .autocorrectionDisabled()
+                    .font(.callout)
+                    .foregroundStyle(textColor)
                     .autocapitalization(.none)
+                    .padding(.bottom, .zero)
+                    .onReceive(Just(text)) { _ in
+                        textColor = error == nil 
+                            ? colors.customizable.onBackground
+                            : colors.background.errorContrast
+                    }
+                    .focused($isFocused)
                 
-                Divider()
-                    .background(error == nil ? Color(.separator) : .red)
+                ColoredDivider(
+                    error != nil
+                        ? colors.background.errorContrast
+                        : isFocused ? colors.customizable.primary : colors.customizable.onBackground.opacity(0.1),
+                    height: isFocused ? Self.dividerFocusedHeight : Self.dividerHeight
+                )
+                .padding(.bottom, Self.errorTextPaddingBottom)
                 
-                if let error {
+                if let error = error {
                     Text(error)
                         .font(.caption)
-                        .foregroundColor(style.formErrorColor)
+                        .foregroundColor(colors.background.errorContrast)
                 }
             }
+            .animation(.default, value: isFocused)
         }
     }
 }
@@ -100,10 +123,7 @@ func numeric(_ localization: ChatLocalization) -> (String) -> String? {
 
 func email(_ localization: ChatLocalization) -> (String) -> String? {
     { text in
-        let emailRegEx = #"^(?:|([A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,64}))$"#
-        let isValidFormat = text.range(of: emailRegEx, options: [.regularExpression]) != nil
-
-        return !isValidFormat ? localization.commonInvalidEmail : nil
+        !text.isValidEmail ? localization.commonInvalidEmail : nil
     }
 }
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -15,175 +15,124 @@
 
 import SwiftUI
 
-/// A protocol that defines the color properties for the background.
-public protocol BackgroundStyleColors {
-    /// The base color.
-    var base: Color { get }
+protocol BackgroundStyleColors {
     
-    /// The subtle color.
+    var canvas: Color { get }
     var subtle: Color { get }
-    
-    /// The muted color.
     var muted: Color { get }
-    
-    /// The contrast color.
     var contrast: Color { get }
-    
-    /// The surface color.
     var surface: Color { get }
-    
-    /// The interactive primary color.
     var interactivePrimary: Color { get }
-    
-    /// The interactive secondary color.
     var interactiveSecondary: Color { get }
-    
-    /// The interactive tertiary color.
     var interactiveTertiary: Color { get }
-    
-    /// The success contrast color.
     var successContrast: Color { get }
-    
-    /// The error color.
     var error: Color { get }
-    
-    /// The error contrast color.
     var errorContrast: Color { get }
-    
-    /// The warning color.
     var warning: Color { get }
-    
-    /// The disabled color.
     var disabled: Color { get }
-    
-    /// The danger primary color.
     var dangerPrimary: Color { get }
-    
-    /// The danger secondary color.
     var dangerSecondary: Color { get }
-    
-    /// The danger tertiary color.
     var dangerTertiary: Color { get }
 }
 
 // MARK: - Default Colors
 
-/// Default colors for the background.
-public struct BackgroundStyleColorsImpl: BackgroundStyleColors {
+struct BackgroundStyleColorsImpl: BackgroundStyleColors {
     
     // MARK: - Properties
     
-    public let base: Color
-    public let subtle: Color
-    public let muted: Color
-    public let contrast: Color
-    public let surface: Color
-    public let interactivePrimary: Color
-    public let interactiveSecondary: Color
-    public let interactiveTertiary: Color
-    public let successContrast: Color
-    public let error: Color
-    public let errorContrast: Color
-    public let warning: Color
-    public let disabled: Color
-    public let dangerPrimary: Color
-    public let dangerSecondary: Color
-    public let dangerTertiary: Color
+    let canvas: Color
+    let subtle: Color
+    let muted: Color
+    let contrast: Color
+    let surface: Color
+    let interactivePrimary: Color
+    let interactiveSecondary: Color
+    let interactiveTertiary: Color
+    let successContrast: Color
+    let error: Color
+    let errorContrast: Color
+    let warning: Color
+    let disabled: Color
+    let dangerPrimary: Color
+    let dangerSecondary: Color
+    let dangerTertiary: Color
     
     // MARK: - Init
     
-    /// Initializes the default light colors for the background.
-    ///
-    /// - Parameters:
-    ///  - base: The base color.
-    ///  - subtle: The subtle color.
-    ///  - muted: The muted color.
-    ///  - contrast: The contrast color.
-    ///  - surface: The surface color.
-    ///  - interactivePrimary: The interactive primary color.
-    ///  - interactiveSecondary: The interactive secondary color.
-    ///  - interactiveTertiary: The interactive tertiary color.
-    ///  - successContrast: The success contrast color.
-    ///  - error: The error color.
-    ///  - errorContrast: The error contrast color.
-    ///  - warning: The warning color.
-    ///  - disabled: The disabled color.
-    ///  - dangerPrimary: The danger primary color.
-    ///  - dangerSecondary: The danger secondary color.
-    ///  - dangerTertiary: The danger tertiary color.
-    public init(
-        base: Color,
-        subtle: Color,
-        muted: Color,
-        contrast: Color,
-        surface: Color,
-        interactivePrimary: Color,
-        interactiveSecondary: Color,
-        interactiveTertiary: Color,
-        successContrast: Color,
-        error: Color,
-        errorContrast: Color,
-        warning: Color,
-        disabled: Color,
-        dangerPrimary: Color,
-        dangerSecondary: Color,
-        dangerTertiary: Color
+    init(
+        canvas: ColorAsset,
+        subtle: ColorAsset,
+        muted: ColorAsset,
+        contrast: ColorAsset,
+        surface: ColorAsset,
+        interactivePrimary: ColorAsset,
+        interactiveSecondary: ColorAsset,
+        interactiveTertiary: ColorAsset,
+        successContrast: ColorAsset,
+        error: ColorAsset,
+        errorContrast: ColorAsset,
+        warning: ColorAsset,
+        disabled: ColorAsset,
+        dangerPrimary: ColorAsset,
+        dangerSecondary: ColorAsset,
+        dangerTertiary: ColorAsset
     ) {
-        self.base = base
-        self.subtle = subtle
-        self.muted = muted
-        self.contrast = contrast
-        self.surface = surface
-        self.interactivePrimary = interactivePrimary
-        self.interactiveSecondary = interactiveSecondary
-        self.interactiveTertiary = interactiveTertiary
-        self.successContrast = successContrast
-        self.error = error
-        self.errorContrast = errorContrast
-        self.warning = warning
-        self.disabled = disabled
-        self.dangerPrimary = dangerPrimary
-        self.dangerSecondary = dangerSecondary
-        self.dangerTertiary = dangerTertiary
+        self.canvas = canvas.swiftUIColor
+        self.subtle = subtle.swiftUIColor
+        self.muted = muted.swiftUIColor
+        self.contrast = contrast.swiftUIColor
+        self.surface = surface.swiftUIColor
+        self.interactivePrimary = interactivePrimary.swiftUIColor
+        self.interactiveSecondary = interactiveSecondary.swiftUIColor
+        self.interactiveTertiary = interactiveTertiary.swiftUIColor
+        self.successContrast = successContrast.swiftUIColor
+        self.error = error.swiftUIColor
+        self.errorContrast = errorContrast.swiftUIColor
+        self.warning = warning.swiftUIColor
+        self.disabled = disabled.swiftUIColor
+        self.dangerPrimary = dangerPrimary.swiftUIColor
+        self.dangerSecondary = dangerSecondary.swiftUIColor
+        self.dangerTertiary = dangerTertiary.swiftUIColor
     }
     
     // MARK: - Static Properties
     
     static let defaultLight = BackgroundStyleColorsImpl(
-        base: Asset.Colors.white.swiftUIColor,
-        subtle: Asset.Colors.grey10.swiftUIColor,
-        muted: Asset.Colors.grey20.swiftUIColor,
-        contrast: Asset.Colors.grey100.swiftUIColor,
-        surface: Asset.Colors.white.swiftUIColor,
-        interactivePrimary: Asset.Colors.grey20.swiftUIColor,
-        interactiveSecondary: Asset.Colors.grey30.swiftUIColor,
-        interactiveTertiary: Asset.Colors.grey40.swiftUIColor,
-        successContrast: Asset.Colors.green60.swiftUIColor,
-        error: Asset.Colors.red10.swiftUIColor,
-        errorContrast: Asset.Colors.red60.swiftUIColor,
-        warning: Asset.Colors.yellow10.swiftUIColor,
-        disabled: Asset.Colors.grey30.swiftUIColor,
-        dangerPrimary: Asset.Colors.red50.swiftUIColor,
-        dangerSecondary: Asset.Colors.red60.swiftUIColor,
-        dangerTertiary: Asset.Colors.red70.swiftUIColor
+        canvas: Asset.Colors.white,
+        subtle: Asset.Colors.grey10,
+        muted: Asset.Colors.grey20,
+        contrast: Asset.Colors.grey100,
+        surface: Asset.Colors.white,
+        interactivePrimary: Asset.Colors.grey20,
+        interactiveSecondary: Asset.Colors.grey30,
+        interactiveTertiary: Asset.Colors.grey40,
+        successContrast: Asset.Colors.green60,
+        error: Asset.Colors.red10,
+        errorContrast: Asset.Colors.red60,
+        warning: Asset.Colors.yellow10,
+        disabled: Asset.Colors.grey30,
+        dangerPrimary: Asset.Colors.red50,
+        dangerSecondary: Asset.Colors.red60,
+        dangerTertiary: Asset.Colors.red70
     )
     
     static let defaultDark = BackgroundStyleColorsImpl(
-        base: Asset.Colors.grey100.swiftUIColor,
-        subtle: Asset.Colors.grey90.swiftUIColor,
-        muted: Asset.Colors.grey80.swiftUIColor,
-        contrast: Asset.Colors.white.swiftUIColor,
-        surface: Asset.Colors.grey80.swiftUIColor,
-        interactivePrimary: Asset.Colors.grey80.swiftUIColor,
-        interactiveSecondary: Asset.Colors.grey70.swiftUIColor,
-        interactiveTertiary: Asset.Colors.grey60.swiftUIColor,
-        successContrast: Asset.Colors.green50.swiftUIColor,
-        error: Asset.Colors.red80.swiftUIColor,
-        errorContrast: Asset.Colors.red50.swiftUIColor,
-        warning: Asset.Colors.yellow80.swiftUIColor,
-        disabled: Asset.Colors.grey80.swiftUIColor,
-        dangerPrimary: Asset.Colors.red50.swiftUIColor,
-        dangerSecondary: Asset.Colors.red60.swiftUIColor,
-        dangerTertiary: Asset.Colors.red70.swiftUIColor
+        canvas: Asset.Colors.grey100,
+        subtle: Asset.Colors.grey90,
+        muted: Asset.Colors.grey80,
+        contrast: Asset.Colors.white,
+        surface: Asset.Colors.grey80,
+        interactivePrimary: Asset.Colors.grey80,
+        interactiveSecondary: Asset.Colors.grey70,
+        interactiveTertiary: Asset.Colors.grey60,
+        successContrast: Asset.Colors.green50,
+        error: Asset.Colors.red80,
+        errorContrast: Asset.Colors.red50,
+        warning: Asset.Colors.yellow80,
+        disabled: Asset.Colors.grey80,
+        dangerPrimary: Asset.Colors.red50,
+        dangerSecondary: Asset.Colors.red60,
+        dangerTertiary: Asset.Colors.red70
     )
 }

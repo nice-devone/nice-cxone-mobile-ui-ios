@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -27,29 +27,24 @@ extension Asset {
     static let close = Image(systemName: "xmark")
     /// `checkmark`
     static let check = Image(systemName: "checkmark")
-    /// `chevron.left`
-    static let back = Image(systemName: "chevron.left")
     /// `"ellipsis`
     static let menu = Image(systemName: "ellipsis")
-    /// `bolt.slash.fill`
-    static let disconnect = Image(systemName: "bolt.slash.fill")
+    /// `chevron.down`
+    static let down = Image(systemName: "chevron.down")
     /// `chevron.right`
-    static let disclosure = Image(systemName: "chevron.right")
-    
-    // MARK: - Chat Example
-    
-    enum ChatExample {
-        /// `bubble.left.and.bubble.right`
-        static let exampleNavigationIcon = Image(systemName: "bubble.left.and.bubble.right")
-    }
+    static let right = Image(systemName: "chevron.right")
+    /// 'exclamationmark.triangle'
+    static let warning = Image(systemName: "exclamationmark.triangle")
     
     // MARK: - List
     
     enum List {
         /// `plus`
         static let new = Image(systemName: "plus")
-        /// `trash`
-        static let delete = Image(systemName: "trash")
+        /// `gearshape`
+        static let rename = Image(systemName: "gearshape")
+        /// `archivebox`
+        static let archive = Image(systemName: "archivebox")
     }
     
     // MARK: - Chat Thread
@@ -59,74 +54,69 @@ extension Asset {
         static let editPrechatCustomFields = Image(systemName: "rectangle.stack.badge.person.crop")
         /// `rectangle.and.pencil.and.ellipsis.rtl`
         static let editThreadName = Image(systemName: "rectangle.and.pencil.and.ellipsis.rtl")
+        /// `gearshape`
+        static let gear = Image(systemName: "gearshape")
     }
     
     // MARK: - Message
     
     enum Message {
-        /// `bubble.left`
-        static let toastIcon = Image(systemName: "bubble.left")
         /// `checkmark.circle`
         static let sent = Image(systemName: "checkmark.circle")
         /// `checkmark.circle.fill`
         static let delivered = Image(systemName: "checkmark.circle.fill")
-        /// `paperplane.fill`
-        static let send = Image(systemName: "paperplane.fill")
+        /// `paperplane.circle.fill`
+        static let send = Image(systemName: "paperplane.circle.fill")
+        /// `exclamationmark.circle`
+        static let failed = Image(systemName: "exclamationmark.circle")
         /// `archivebox.fill`
-        static let archived = Image(systemName: "archivebox.fill")
+        static let archiveFill = Image(systemName: "archivebox.fill")
+        /// `archivebox`
+        static let archive = Image(systemName: "archivebox")
+        /// `person.fill`
+        static let fallbackAvatar = Image(systemName: "person.fill")
+        
+        enum RichContent {
+            /// `link`
+            static let link = Image(systemName: "link")
+        }
     }
     
     // MARK: - Attachments
     
     enum Attachment {
-        /// `arrow.up.doc`
-        static let image = Image(systemName: "arrow.up.doc")
         /// `xmark.circle.fill`
         static let remove = Image(systemName: "xmark.circle.fill")
         /// `play.fill`
         static let play = Image(systemName: "play.fill")
         /// `pause.fill`
         static let pause = Image(systemName: "pause.fill")
-        /// `stop.fill`
-        static let stop = Image(systemName: "stop.fill")
-        /// `play.circle.fill`
-        static let playCircle = Image(systemName: "play.circle.fill")
-        /// `pause.fill.circle`
-        static let pauseCircle = Image(systemName: "pause.circle.fill")
-        /// `speaker.slash`
-        static let mute = Image(systemName: "speaker.slash")
-        /// `speaker.2`
-        static let unmute = Image(systemName: "speaker.2")
+        /// `stop.circle.fill`
+        static let stop = Image(systemName: "stop.circle.fill")
         /// `gobackward.10`
         static let rewind = Image(systemName: "gobackward.10")
         /// `goforward.10`
         static let advance = Image(systemName: "goforward.10")
-        /// `rectangle.on.rectangle.angled`
-        static let videoInFullScreen = Image(systemName: "rectangle.on.rectangle.angled")
         /// `photo`
         static let placeholder = Image(systemName: "photo")
         /// `paperclip`
         static let file = Image(systemName: "paperclip")
         /// `mic.fill`
-        static let recordVoice = Image(systemName: "mic.fill")
+        static let recordVoice = Image(systemName: "mic.circle.fill")
         /// `trash.fill`
         static let deleteVoice = Image(systemName: "trash.fill")
-        /// `rectangle.portrait.and.arrow.right`
-        static let openLink = Image(systemName: "rectangle.portrait.and.arrow.right")
-        /// `doc.text`
-        static let linkPlaceholder = Image(systemName: "doc.text")
         /// `waveform`
         static let voiceIndicator = Image(systemName: "waveform")
+        /// `play.circle.fill`
+        static let playButtonSymbol = Image(systemName: "play.circle.fill")
     }
     
     // MARK: - LiveChat - End Conversation
     
     enum LiveChat {
         /// `moon.zzz`
-        static let offline = Image(systemName: "moon.zzz")
+        static let offline = Image(systemName: "moon.zzz.fill")
         /// `person.crop.circle.badge.clock`
         static let personWithClock = Image(systemName: "person.crop.circle.badge.clock")
-        /// `bubble.left.and.bubble.right.fill`
-        static let newChat = Image(systemName: "bubble.left.and.bubble.right.fill")
     }
 }
