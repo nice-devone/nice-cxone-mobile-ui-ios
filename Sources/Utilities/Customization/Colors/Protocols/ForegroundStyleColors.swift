@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -15,104 +15,81 @@
 
 import SwiftUI
 
-/// A protocol that defines the color properties for the foreground.
-public protocol ForegroundStyleColors {
-    /// The base color.
+protocol ForegroundStyleColors {
+    
     var base: Color { get }
-    /// The muted color.
     var muted: Color { get }
-    /// The subtle color.
     var subtle: Color { get }
-    /// The accent color.
     var accent: Color { get }
-    /// The disabled color.
     var disabled: Color { get }
-    /// The on contrast color.
     var onContrast: Color { get }
-    /// The static dark color.
     var staticDark: Color { get }
-    /// The static light color.
     var staticLight: Color { get }
-    /// The error color.
     var error: Color { get }
 }
 
-// MARK: - Light Default Colors
+// MARK: - Default Colors
 
-/// Default colors for the foreground.
-public struct ForegroundStyleColorsImpl: ForegroundStyleColors {
+struct ForegroundStyleColorsImpl: ForegroundStyleColors {
     
     // MARK: - Properties
     
-    public let base: Color
-    public let muted: Color
-    public let subtle: Color
-    public let accent: Color
-    public let disabled: Color
-    public let onContrast: Color
-    public let staticDark: Color
-    public let staticLight: Color
-    public let error: Color
+    let base: Color
+    let muted: Color
+    let subtle: Color
+    let accent: Color
+    let disabled: Color
+    let onContrast: Color
+    let staticDark: Color
+    let staticLight: Color
+    let error: Color
     
     // MARK: - Init
     
-    /// Initializes the default light colors for the foreground.
-    /// 
-    /// - Parameters:
-    ///  - base: The base color.
-    ///  - muted: The muted color.
-    ///  - subtle: The subtle color.
-    ///  - accent: The accent color.
-    ///  - disabled: The disabled color.
-    ///  - onContrast: The on contrast color.
-    ///  - staticDark: The static dark color.
-    ///  - staticLight: The static light color.
-    ///  - error: The error color.
-    public init(
-        base: Color, 
-        muted: Color,
-        subtle: Color,
-        accent: Color,
-        disabled: Color,
-        onContrast: Color,
-        staticDark: Color,
-        staticLight: Color,
-        error: Color
+    init(
+        base: ColorAsset,
+        muted: ColorAsset,
+        subtle: ColorAsset,
+        accent: ColorAsset,
+        disabled: ColorAsset,
+        onContrast: ColorAsset,
+        staticDark: ColorAsset,
+        staticLight: ColorAsset,
+        error: ColorAsset
     ) {
-        self.base = base
-        self.muted = muted
-        self.subtle = subtle
-        self.accent = accent
-        self.disabled = disabled
-        self.onContrast = onContrast
-        self.staticDark = staticDark
-        self.staticLight = staticLight
-        self.error = error
+        self.base = base.swiftUIColor
+        self.muted = muted.swiftUIColor
+        self.subtle = subtle.swiftUIColor
+        self.accent = accent.swiftUIColor
+        self.disabled = disabled.swiftUIColor
+        self.onContrast = onContrast.swiftUIColor
+        self.staticDark = staticDark.swiftUIColor
+        self.staticLight = staticLight.swiftUIColor
+        self.error = error.swiftUIColor
     }
-    
     // MARK: - Static Properties
 
     static let defaultLight = ForegroundStyleColorsImpl(
-        base: Asset.Colors.grey100.swiftUIColor,
-        muted: Asset.Colors.grey60.swiftUIColor,
-        subtle: Asset.Colors.grey50.swiftUIColor,
-        accent: Asset.Colors.brand60.swiftUIColor,
-        disabled: Asset.Colors.grey50.swiftUIColor,
-        onContrast: Asset.Colors.white.swiftUIColor,
-        staticDark: Asset.Colors.grey100.swiftUIColor,
-        staticLight: Asset.Colors.white.swiftUIColor,
-        error: Asset.Colors.red60.swiftUIColor
+        base: Asset.Colors.grey100,
+        muted: Asset.Colors.grey60,
+        subtle: Asset.Colors.grey50,
+        accent: Asset.Colors.brand60,
+        disabled: Asset.Colors.grey50,
+        onContrast: Asset.Colors.white,
+        staticDark: Asset.Colors.grey100,
+        staticLight: Asset.Colors.white,
+        error: Asset.Colors.red60
     )
     
     static let defaultDark = ForegroundStyleColorsImpl(
-        base: Asset.Colors.white.swiftUIColor,
-        muted: Asset.Colors.grey50.swiftUIColor,
-        subtle: Asset.Colors.grey60.swiftUIColor,
-        accent: Asset.Colors.brand60.swiftUIColor,
-        disabled: Asset.Colors.grey60.swiftUIColor,
-        onContrast: Asset.Colors.grey100.swiftUIColor,
-        staticDark: Asset.Colors.grey100.swiftUIColor,
-        staticLight: Asset.Colors.white.swiftUIColor,
-        error: Asset.Colors.red40.swiftUIColor
+        base: Asset.Colors.white,
+        muted: Asset.Colors.grey50,
+        subtle: Asset.Colors.grey60,
+        accent: Asset.Colors.brand60,
+        disabled: Asset.Colors.grey60,
+        onContrast: Asset.Colors.grey100,
+        staticDark: Asset.Colors.grey100,
+        staticLight: Asset.Colors.white,
+        error: Asset.Colors.red40
     )
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -103,8 +103,13 @@ struct MediaPickerView: UIViewControllerRepresentable {
             guard let documentsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
                 throw CommonError.failed("Unable to get Documents directory URL")
             }
-            guard let data = image.jpegData(compressionQuality: 0.7) else {
-                throw CommonError.unableToParse("pngData")
+            
+            // For iOS 15 compatibility, ensure we're normalizing the image orientation
+            let normalizedImage = image.fixOrientation()
+            
+            // Use higher compression quality for better image clarity
+            guard let data = normalizedImage.jpegData(compressionQuality: 0.85) else {
+                throw CommonError.unableToParse("jpegData")
             }
             
             let localPath = documentsUrl.appendingPathComponent("\(UUID().uuidString).jpeg")

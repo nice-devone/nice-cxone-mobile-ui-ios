@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -14,67 +14,82 @@
 //
 
 import Combine
-import Kingfisher
 import SwiftUI
 
-struct ImageMessageCell: View {
-    
+struct ImageMessageCell: View, Themed {
+
     // MARK: - Properties
     
-    @EnvironmentObject private var style: ChatStyle
+    @EnvironmentObject var style: ChatStyle
+    @EnvironmentObject var localization: ChatLocalization
+    
+    @Environment(\.colorScheme) var scheme
+    
+    @StateObject private var viewModel: ImageMessageCellViewModel
 
-    @State var isSelected: Bool = false
-
-    private let item: AttachmentItem
+    @Binding var alertType: ChatAlertType?
+    
     private let isMultiAttachment: Bool
     private let message: ChatMessage
     private let position: MessageGroupPosition
     
     // MARK: - Init
     
-    init(message: ChatMessage, item: AttachmentItem, isMultiAttachment: Bool, position: MessageGroupPosition) {
+    init(
+        message: ChatMessage,
+        item: AttachmentItem,
+        isMultiAttachment: Bool,
+        position: MessageGroupPosition,
+        alertType: Binding<ChatAlertType?>,
+        localization: ChatLocalization
+    ) {
         self.message = message
-        self.item = item
         self.isMultiAttachment = isMultiAttachment
         self.position = position
+        self._alertType = alertType
+        
+        _viewModel = StateObject(wrappedValue: ImageMessageCellViewModel(
+            item: item,
+            alertType: alertType,
+            localization: localization
+        ))
     }
     
     // MARK: - Builder
     
     var body: some View {
-        LoadingImageMessageCell(item: item, isMultiAttachment: isMultiAttachment)
-            .messageChatStyle(message, position: position)
+        LoadingImageMessageCell(item: viewModel.item, isMultiAttachment: isMultiAttachment, alertType: $alertType, localization: localization)
             .if(!isMultiAttachment) { view in
-                view.shareable(message, attachments: [item], spacerLength: 0)
+                view
+                    .messageChatStyle(message, position: position)
+                    .shareable(message, attachments: [viewModel.item], spacerLength: 0)
             }
     }
 }
 
 // MARK: - Preview
 
-struct ImageMessageCell_Previews: PreviewProvider {
-    
-    static let agentMessage = MockData.imageMessageWithText(user: MockData.agent)
-    static let customerMessage = MockData.imageMessage(user: MockData.customer)
-    
-    static var previews: some View {
-        Group {
-            VStack(spacing: 4) {
-                ImageMessageCell(message: agentMessage, item: MockData.imageItem, isMultiAttachment: false, position: .single)
-                
-                ImageMessageCell(message: customerMessage, item: MockData.imageItem, isMultiAttachment: false, position: .single)
-            }
-            .previewDisplayName("Light Mode")
-            
-            VStack(spacing: 4) {
-                ImageMessageCell(message: agentMessage, item: MockData.imageItem, isMultiAttachment: false, position: .single)
-                
-                ImageMessageCell(message: customerMessage, item: MockData.imageItem, isMultiAttachment: false, position: .single)
-            }
-            .previewDisplayName("Dark Mode")
-            .preferredColorScheme(.dark)
-        }
-        .padding(.horizontal, 10)
-        .environmentObject(ChatStyle())
+#Preview {
+    VStack(spacing: 4) {
+        ImageMessageCell(
+            message: MockData.imageMessageWithText(user: MockData.agent),
+            item: MockData.imageItem,
+            isMultiAttachment: true,
+            position: .single,
+            alertType: .constant(nil),
+            localization: ChatLocalization()
+        )
+        
+        ImageMessageCell(
+            message: MockData.imageMessage(user: MockData.customer),
+            item: MockData.imageItem,
+            isMultiAttachment: true,
+            position: .single,
+            alertType: .constant(nil),
+            localization: ChatLocalization()
+        )
     }
+    .padding(.horizontal, 10)
+    .environmentObject(ChatStyle())
+    .environmentObject(ChatLocalization())
 }

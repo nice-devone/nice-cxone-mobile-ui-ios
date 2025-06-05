@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -38,6 +38,9 @@ public struct RichMessageButton: Hashable, Equatable {
     /// The label or text displayed on the button.
     public let title: String
     
+    /// A more detailed description of the option
+    public let description: String?
+    
     /// An optional URL to navigate to when the button is clicked.
     public let url: URL?
     
@@ -49,12 +52,14 @@ public struct RichMessageButton: Hashable, Equatable {
     /// Initialization of the RichMessageButton
     ///
     /// - Parameters:
-    ///   - iconUrl: An optional URL for an icon or image associated with the button.
     ///   - title: The label or text displayed on the button.
+    ///   - description: A more detailed description of the option.
+    ///   - iconUrl: An optional URL for an icon or image associated with the button.
     ///   - url: An optional URL to navigate to when the button is clicked.
     ///   - postback: An optional custom string associated with the button's action.
-    public init(title: String, iconUrl: URL? = nil, url: URL? = nil, postback: String? = nil) {
+    public init(title: String, description: String? = nil, iconUrl: URL? = nil, url: URL? = nil, postback: String? = nil) {
         self.title = title
+        self.description = description
         self.iconUrl = iconUrl
         self.url = url
         self.postback = postback

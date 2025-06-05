@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -39,7 +39,11 @@ struct TextFieldView: View {
             ),
             label: entity.label
         )
-        .keyboardType(isEmail ? .emailAddress : .default)
+        .if(isEmail) { view in
+            view
+                .textContentType(.emailAddress)
+                .keyboardType(.emailAddress)
+        }
     }
 }
 
@@ -50,7 +54,6 @@ struct TextFieldView_Previews: PreviewProvider {
     private static let firstNameEntity = TextFieldEntity(label: "First Name", isRequired: true, ident: "firstName", isEmail: false)
     private static let ageEntity = TextFieldEntity(label: "Age", isRequired: false, ident: "age", isEmail: false)
     private static let emailEntity = TextFieldEntity(label: "E-mail", isRequired: false, ident: "email", isEmail: true)
-    private static let localization = ChatLocalization()
 
     static var previews: some View {
         Group {

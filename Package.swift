@@ -1,6 +1,6 @@
 // swift-tools-version: 5.7
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -27,23 +27,22 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/onevcat/Kingfisher.git", from: "7.0.0"),
-        .package(url: "https://github.com/siteline/swiftui-introspect", from: "0.8.0"),
-        .package(url: "https://github.com/wxxsw/GSPlayer.git", from: "0.2.25"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "2.3.2")
+        .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "3.0.0"),
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios.git", from: "3.0.0")
     ],
     targets: [
         .target(
             name: "CXoneChatUI",
             dependencies: [
                 .byName(name: "Kingfisher"),
-                .product(name: "SwiftUIIntrospect", package: "swiftui-introspect"),
-                .byName(name: "GSPlayer"),
-                .product(name: "CXoneChatSDK", package: "nice-cxone-mobile-sdk-ios")
+                .product(name: "CXoneChatSDK", package: "nice-cxone-mobile-sdk-ios"),
+                .product(name: "CXoneGuideUtility", package: "nice-cxone-mobile-guide-utility-ios")
             ],
             path: "Sources",
             resources: [
-                .copy("../PrivacyInfo.xcprivacy")
+                .copy("../PrivacyInfo.xcprivacy"),
+                .copy("Resources/images.xcassets")
             ],
             plugins: []
         )

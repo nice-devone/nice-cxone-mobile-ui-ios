@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,14 @@ struct AttachmentRestrictions {
     
     /// True if attachment uploads are allowed.  If false, no uploads are allowed.
     let areAttachmentsEnabled: Bool
+    
+    /// True if audio files upload is allowed.
+    ///
+    /// Audio files are allowed if the allowed types contain `audio/*`
+    /// or if the allowed types contain any of the audio mime types related to the currently used voice message file type.
+    var areVoiceMessagesEnabled: Bool {
+        allowedTypes.contains("audio/*") || allowedTypes.contains(AudioRecorder.currentAudioFile.mimeType)
+    }
 }
 
 // MARK: - Mappers

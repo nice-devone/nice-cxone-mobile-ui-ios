@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -17,14 +17,17 @@ import CXoneChatSDK
 import SwiftUI
 import UIKit
 
-struct ChatContainerView: View {
+struct ChatContainerView: View, Themed, Alertable {
 
     // MARK: - Properties
-    
-    @SwiftUI.Environment(\.presentationMode) private var presentationMode
-    
-    @ObservedObject var viewModel: ChatContainerViewModel
 
+    @ObservedObject var viewModel: ChatContainerViewModel
+    
+    @EnvironmentObject var style: ChatStyle
+    @EnvironmentObject var localization: ChatLocalization
+    
+    @SwiftUI.Environment(\.colorScheme) var scheme
+    
     // MARK: - Init
 
     init(viewModel: ChatContainerViewModel) {
@@ -34,39 +37,62 @@ struct ChatContainerView: View {
     // MARK: - Builder
     
     var body: some View {
-        NavigationFrame(current: viewModel.currentChild)
-            .onAppear(perform: viewModel.onAppear)
-            .onDisappear(perform: viewModel.onDisappear)
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification), perform: viewModel.willEnterForeground)
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification), perform: viewModel.didEnterBackground)
+        ZStack {
+            contentWrapper
+            	.alert(item: $viewModel.alertType, content: alertContent)
+                .sheet(isPresented: viewModel.isSheetDisplayed) {
+                    viewModel.sheet?()
+                }
+        }
+        .onAppear(perform: viewModel.onAppear)
+        .onDisappear(perform: viewModel.onDisappear)
+        .onReceive(
+            NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification),
+            perform: viewModel.willEnterForeground
+        )
+        .onReceive(
+            NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification),
+            perform: viewModel.didEnterBackground
+        )
+        .tint(colors.customizable.primary)
+        .navigationBarHidden(viewModel.chatState != .ready)
     }
 }
 
-// MARK: - Previews
+// MARK: - Subviews
 
-#Preview("Light Mode") {
-    let localization = ChatLocalization()
+private extension ChatContainerView {
     
-    return ChatContainerView(
-        viewModel: ChatContainerViewModel(
-            chatProvider: CXoneChat.shared,
-            chatLocalization: localization
-        ) {}
-    )
-    .environmentObject(ChatStyle())
-    .environmentObject(localization)
-}
-
-#Preview("Dark Mode") {
-    let localization = ChatLocalization()
+    @ViewBuilder
+    var contentWrapper: some View {
+        if viewModel.presentModally {
+            NavigationView {
+                content
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button(action: self.viewModel.disconnect) {
+                                Asset.down
+                                    .foregroundStyle(colors.customizable.primary)
+                            }
+                        }
+                    }
+            }
+            .navigationViewStyle(StackNavigationViewStyle())
+        } else {
+            content
+        }
+    }
     
-    return ChatContainerView(
-        viewModel: ChatContainerViewModel(
-            chatProvider: CXoneChat.shared,
-            chatLocalization: localization
-        ) {}
-    )
-    .environmentObject(ChatStyle())
-    .environmentObject(localization)
-    .preferredColorScheme(.dark)
+    var content: some View {
+         switch viewModel.chatProvider.mode {
+         case .multithread:
+             return AnyView(
+                 ThreadListView(viewModel: viewModel.threadListViewModel())
+             )
+         case .singlethread, .liveChat:
+             return AnyView(
+                 ThreadView(viewModel: viewModel.viewModel(for: nil))
+             )
+         }
+     }
 }

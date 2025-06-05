@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -13,22 +13,23 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
+import AVFoundation
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-struct MessageInputView: View {
+struct MessageInputView: View, Themed {
     
     // MARK: - Properties
-    
-    @EnvironmentObject private var style: ChatStyle
-    @EnvironmentObject private var localization: ChatLocalization
 
-    @SwiftUI.Environment(\.colorScheme) private var colorScheme
-    
-    @ObservedObject private var audioRecorder = AudioRecorder()
+    @EnvironmentObject var style: ChatStyle
+
+    @Environment(\.colorScheme) var scheme
+
+    @ObservedObject private var audioRecorder: AudioRecorder
     
     @Binding private var isEditing: Bool
+    @Binding private var isInputEnabled: Bool
     @Binding private var alertType: ChatAlertType?
     
     @State private var message = ""
@@ -38,12 +39,25 @@ struct MessageInputView: View {
     @State private var showAttachmentsSheet = false
     @State private var showDocumentPickerSheet = false
     
+    private static let textFieldLineLimit: Int = 6
+    private static let textFieldAudioStateLineLimit: Int = 1
+    private static let inputBarPaddingHorizontal: CGFloat = 12
+    private static let inputBarPaddingVertical: CGFloat = 4
+    private static let inputBarElementsSpacing: CGFloat = 8
+    private static let inputBarTextFieldPaddingLeading: CGFloat = 4
+    private static let voiceIndicatorLeadingPadding: CGFloat = 8
+    private static let animatedDotsHorizontalPadding: CGFloat = 4
+    private static let animatedDotsVerticalPadding: CGFloat = 10
+    private static let paddingTrailingTimeLapsedText: CGFloat = 8
+    
+    private let localization: ChatLocalization
     private let attachmentRestrictions: AttachmentRestrictions
     
-    private var messageEditorHeight: CGFloat {
-        min(self.contentSizeThatFits.height, 0.25 * UIScreen.main.bounds.height)
-    }
     private var isSendButtonDisabled: Bool {
+        guard isInputEnabled else {
+            return true
+        }
+        
         if audioRecorder.state != .idle {
             return audioRecorder.state == .playing || audioRecorder.state == .recording
         } else {
@@ -59,7 +73,7 @@ struct MessageInputView: View {
                     string: self.message,
                     attributes: [
                         NSAttributedString.Key.font: UIFont.preferredFont(forTextStyle: .body),
-                        NSAttributedString.Key.foregroundColor: UIColor(style.backgroundColor).inverse()
+                        NSAttributedString.Key.foregroundColor: UIColor(colors.customizable.onBackground)
                     ]
                 )
             },
@@ -70,20 +84,32 @@ struct MessageInputView: View {
             }
         )
     }
+    private var isVoiceRecordVisible: Bool {
+        guard isInputEnabled else {
+            return false
+        }
+        
+        return message.isEmpty && attachments.isEmpty && attachmentRestrictions.areVoiceMessagesEnabled
+    }
     
     // MARK: - Init
     
     init(
         attachmentRestrictions: AttachmentRestrictions,
         isEditing: Binding<Bool>,
+        isInputEnabled: Binding<Bool>,
         alertType: Binding<ChatAlertType?>,
+        localization: ChatLocalization,
         onSend: @escaping (ChatMessageType, [AttachmentItem]) -> Void
     ) {
         self.attachmentRestrictions = attachmentRestrictions
         self._isEditing = isEditing
+        self._isInputEnabled = isInputEnabled
         self._alertType = alertType
+        self.localization = localization
         self._contentSizeThatFits = State(initialValue: .zero)
         self.onSend = onSend
+        self.audioRecorder = AudioRecorder(alertType: alertType, localization: localization)
     }
     
     // MARK: - Builder
@@ -91,26 +117,23 @@ struct MessageInputView: View {
     var body: some View {
         VStack(spacing: 0) {
             if !attachments.isEmpty {
-                AttachmentListView(attachments: $attachments)
+                MessageInputAttachmentListView(attachments: $attachments, alertType: $alertType)
             }
             
-            HStack(alignment: .center, spacing: 2) {
+            HStack(alignment: .bottom, spacing: Self.inputBarElementsSpacing) {
                 if audioRecorder.state == .idle, attachmentRestrictions.areAttachmentsEnabled {
                     attachmentsButton
+                } else if audioRecorder.state != .idle {
+                    deleteVoiceMessageButton
                     
-                    if isAnyMimeTypeAllowed([UTType.audioPreffix]) {
-                        recordVoiceMessageButton
-                    }
+                    voiceMessageControlButton
                 }
                 
                 inputBar
-                
-                if audioRecorder.state != .idle {
-                    voiceMessageButtons
-                }
+                    .padding(.leading, Self.inputBarTextFieldPaddingLeading)
             }
-            .padding(.horizontal, StyleGuide.Message.paddingHorizontal)
-            .padding(.vertical, StyleGuide.Message.paddingVertical)
+            .padding(.horizontal, Self.inputBarPaddingHorizontal)
+            .padding(.vertical, Self.inputBarPaddingVertical)
         }
         .animation(.spring(duration: 0.5), value: audioRecorder.state)
     }
@@ -124,11 +147,12 @@ private extension MessageInputView {
         Button {
             showAttachmentsSheet = true
         } label: {
-            Asset.Attachment.image
-                .imageScale(.large)
+            Asset.List.new
         }
-        .foregroundColor(style.customerCellColor)
-        .frame(width: StyleGuide.buttonSmallerDimension, height: StyleGuide.buttonSmallerDimension)
+        .font(.title2)
+        .disabled(!isInputEnabled)
+        .foregroundColor(isInputEnabled ? colors.customizable.primary : colors.foreground.disabled)
+        .frame(width: StyleGuide.buttonDimension, height: StyleGuide.buttonDimension)
         .actionSheet(isPresented: $showAttachmentsSheet) {
             attachmentsSourceActionSheet
         }
@@ -165,10 +189,9 @@ private extension MessageInputView {
             }
         } label: {
             Asset.Attachment.recordVoice
-                .imageScale(.large)
         }
-        .foregroundColor(style.customerCellColor)
-        .frame(width: StyleGuide.buttonSmallerDimension, height: StyleGuide.buttonSmallerDimension)
+        .font(.largeTitle)
+        .foregroundStyle(colors.customizable.onPrimary, colors.customizable.primary)
     }
     
     var attachmentsSourceActionSheet: ActionSheet {
@@ -187,7 +210,7 @@ private extension MessageInputView {
         // `.camera` does not allow to have only `video` MIME type, it requires also image
         if isAnyMimeTypeAllowed([UTType.imagePreffix]) {
             buttons.append(.default(Text(localization.chatMessageInputAttachmentsOptionCamera)) {
-                attachmentsPickerSheet = (true, .camera)
+                checkCameraPermissionAndShowPicker()
             })
         }
         
@@ -199,43 +222,60 @@ private extension MessageInputView {
             if audioRecorder.state != .idle {
                 audioRecorderInputBar
             } else {
-                MultilineTextField(attributedText: self.attributedMessage, isEditing: self.$isEditing)
-                    .onPreferenceChange(ContentSizeThatFitsKey.self) {
-                        self.contentSizeThatFits = $0
-                    }
-                    .frame(height: self.messageEditorHeight)
+                if #available(iOS 16.0, *) {
+                    MultilineTextField(text: $message, isEditing: $isEditing)
+                        .disabled(!isInputEnabled)
+                } else {
+                    LegacyMultilineTextField(attributedText: attributedMessage, isEditing: $isEditing, isInputEnabled: $isInputEnabled)
+                }
             }
             
-            sendButton
+            if isVoiceRecordVisible, audioRecorder.state == .idle {
+                recordVoiceMessageButton
+            } else {
+                sendButton
+            }
         }
+        .lineLimit(audioRecorder.state == .idle ? Self.textFieldLineLimit : Self.textFieldAudioStateLineLimit)
+        .animation(.easeInOut, value: isVoiceRecordVisible)
         .background(
             RoundedRectangle(cornerRadius: StyleGuide.buttonDimension / 2)
-                .stroke(style.formTextColor.opacity(0.25))
+                .stroke(colors.customizable.onBackground.opacity(0.1))
         )
     }
     
     var audioRecorderInputBar: some View {
         Group {
             Asset.Attachment.voiceIndicator
-                .foregroundColor(style.customerCellColor)
-                .padding(.leading, 8)
+                .foregroundColor(colors.customizable.primary)
+                .padding(.leading, Self.voiceIndicatorLeadingPadding)
             
             if case .recording = audioRecorder.state {
                 AnimatedDotsView(text: localization.chatMessageInputAudioRecorderRecording)
-                    .padding(.leading, 4)
+                    .padding(.leading, Self.animatedDotsHorizontalPadding)
+                    .padding(.vertical, Self.animatedDotsVerticalPadding)
             } else if case .playing = audioRecorder.state {
                 AnimatedDotsView(text: localization.chatMessageInputAudioRecorderPlaying)
-                    .padding(.leading, 4)
+                    .padding(.leading, Self.animatedDotsHorizontalPadding)
+                    .padding(.vertical, Self.animatedDotsVerticalPadding)
+            } else if case .recorded = audioRecorder.state {
+                Text(localization.chatMessageInputAudioRecorderRecorded)
+                    .truncationMode(.tail)
+                    .foregroundColor(colors.customizable.onBackground.opacity(0.5))
+                    .padding(.leading, Self.animatedDotsHorizontalPadding)
+                    .padding(.vertical, Self.animatedDotsVerticalPadding)
             }
             
             Spacer()
             
             if audioRecorder.state == .recorded {
                 Text(audioRecorder.formattedLength)
-                    .foregroundColor(style.formTextColor)
+                    .foregroundColor(colors.customizable.onBackground)
+                    .padding(.trailing, Self.paddingTrailingTimeLapsedText)
             } else {
                 Text(audioRecorder.formattedCurrentTime)
-                    .foregroundColor(style.formTextColor)
+                    .foregroundColor(colors.customizable.onBackground)
+                    .padding(.trailing, Self.paddingTrailingTimeLapsedText)
             }
         }
     }
@@ -253,74 +293,52 @@ private extension MessageInputView {
             
             hideKeyboard()
         } label: {
-            sendButtonBackground
-                .frame(width: StyleGuide.buttonSmallerDimension, height: StyleGuide.buttonSmallerDimension)
-                .overlay(
-                    Asset.Message.send
-                        .resizable()
-                        .offset(x: -1, y: 1)
-                    .padding(8)
-                )
+            Asset.Message.send
         }
+        .font(.largeTitle)
         .disabled(isSendButtonDisabled)
-        .foregroundColor(style.backgroundColor)
-        .padding(3)
+        .foregroundStyle(
+            colors.customizable.onPrimary,
+            isSendButtonDisabled ? colors.background.disabled : colors.customizable.primary
+        )
+        .animation(.default, value: isSendButtonDisabled)
     }
     
-    var sendButtonBackground: some View {
-        if isSendButtonDisabled {
-            Circle()
-                .fill(style.formTextColor.opacity(0.5))
-        } else {
-            Circle()
-                .fill(style.customerCellColor)
+    var deleteVoiceMessageButton: some View {
+        Button(action: audioRecorder.delete) {
+            Asset.Attachment.deleteVoice
         }
+        .font(.title2)
+        .foregroundStyle(colors.foreground.error)
+        .frame(width: StyleGuide.buttonDimension, height: StyleGuide.buttonDimension)
     }
     
-    var voiceMessageButtons: some View {
-        Group {
-            Button {
-                switch audioRecorder.state {
-                case .recording:
-                    audioRecorder.stop()
-                case .recorded:
-                    audioRecorder.play()
-                default:
-                    audioRecorder.pause()
-                }
-            } label: {
-                Circle()
-                    .fill(style.customerCellColor)
-                    .frame(width: StyleGuide.buttonSmallerDimension, height: StyleGuide.buttonSmallerDimension)
-                    .overlay(
-                        recordingControlButtonOverlay
-                            .foregroundColor(colorScheme == .dark ? .black : .white)
-                    )
+    var voiceMessageControlButton: some View {
+        Button {
+            switch audioRecorder.state {
+            case .idle:
+                break
+            case .recording:
+                audioRecorder.stopRecording()
+            case .recorded:
+                audioRecorder.play()
+            case .playing:
+                audioRecorder.pause()
+            case .paused:
+                audioRecorder.play()
             }
-            .padding(4)
-        
-            Button(action: audioRecorder.delete) {
-                Circle()
-                    .fill(Color(.red))
-                    .frame(width: StyleGuide.buttonSmallerDimension, height: StyleGuide.buttonSmallerDimension)
-                    .overlay(
-                        Asset.Attachment.deleteVoice
-                            .foregroundColor(.white)
-                    )
+        } label: {
+            switch audioRecorder.state {
+            case .recording:
+                Asset.Attachment.stop
+            case .recorded:
+                Asset.Attachment.play
+            default:
+                Asset.Attachment.pause
             }
-            .padding(4)
         }
-    }
-    
-    var recordingControlButtonOverlay: some View {
-        switch audioRecorder.state {
-        case .recording:
-            Asset.Attachment.stop
-        case .recorded:
-            Asset.Attachment.play
-        default:
-            Asset.Attachment.pause
-        }
+        .font(.title)
+        .frame(width: StyleGuide.buttonDimension, height: StyleGuide.buttonDimension)
     }
 }
 
@@ -336,6 +354,48 @@ private extension MessageInputView {
         }
         
         return false
+    }
+    
+    func checkCameraPermissionAndShowPicker() {
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        
+        switch status {
+        case .authorized:
+            // Permission already granted, show the camera
+            attachmentsPickerSheet = (true, .camera)
+        case .notDetermined:
+            // Permission not determined yet, request it
+            // This will show the system permission dialog
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        // User granted permission, show camera
+                        self.attachmentsPickerSheet = (true, .camera)
+                    } else {
+                        // User denied permission in the system dialog
+                        self.alertType = .cameraPermissionDenied(localization: self.localization) {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                    }
+                }
+            }
+        case .denied, .restricted:
+            // Permission previously denied, show settings alert
+            alertType = .cameraPermissionDenied(localization: localization) {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+        @unknown default:
+            // Handle any future status types gracefully
+            alertType = .cameraPermissionDenied(localization: localization) {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+        }
     }
 }
 
@@ -357,6 +417,7 @@ private extension AttachmentItem {
             }
         } catch {
             error.logError()
+            
             return false
         }
     }
@@ -364,46 +425,31 @@ private extension AttachmentItem {
 
 // MARK: - Preview
 
-struct MessageInputView_Previews: PreviewProvider {
+@available(iOS 17.0, *)
+#Preview {
+    @Previewable @State var isEditing = false
+    @Previewable @State var alertType: ChatAlertType?
     
-    static var localization = ChatLocalization()
+    let localization = ChatLocalization()
     
-    @State private static var isEditing = false
-    @State private static var alertType: ChatAlertType?
-    
-    private static let attachmentRestrictions = AttachmentRestrictions(
-        allowedFileSize: 40,
-        allowedTypes: ["image/*", "video/*", "audio/*"],
-        areAttachmentsEnabled: true
-    )
-    
-    static var previews: some View {
-        Group {
-            VStack {
-                Spacer()
-                
-                MessageInputView(attachmentRestrictions: attachmentRestrictions, isEditing: $isEditing, alertType: $alertType) { _, _ in }
-            }
-            .alert(item: $alertType, content: alertContent)
-            .previewDisplayName("Light Mode")
-            
-            VStack {
-                Spacer()
-                
-                MessageInputView(attachmentRestrictions: attachmentRestrictions, isEditing: $isEditing, alertType: $alertType) { _, _ in }
-            }
-            .preferredColorScheme(.dark)
-            .previewDisplayName("Dark Mode")
-        }
-        .environmentObject(ChatStyle())
-        .environmentObject(localization)
+    VStack {
+        Spacer()
+        
+        MessageInputView(
+            attachmentRestrictions: MockData.attachmentResrictions,
+            isEditing: $isEditing,
+            isInputEnabled: .constant(false),
+            alertType: $alertType,
+            localization: localization
+        ) { _, _ in }
     }
-    
-    static func alertContent(for alertType: ChatAlertType) -> Alert {
+    .alert(item: $alertType) { alertType in
         Alert(
-            title: Text(localization.commonAttention),
-            message: Text(localization.alertGenericErrorMessage),
+            title: Text(alertType.title),
+            message: Text(alertType.message),
             dismissButton: .cancel()
         )
     }
+    .environmentObject(ChatStyle())
+    .environmentObject(localization)
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -16,32 +16,29 @@
 import CXoneChatSDK
 import SwiftUI
 
-class FormViewModel: ChatContainerViewModel.ChildViewModel {
+class FormViewModel: ObservableObject {
     
     // MARK: - Properties
     
     @Published var customFields: [FormCustomFieldType]
     
     let onAccept: ([String: String]) -> Void
+    let onCancel: () -> Void
 
-    var nodeSelected: TreeFieldEntity?
-    
+    let title: String
+
     // MARK: - Init
 
     init(
-        containerViewModel: ChatContainerViewModel,
         title: String,
         customFields: [FormCustomFieldType],
-        localization: ChatLocalization,
         onAccept: @escaping ([String: String]) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.customFields = customFields
         self.onAccept = onAccept
-
-        super.init(left: containerViewModel.back(title: localization.commonCancel, action: onCancel), title: Text(title))
-
-        self.content = { AnyView(FormView(viewModel: self)) }
+        self.onCancel = onCancel
+        self.title = title
     }
 }
 
@@ -51,7 +48,15 @@ extension FormViewModel {
     
     func isValid() -> Bool {
         self.customFields.allSatisfy { type in
-            type.isRequired ? !type.value.isEmpty : true
+            var isValid = true
+            
+            if let textfield = type as? TextFieldEntity, textfield.isEmail {
+                isValid = type.value.isValidEmail
+            }
+            
+            return type.isRequired
+                ? !type.value.isEmpty && isValid
+                : isValid
         }
     }
 

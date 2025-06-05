@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import SwiftUI
 
 class AudioRecorder: NSObject, ObservableObject {
     
-    // MARK: - Enums
+    // MARK: - Objects
     
     enum VoiceMessageState {
         case idle
@@ -29,26 +29,44 @@ class AudioRecorder: NSObject, ObservableObject {
         case paused
     }
 
+    struct AudioFileType {
+        let `extension`: String
+        let mimeType: String
+    }
+    
     // MARK: - Properties
     
     @Published var time: TimeInterval = 0
     @Published var length: TimeInterval = 0
     @Published var state: VoiceMessageState = .idle
     
+    @Binding var alertType: ChatAlertType?
+    
+    private let localization: ChatLocalization
     private let audioSession: AVAudioSession = .sharedInstance()
+    
     private var audioRecorder: AVAudioRecorder?
     private var audioPlayer = AVAudioPlayer()
     private var ticks = [AnyCancellable]()
     private var url: URL?
     
     var attachmentItem: AttachmentItem?
-    var currentProgress: Float = 0
     
     var formattedCurrentTime: String {
         formatted(time)
     }
     var formattedLength: String {
         formatted(length)
+    }
+    
+    static let currentAudioFile = AudioFileType(extension: "m4a", mimeType: "audio/x-m4a")
+
+    // MARK: - Init
+    
+    init(alertType: Binding<ChatAlertType?>, localization: ChatLocalization) {
+        self._alertType = alertType
+        self.localization = localization
+        super.init()
     }
     
     // MARK: - Methods
@@ -65,7 +83,7 @@ class AudioRecorder: NSObject, ObservableObject {
             do {
                 try setupRecorder()
                 
-                guard state != .recording, let recorder = self.audioRecorder else {
+                guard state != .recording, let audioRecorder else {
                     LogManager.error(.failed("Unable to record - already recording"))
                     return
                 }
@@ -74,44 +92,48 @@ class AudioRecorder: NSObject, ObservableObject {
                 try audioSession.setActive(true)
                 
                 time = 0
-                currentProgress = 0
                 
                 Timer.publish(every: 1, on: .main, in: .common)
                     .autoconnect()
                     .sink { [weak self] _ in self?.updateTimer() }
                     .store(in: &ticks)
                 
-                recorder.record()
+                audioRecorder.record()
+                
                 state = .recording
             } catch {
                 error.logError()
+                
+                attachmentItem = nil
+                
+                do {
+                    try eraseAudioRecorder(deleteRecording: true)
+                } catch {
+                    error.logError()
+                }
+                
+                state = .idle
+                alertType = .genericError(localization: localization)
             }
         }
     }
     
-    func pause() {
-        LogManager.trace("Recorded voice message has been paused")
-        
-        state = .paused
-        audioPlayer.pause()
-        
-        ticks.cancel()
-    }
-    
-    func stop() {
+    func stopRecording() {
         LogManager.trace("Recording has been stopped")
         
         ticks.cancel()
         
-        length = time
-        time = 0
-        state = .recorded
-        audioRecorder?.stop()
-        
         do {
-            try audioSession.setActive(false)
+            try eraseAudioRecorder(deleteRecording: false)
+            
+            state = .recorded
         } catch {
             error.logError()
+            
+            attachmentItem = nil
+            
+            state = .idle
+            alertType = .genericError(localization: localization)
         }
     }
     
@@ -143,7 +165,6 @@ class AudioRecorder: NSObject, ObservableObject {
                 
                 if audioPlayer.currentTime == 0 {
                     time = 0
-                    currentProgress = 0
                 }
                 
                 Timer.publish(every: 1, on: .main, in: .common)
@@ -152,19 +173,48 @@ class AudioRecorder: NSObject, ObservableObject {
                     .store(in: &ticks)
             } catch {
                 error.logError()
+                
+                ticks.cancel()
+                attachmentItem = nil
+                
+                do {
+                    try eraseAudioRecorder(deleteRecording: true)
+                } catch {
+                    error.logError()
+                }
+                
+                eraseAudioPlayer()
+                
+                state = .idle
+                alertType = .genericError(localization: localization)
             }
         }
+    }
+    
+    func pause() {
+        LogManager.trace("Recorded voice message has been paused")
+        
+        ticks.cancel()
+        audioPlayer.pause()
+        
+        state = .paused
     }
     
     func delete() {
         LogManager.trace("Removing recorded voice message")
         
-        if let audioRecorder, audioRecorder.deleteRecording() {
-            attachmentItem = nil
-            state = .idle
-        } else {
-            LogManager.error(.failed("Unable to delete recorded file"))
+        ticks.cancel()
+        attachmentItem = nil
+        
+        do {
+            try eraseAudioRecorder(deleteRecording: true)
+        } catch {
+            error.logError()
         }
+        
+        eraseAudioPlayer()
+        
+        state = .idle
     }
 }
 
@@ -173,23 +223,41 @@ class AudioRecorder: NSObject, ObservableObject {
 extension AudioRecorder: AVAudioRecorderDelegate {
     
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
-        LogManager.trace("Voice message recording did finish")
-        
-        currentProgress = 1
-        state = .recorded
+        LogManager.trace("Voice message recording did finish \(flag ? "successfully" : "unsuccessfully")")
         
         ticks.cancel()
+        
+        // Successful flag is handled in the trigger place, e.g. "delete" or "stop" method
+        if !flag {
+            attachmentItem = nil
+            
+            do {
+                try eraseAudioRecorder(deleteRecording: true)
+            } catch {
+                error.logError()
+            }
+            
+            state = .idle
+            alertType = .genericError(localization: localization)
+        }
     }
     
     func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
         LogManager.trace("Error occured during encoding")
         
-        if let error {
+        error?.logError()
+        
+        ticks.cancel()
+        attachmentItem = nil
+        
+        do {
+            try eraseAudioRecorder(deleteRecording: true)
+        } catch {
             error.logError()
         }
         
         state = .idle
-        ticks.cancel()
+        alertType = .genericError(localization: localization)
     }
 }
 
@@ -198,21 +266,31 @@ extension AudioRecorder: AVAudioRecorderDelegate {
 extension AudioRecorder: AVAudioPlayerDelegate {
     
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        LogManager.trace("Playing recorded voice message did finish")
+        LogManager.trace("Playing recorded voice message did finish \(flag ? "successfully" : "unsuccessfully")")
         
         ticks.cancel()
         
-        state = .recorded
+        // Successful flag is handled in the button trigger place, e.g. "delete" or "stop"
+        if !flag {
+            attachmentItem = nil
+            eraseAudioPlayer()
+            
+            state = .idle
+            alertType = .genericError(localization: localization)
+        }
     }
     
     func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
         LogManager.trace("Error occured during decoding")
         
-        guard let error else {
-            return
-        }
+        error?.logError()
         
-        error.logError()
+        ticks.cancel()
+        attachmentItem = nil
+        eraseAudioPlayer()
+        
+        state = .idle
+        alertType = .genericError(localization: localization)
     }
 }
 
@@ -220,10 +298,38 @@ extension AudioRecorder: AVAudioPlayerDelegate {
 
 private extension AudioRecorder {
     
+    func eraseAudioPlayer() {
+        LogManager.trace("Erasing audio player")
+        
+        length = time
+        time = 0
+        audioPlayer.stop()
+    }
+/// Cleans up and stops the current audio recording session.
+/// 
+/// This method handles the cleanup of the audio recorder by stopping the recording, 
+/// optionally deleting the recorded file, and deactivating the audio session.
+///
+/// - Parameter deleteRecording: Whether to delete the recorded audio file from storage.
+///   - Set to `true` when permanently removing a recording (e.g., when deleting or canceling).
+///   - Set to `false` when transitioning states but keeping the recording (e.g., when stopping a recording to save it).
+/// - Throws: An error if deactivating the audio session fails.
+    func eraseAudioRecorder(deleteRecording: Bool) throws {
+        LogManager.trace("Erasing audio recorder")
+        
+        length = time
+        time = 0
+        audioRecorder?.stop()
+        
+        if deleteRecording {
+            audioRecorder?.deleteRecording()
+        }
+        
+        try audioSession.setActive(false)
+    }
+    
     func updateTimer() {
         time += 1
-        
-        currentProgress = Float(time / audioPlayer.duration.rounded())
     }
     
     func isRecordPermissionGranted() async -> Bool {
@@ -246,7 +352,7 @@ private extension AudioRecorder {
             return
         }
         
-        let recordingName = "voice_message_\(Date().formatted(format: "HH:mm:ss_dd-MM-YY")).m4a"
+        let recordingName = "voice_message_\(Date().formatted(format: "HH:mm:ss_dd-MM-YY")).\(Self.currentAudioFile.extension)"
         let bundle = documentDirectory.appendingPathComponent(recordingName)
         
         let settings = [

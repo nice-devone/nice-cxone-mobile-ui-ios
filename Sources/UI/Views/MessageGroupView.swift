@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -16,18 +16,25 @@
 import CXoneChatSDK
 import SwiftUI
 
-struct MessageGroupView: View {
-
+struct MessageGroupView: View, Themed {
+    
     // MARK: - Properties
 
-    @EnvironmentObject private var style: ChatStyle
+    @EnvironmentObject var style: ChatStyle
+    
+    @SwiftUI.Environment(\.colorScheme) var scheme
     
     @Binding private var isProcessDialogVisible: Bool
     @Binding private var alertType: ChatAlertType?
 
-    var group: MessageGroup
-
+    let group: MessageGroup
     let onRichMessageElementSelected: (_ textToSend: String?, RichMessageSubElementType) -> Void
+    
+    private static let containerHorizontalPadding: CGFloat = 16
+    private static let headerPaddingBottom: CGFloat = 8
+    private static let footerTopPadding: CGFloat = 2
+    private static let avatarDimension: CGFloat = 24
+    private static let avatarOffset: CGFloat = 12
     
     // MARK: - Init
     
@@ -35,7 +42,7 @@ struct MessageGroupView: View {
         group: MessageGroup,
         isProcessDialogVisible: Binding<Bool>,
         alertType: Binding<ChatAlertType?>,
-        onRichMessageElementSelected: @escaping (_: String?, RichMessageSubElementType) -> Void
+        onRichMessageElementSelected: @escaping (_ textToSend: String?, RichMessageSubElementType) -> Void
     ) {
         self.group = group
         self._isProcessDialogVisible = isProcessDialogVisible
@@ -46,13 +53,13 @@ struct MessageGroupView: View {
     // MARK: - Builder
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             if group.shouldShowHeader {
                 header
             }
             
             ZStack {
-                VStack(spacing: 2) {
+                VStack(spacing: StyleGuide.Message.groupCellSpacing) {
                     ForEach(group.messages) { message in
                         ChatMessageCell(
                             message: message,
@@ -73,9 +80,8 @@ struct MessageGroupView: View {
                 footer
             }
         }
-        .padding(.leading, 16)
-        .padding(.trailing, 10)
-        .padding(.bottom, group.shouldShowFooter ? 0 : StyleGuide.Message.paddingVertical)
+        .padding(.horizontal, Self.containerHorizontalPadding)
+        .padding(.bottom, group.shouldShowFooter ? .zero : StyleGuide.Message.paddingVertical)
     }
 }
 
@@ -85,10 +91,10 @@ extension MessageGroupView {
 
     var header: some View {
         Text(group.date.formatted(useRelativeFormat: true))
-            .font(.footnote.bold())
-            .foregroundColor(style.formTextColor.opacity(0.5))
+            .font(.caption.bold())
+            .foregroundColor(colors.customizable.onBackground.opacity(0.5))
             .frame(maxWidth: .infinity)
-            .padding(.bottom, 8)
+            .padding(.bottom, Self.headerPaddingBottom)
     }
 
     var footer: some View {
@@ -98,30 +104,33 @@ extension MessageGroupView {
             switch group.status {
             case .sent:
                 Asset.Message.sent
-                    .foregroundColor(style.customerCellColor)
+                    .foregroundColor(colors.customizable.onBackground.opacity(0.5))
             case .delivered:
                 Asset.Message.delivered
-                    .foregroundColor(style.customerCellColor)
+                    .foregroundColor(colors.customizable.customerBackground)
             case .seen:
                 ZStack {
                     Asset.Message.delivered
                         .background(
                             Circle()
-                                .foregroundColor(style.backgroundColor)
+                                .foregroundColor(colors.customizable.background)
                         )
-                        .foregroundColor(style.customerCellColor)
+                        .foregroundColor(colors.customizable.customerBackground)
                         .offset(x: -10)
                     
                     Asset.Message.delivered
                         .background(
                             Circle()
-                                .foregroundColor(style.backgroundColor)
+                                .foregroundColor(colors.customizable.background)
                         )
-                        .foregroundColor(style.customerCellColor)
+                        .foregroundColor(colors.customizable.customerBackground)
                 }
+            case .failed:
+                Asset.Message.failed
+                    .foregroundColor(colors.foreground.error)
             }
         }
-        .padding(.top, 2)
+        .padding(.top, Self.footerTopPadding)
     }
 
     var avatar: some View {
@@ -130,16 +139,9 @@ extension MessageGroupView {
                 .frame(maxWidth: .infinity)
         
             HStack {
-                MessageAvatarView(
-                    avatarUrl: group.sender.avatarURL,
-                    initials: group.sender.initials
-                )
-                    .frame(width: 24, height: 24)
-                    .overlay(
-                        Circle()
-                            .stroke(style.backgroundColor, lineWidth: 2)
-                    )
-                    .offset(x: -12, y: 12)
+                AvatarView(imageUrl: group.sender?.avatarURL, initials: group.sender?.initials)
+                    .frame(width: Self.avatarDimension, height: Self.avatarDimension)
+                    .offset(x: -Self.avatarOffset, y: Self.avatarOffset)
 
                 Spacer()
                     .frame(maxWidth: .infinity)
@@ -150,28 +152,36 @@ extension MessageGroupView {
 
 // MARK: - Preview
 
-struct MessageGroupView_Previews: PreviewProvider {
-    
-    static let manager = ChatManager(
-        messages: [
+#Preview {
+    let localization = ChatLocalization()
+    let chatMessages = [
             MockData.textMessage(user: MockData.customer, date: Date.now.adding(.day, value: -2)),
             MockData.textMessage(user: MockData.customer, date: Date.now.adding(.day, value: -1)),
-            MockData.textMessage(user: MockData.customer, date: Date.now.adding(.day, value: -1)),
-            MockData.textMessage(user: MockData.agent, date: Date.now.adding(.minute, value: -2)),
+            MockData.listPickerMessage(date: Date.now.adding(.minute, value: -1)),
+            MockData.textMessage(user: MockData.customer, date: Date.now.adding(.day, value: -2)),
+            MockData.textMessage(user: MockData.agent, date: Date.now.adding(.minute, value: -1)),
+            MockData.quickRepliesMessage(date: Date.now.adding(.minute, value: -1)),
             MockData.textMessage(user: MockData.customer, date: Date.now.adding(.minute, value: -1)),
             MockData.textMessage(user: MockData.customer)
         ]
-    )
     
-    static var previews: some View {
+    VStack {
         ScrollView {
             VStack {
-                ForEach(manager.groupMessages()) { message in
+                ForEach(chatMessages.groupMessages(interval: 2.0)) { message in
                     MessageGroupView(group: message, isProcessDialogVisible: .constant(false), alertType: .constant(nil)) { _, _ in }
                 }
             }
         }
-        .environmentObject(ChatLocalization())
-        .environmentObject(ChatStyle())
+        
+        MessageInputView(
+            attachmentRestrictions: MockData.attachmentResrictions,
+            isEditing: .constant(false),
+            isInputEnabled: .constant(true),
+            alertType: .constant(nil),
+            localization: localization
+        ) { _, _ in }
     }
+    .environmentObject(localization)
+    .environmentObject(ChatStyle())
 }

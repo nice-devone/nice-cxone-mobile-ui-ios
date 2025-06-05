@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -16,15 +16,28 @@
 import CXoneChatSDK
 import SwiftUI
 
-struct ThreadListView: View, Alertable {
+struct ThreadListView: View, Themed {
+
+    // MARK: - Constants
+
+    private enum Constants {
+        enum Padding {
+            static let pickerHorizontal: CGFloat = 16
+            static let pickerBottom: CGFloat = 12
+            static let pickerTop: CGFloat = 14
+        }
+
+        enum Colors {
+            static let listRowBackground = Color.clear
+        }
+    }
 
     // MARK: - Properties
 
-    @EnvironmentObject private var style: ChatStyle
+    @SwiftUI.Environment(\.colorScheme) var scheme
     
+    @EnvironmentObject var style: ChatStyle
     @EnvironmentObject var localization: ChatLocalization
-
-    @SwiftUI.Environment(\.presentationMode) private var presentationMode
     
     @ObservedObject private var viewModel: ThreadListViewModel
 
@@ -38,18 +51,40 @@ struct ThreadListView: View, Alertable {
 
     var body: some View {
         VStack {
-            if viewModel.isLoading {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: style.formTextColor))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                content
-            }
+            content
+
+            // This NavigationLink allows programmatic navigation to the ThreadView to handle
+            // the cases of direct to thread and thread creation.
+            NavigationLink(
+                destination: LazyView {
+                    viewModel.viewModel(for: viewModel.threadToShow).map(ThreadView.init)
+                        .environmentObject(localization)
+                        .environmentObject(style)
+                },
+                isActive: viewModel.showThread
+            ) { EmptyView() }
+            
+            NavigationLink(
+                destination: LazyView {
+                    viewModel.viewModel(for: viewModel.hiddenThreadToShow).map(ThreadView.init)
+                        .environmentObject(localization)
+                        .environmentObject(style)
+                },
+                isActive: viewModel.showHiddenThread
+            ) { EmptyView() }
         }
-        .background(style.backgroundColor)
+        .navigationTitle(localization.chatListTitle)
+        .navigationBarItems(trailing: menu)
+        .background(colors.customizable.background)
         .onAppear(perform: viewModel.onAppear)
         .onDisappear(perform: viewModel.onDisappear)
-        .alert(item: $viewModel.alertType, content: alertContent)
+        .alert(localization.alertUpdateThreadNameTitle, isPresented: $viewModel.isEditingThreadName) {
+            AlertTextFieldView(isPresented: $viewModel.isEditingThreadName, onConfirm: viewModel.setThreadName)
+        }
+    }
+
+    var menu: some View {
+        viewModel.menu.build(colors: colors)
     }
 }
 
@@ -68,14 +103,16 @@ private extension ThreadListView {
             viewModel.updateThreadStatus(newValue)
         }
         .pickerStyle(SegmentedPickerStyle())
-        .padding()
-
+        .padding(.bottom, Constants.Padding.pickerBottom)
+        .padding(.horizontal, Constants.Padding.pickerHorizontal)
+        .padding(.top, Constants.Padding.pickerTop)
+        
         if viewModel.chatThreads.isEmpty {
             Spacer()
             
             Text(localization.chatListEmpty)
-                .foregroundColor(style.formTextColor)
-            
+                .foregroundColor(colors.customizable.onBackground.opacity(0.50))
+
             Spacer()
         } else {
             if #available(iOS 16.0, *) {
@@ -90,82 +127,93 @@ private extension ThreadListView {
     
     var listContent: some View {
         List {
-            ForEach($viewModel.chatThreads) { chatThread in
-                ChatListCell(
-                    title: listName(thread: chatThread.wrappedValue),
-                    message: chatThread.wrappedValue.messages.last?.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: true)
+            ForEach(viewModel.chatThreads, id: \.id) { chatThread in
+                let title = chatThread.name?.nilIfEmpty()
+                    ?? chatThread.assignedAgent?.fullName
+                    ?? localization.commonUnassignedAgent
+                let timestamp = chatThread.messages.last?.createdAt.formatted(dateStyle: .none)
+                    ?? Date().formatted(dateStyle: .none)
+                let message = chatThread.messages.last?.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: true)
+                
+                ThreadListCell(
+                    assignedAgent: ChatUserMapper.map(from: chatThread.assignedAgent),
+                    title: title,
+                    message: message,
+                    timestamp: timestamp,
+                    statusType: viewModel.threadStatus,
+                    onRename: {
+                        viewModel.onEditThreadName(for: chatThread)
+                    },
+                    onArchive: {
+                        viewModel.onArchive(chatThread)
+                    }
                 )
-                .listRowBackground(Color.clear)
+                .listRowBackground(Constants.Colors.listRowBackground)
                 .onTapGesture {
-                    viewModel.onThreadTapped(chatThread.wrappedValue)
+                    // Note that we *could* use a NavigationLink here instead, but then
+                    // we would be duplicating much of the code for the NavigationLink
+                    // on or around line 43.
+                    viewModel.show(thread: chatThread)
                 }
             }
             .if(viewModel.threadStatus == .current) { view in
-                view.onDelete(perform: viewModel.onSwipeToDelete)
+                view.onDelete(perform: viewModel.onSwipeToArchive)
             }
         }
         .listStyle(.plain)
-        .background(style.backgroundColor)
+        .background(colors.customizable.background)
     }
     
     var lazyStackContent: some View {
         LazyVStack {
-            ForEach($viewModel.chatThreads) { chatThread in
-                ChatListCell(
-                    title: listName(thread: chatThread.wrappedValue),
-                    message: chatThread.wrappedValue.messages.last?.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: true),
-                    showDeleteButton: viewModel.threadStatus == .current
-                ) {
-                    viewModel.onDelete(chatThread.wrappedValue)
-                }
-                .padding(.horizontal, 12)
-                .listRowBackground(Color.clear)
+            ForEach(viewModel.chatThreads) { chatThread in
+                let title = chatThread.name?.nilIfEmpty()
+                    ?? chatThread.assignedAgent?.fullName
+                    ?? localization.commonUnassignedAgent
+                let timestamp = chatThread.messages.last?.createdAt.formatted(dateStyle: .none)
+                    ?? Date().formatted(dateStyle: .none)
+                let message = chatThread.messages.last?.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: true)
+                
+                ThreadListCell(
+                    assignedAgent: ChatUserMapper.map(from: chatThread.assignedAgent),
+                    title: title,
+                    message: message,
+                    timestamp: timestamp,
+                    statusType: viewModel.threadStatus,
+                    onRename: {
+                        viewModel.onEditThreadName(for: chatThread)
+                    },
+                    onArchive: {
+                        viewModel.onArchive(chatThread)
+                    }
+                )
+                .listRowBackground(Constants.Colors.listRowBackground)
                 .onTapGesture {
-                    viewModel.onThreadTapped(chatThread.wrappedValue)
+                    viewModel.show(thread: chatThread)
                 }
             }
         }
         .listStyle(.plain)
-        .background(style.backgroundColor)
-    }
-}
-
-// MARK: - Helpers
-
-private extension ThreadListView {
-
-    func listName(thread: ChatThread) -> String {
-        thread.name?.nilIfEmpty()
-            ?? thread.assignedAgent?.fullName
-            ?? localization.commonUnassignedAgent
+        .background(colors.customizable.background)
     }
 }
 
 // MARK: - Previews
 
-#Preview("Light Mode") {
-    ThreadListView(
-        viewModel: ThreadListViewModel(
-            containerViewModel: ChatContainerViewModel(
-                chatProvider: CXoneChat.shared,
-                chatLocalization: ChatLocalization()
-            ) {}
+#Preview("ThreadListView") {
+    NavigationView {
+        ThreadListView(
+            viewModel: ThreadListViewModel(
+                containerViewModel: ChatContainerViewModel(
+                    chatProvider: CXoneChat.shared,
+                    chatLocalization: ChatLocalization(),
+                    chatStyle: ChatStyle(),
+                    chatConfiguration: ChatConfiguration(),
+                    presentModally: true
+                ) {}
+            )
         )
-    )
+    }
     .environmentObject(ChatStyle())
     .environmentObject(ChatLocalization())
-}
-
-#Preview("Dark Mode") {
-    ThreadListView(
-        viewModel: ThreadListViewModel(
-            containerViewModel: ChatContainerViewModel(
-                chatProvider: CXoneChat.shared,
-                chatLocalization: ChatLocalization()
-            ) {}
-        )
-    )
-    .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
-    .preferredColorScheme(.dark)
 }

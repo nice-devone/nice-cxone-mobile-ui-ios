@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -14,19 +14,23 @@
 //
 
 import Combine
-import Kingfisher
 import SwiftUI
 
-struct SelectableImageMessageCell: View {
+struct SelectableImageMessageCell: View, Themed {
 
     // MARK: - Properties
 
-    @ObservedObject private var viewModel: ImageMessageCellViewModel
+    @EnvironmentObject var style: ChatStyle
+    
+    @Environment(\.colorScheme) var scheme
+    
     @ObservedObject private var attachmentsViewModel: AttachmentsViewModel
 
     @Binding private var inSelectionMode: Bool
 
     @State private var isImagePresented = false
+    
+    @StateObject private var viewModel: ImageMessageCellViewModel
 
     private let item: SelectableAttachment
 
@@ -39,14 +43,16 @@ struct SelectableImageMessageCell: View {
     init?(
         item: SelectableAttachment,
         attachmentsViewModel: AttachmentsViewModel,
-        inSelectionMode: Binding<Bool>
+        inSelectionMode: Binding<Bool>,
+        alertType: Binding<ChatAlertType?>,
+        localization: ChatLocalization
     ) {
         guard let attachmentItem = AttachmentItemMapper.map(item.messageType) else {
             return nil
         }
 
         self.item = item
-        self.viewModel = ImageMessageCellViewModel(item: attachmentItem)
+        _viewModel = StateObject(wrappedValue: ImageMessageCellViewModel(item: attachmentItem, alertType: alertType, localization: localization))
         self.attachmentsViewModel = attachmentsViewModel
         self._inSelectionMode = inSelectionMode
     }
@@ -76,8 +82,8 @@ struct SelectableImageMessageCell: View {
             } else {
                 Asset.Attachment.placeholder
                     .frame(width: width, height: width)
-                    .background(Color.gray)
-                    .foregroundColor(Color.black)
+                    .background(colors.foreground.subtle)
+                    .foregroundColor(colors.foreground.base)
             }
             
             if inSelectionMode {
@@ -85,33 +91,32 @@ struct SelectableImageMessageCell: View {
                     .padding([.top, .trailing], 10)
             }
         }
-        .cornerRadius(StyleGuide.Message.cornerRadius)
+        .cornerRadius(StyleGuide.Attachment.cornerRadius)
     }
 }
 
 // MARK: - Preview
 
-struct SelectableImageMessageCell_Previews: PreviewProvider {
+#Preview {
+    let localization = ChatLocalization()
+    let viewModel = AttachmentsViewModel(messageTypes: [])
     
-    static let viewModel = AttachmentsViewModel(messageTypes: [])
-
-    static var previews: some View {
-        Group {
-            VStack {
-                SelectableImageMessageCell(item: MockData.selectableImageAttachment, attachmentsViewModel: viewModel, inSelectionMode: .constant(true))
-                
-                SelectableImageMessageCell(item: MockData.selectableImageAttachment, attachmentsViewModel: viewModel, inSelectionMode: .constant(false))
-            }
-            .previewDisplayName("Light Mode")
-
-            VStack {
-                SelectableImageMessageCell(item: MockData.selectableImageAttachment, attachmentsViewModel: viewModel, inSelectionMode: .constant(true))
-                
-                SelectableImageMessageCell(item: MockData.selectableImageAttachment, attachmentsViewModel: viewModel, inSelectionMode: .constant(false))
-            }
-            .previewDisplayName("Dark Mode")
-            .preferredColorScheme(.dark)
-        }
-        .environmentObject(ChatStyle())
+    VStack {
+        SelectableImageMessageCell(
+            item: MockData.selectableImageAttachment,
+            attachmentsViewModel: viewModel,
+            inSelectionMode: .constant(true),
+            alertType: .constant(nil),
+            localization: localization
+        )
+        
+        SelectableImageMessageCell(
+            item: MockData.selectableImageAttachment,
+            attachmentsViewModel: viewModel,
+            inSelectionMode: .constant(false),
+            alertType: .constant(nil),
+            localization: localization
+        )
     }
+    .environmentObject(ChatStyle())
 }

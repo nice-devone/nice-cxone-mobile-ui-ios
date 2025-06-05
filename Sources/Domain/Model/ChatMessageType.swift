@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import UIKit
 ///
 /// This enum is designed for categorizing and representing various types of messages in chat systems.
 /// It allows for the display of text, multimedia, links, rich content, and more, providing versatility in message content and presentation.
-public enum ChatMessageType: Hashable {
+public enum ChatMessageType: Hashable, Equatable {
     
     // MARK: - Cases
     
@@ -33,7 +33,7 @@ public enum ChatMessageType: Hashable {
     
     case audio(AttachmentItem)
     
-    case linkPreview(AttachmentItem)
+    case documentPreview(AttachmentItem)
     
     case richContent(ChatRichMessageType)
     
@@ -42,7 +42,7 @@ public enum ChatMessageType: Hashable {
     /// Indicates whether the message is of a attachment type (image, video, audio).
     public var isAttachment: Bool {
         switch self {
-        case .text, .richContent, .linkPreview:
+        case .text, .richContent, .audio:
             return false
         default:
             return true
@@ -56,7 +56,7 @@ public enum ChatMessageType: Hashable {
 ///
 /// This enum is designed to categorize and represent different types of rich messages that can be used in chat systems.
 /// It provides flexibility in displaying various types of content and interactions within chat applications.
-public enum ChatRichMessageType: Hashable {
+public enum ChatRichMessageType: Hashable, Equatable {
 
     case quickReplies(QuickRepliesItem)
     

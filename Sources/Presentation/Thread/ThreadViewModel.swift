@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -17,147 +17,124 @@ import Combine
 import CXoneChatSDK
 import SwiftUI
 
-class ThreadViewModel: NavigationItem {
+class ThreadViewModel: ObservableObject {
 
     // MARK: - Properties
     
-    @Published var thread: ChatThread
-    @Published var messages = [ChatMessage]()
-    @Published var alertType: ChatAlertType?
-    @Published var isInputEnabled: Bool
-    @Published var hasMoreMessagesToLoad = false
-    @Published var isAgentTyping = false
+    @Published var thread: CXoneChatUI.ChatThread?
+    @Published var messageGroups = [MessageGroup]()
+    /// Indicator of the message input bar is disabled
+    @Published var isInputEnabled = false
+    /// Indicator if the message input bar is replaced with view that informs about conversation closed/archived state
+    @Published var isThreadClosed = false
+    @Published var hasMoreMessagesToLoad = true
+    @Published var typingAgent: ChatUser?
     @Published var isUserTyping = false
-    @Published var isLoading = false
-    @Published var canEditThreadName = false
-    @Published var isEndConversationVisible = false
+    @Published var canEditCustomFields = false
     @Published var isProcessDialogVisible = false
     @Published var isEditingThreadName = false
-    @Published var threadName: String
-    
-    private let localization: ChatLocalization
-
-    private var cachedThreads = [ChatThread]()
-    private let chatProvider: ChatProvider
+    @Published var threadName: String = ""
+    @Published var positionInQueue: Int?
 
     let attachmentRestrictions: AttachmentRestrictions
     
     weak var containerViewModel: ChatContainerViewModel?
     
-    // MARK: - Init
+    var alertType: ChatAlertType? {
+        get { containerViewModel?.alertType }
+        set { containerViewModel?.alertType = newValue }
+    }
+    var chatTitle: String {
+        let title = thread?.assignedAgent?.fullName ?? thread?.lastAssignedAgent?.fullName
+
+        if let title, !title.isEmpty {
+            return title
+        }
+
+        return localization.commonUnassignedAgent
+    }
     
+    private let chatProvider: ChatProvider
+    private let localization: ChatLocalization
+    
+    private var didSetAdditionalCustomFields = false
+    private var isEndConversationShown = false
+    private var isThreadPermanentlyClosed = false
+
+    private static let groupInterval: TimeInterval = 120
+
+    // MARK: - Init
+
     init(
-        thread: ChatThread,
-        containerViewModel: ChatContainerViewModel,
-        onBack: (() -> Void)? = nil
+        thread: CXoneChatUI.ChatThread?,
+        containerViewModel: ChatContainerViewModel
     ) {
         self.thread = thread
         self.containerViewModel = containerViewModel
         self.chatProvider = containerViewModel.chatProvider
         self.attachmentRestrictions = AttachmentRestrictions.map(from: chatProvider.connection.channelConfiguration.fileRestrictions)
-        self.threadName = thread.name ?? ""
         self.localization = containerViewModel.chatLocalization
-        self.isInputEnabled = thread.state != .closed
-        self.canEditThreadName = chatProvider.threads.preChatSurvey?.customFields.isEmpty == false
-
-        super.init(
-            left: containerViewModel.back(title: localization.commonBack, action: onBack)
-        )
-        
-        self.content = { AnyView(ThreadView(viewModel: self)) }
-
-        updateActionMenu()
+        self.canEditCustomFields = chatProvider.threads.preChatSurvey?.customFields.isEmpty == false
     }
 
     // MARK: - Methods
     
+    func onAppear() {
+        LogManager.trace("Chat view appeared")
+        
+        chatProvider.add(delegate: self)
+        
+        Task {
+            do {
+                _ = try await MainActor.run {
+                    try updateThread(with: thread)
+                }
+                
+                guard let thread, let threadProvider = try? chatProvider.threads.provider(for: thread.id) else {
+                    LogManager.error("Unexpected nil thread")
+                    return
+                }
+                
+                if thread.state == .ready {
+                    LogManager.trace("Marking thread as read")
+                    
+                    try await threadProvider.markRead()
+                }
+            } catch {
+                error.logError()
+                
+                _ = await MainActor.run { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    
+                    self.alertType = .connectionErrorAlert(localization: self.localization) {
+                        self.containerViewModel?.disconnect()
+                    }
+                }
+            }
+        }
+    }
+
     func onDisappear() {
         LogManager.trace("Chat view disappeared")
         
         containerViewModel?.chatProvider.remove(delegate: self)
-    }
-    
-    func updateActionMenu() {
-        var menu = [NavigationAction]()
-
-        if isInputEnabled && canEditThreadName {
-            menu += NavigationAction(title: localization.alertEditPrechatCustomFieldsTitle, image: Asset.ChatThread.editPrechatCustomFields) { [weak self] in
-                guard let model = self else {
-                    return
-                }
-                model.onEditPrechatField(title: model.localization.alertEditPrechatCustomFieldsTitle)
-            }
-        }
-
-        if isInputEnabled && containerViewModel?.chatProvider.mode == .multithread {
-            menu += NavigationAction(title: localization.chatMenuOptionUpdateName, image: Asset.ChatThread.editThreadName) { [weak self] in
-                self?.onEditThreadName()
-            }
-        }
-
-        if containerViewModel?.chatProvider.mode == .liveChat {
-            menu += NavigationAction(title: localization.chatMenuOptionEndConversation, image: Asset.close) { [weak self] in
-                guard let model = self else {
-                    return
-                }
-                if model.thread.state == .closed {
-                    model.onEndConversation()
-                } else {
-                    model.alertType = .endConversation(localization: model.localization, primaryAction: model.onEndConversation)
-                }
-            }
-        }
-
-        right = menu
     }
 }
 
 // MARK: - Actions
 
 extension ThreadViewModel {
-    
-    func onAppear() {
-        LogManager.trace("Chat view appeared")
-        
-        containerViewModel?.chatProvider.add(delegate: self)
-        
-        do {
-            // Mark as read a thread that has not just been created locally
-            LogManager.trace("Marking thread as read")
-            
-            try chatProvider.threads.markRead(thread)
 
-            Task {
-                LogManager.trace("Reporting chat window open event")
-                
-                try await chatProvider.analytics.chatWindowOpen()
-            }
-            set(title: thread.chatTitle(localization: localization))
-            
-            if thread.state == .loaded {
-                isLoading = true
-
-                try chatProvider.threads.load(with: thread.id)
-            }
-
-            // To be able to handle receiving new messages from different thread, it is necessary to cache current thread list
-            cachedThreads = chatProvider.threads.get()
-
-            self.messages = thread.messages.map { ChatMessageMapper.map($0, localization: localization) }
-        } catch {
-            containerViewModel?.show(fatal: error)
-        }
-    }
-    
-    func onDisconnectTapped() {
-        LogManager.trace("Disconnecting from CXoneChat services")
-        
-        containerViewModel?.disconnect()
-    }
-    
-    func onEditPrechatField(title: String) {
+    func onEditPrechatField() {
         LogManager.trace("Trying to edit prechat custom fields")
         
+        guard let thread else { 
+            LogManager.error("Unexpected nil thread")
+            return
+        }
+
         guard let prechatCustomFields = chatProvider.threads.preChatSurvey?.customFields, !prechatCustomFields.isEmpty else {
             LogManager.error(.unableToParse("prechatCustomFields"))
             return
@@ -167,22 +144,27 @@ extension ThreadViewModel {
             FormCustomFieldTypeMapper.map(definition, with: chatProvider.threads.customFields.get(for: thread.id))
         }
         
-        containerViewModel?.showForm(
-            title: title,
-            fields: customFields,
-            onAccept: { [self] customFields in
-                do {
-                    try chatProvider.threads.customFields.set(customFields, for: self.thread.id)
-                } catch {
-                    error.logError()
-                    containerViewModel?.disconnect()
-                }
-                containerViewModel?.currentChild = self
-            },
-            onCancel: {
-                self.containerViewModel?.currentChild = self
+        Task {
+            guard let answers = await containerViewModel?.showForm(title: localization.alertEditPrechatCustomFieldsTitle, fields: customFields) else {
+                return
             }
-        )
+
+            do {
+                try await chatProvider.threads.customFields.set(answers, for: thread.id)
+            } catch {
+                error.logError()
+                
+                _ = await MainActor.run { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    
+                    self.alertType = .connectionErrorAlert(localization: self.localization) {
+                        self.containerViewModel?.disconnect()
+                    }
+                }
+            }
+        }
     }
 
     func onEditThreadName() {
@@ -191,46 +173,96 @@ extension ThreadViewModel {
         isEditingThreadName = true
     }
     
-    func setThread(name: String?) {
-        do {
-            try chatProvider.threads.updateName(threadName, for: thread.id)
-        } catch {
-            containerViewModel?.show(fatal: error)
-        }
-   }
-
-    func onEndConversation() {
-        guard thread.state != .closed else {
-            LogManager.info("Conversation has been already closed -> show end conversation view without interaction with the SDK")
-
-            isEndConversationVisible = true
+    func setThread(name: String) {
+        LogManager.trace("Setting thread name to \(name) for thread \(String(describing: thread?.id))")
+        
+        guard let thread, let threadProvider = try? chatProvider.threads.provider(for: thread.id) else {
+            LogManager.error("Unexpected nil thread")
             return
         }
         
-        LogManager.trace("Ending live chat conversation")
-        
-        do {
-            try chatProvider.threads.endContact(thread)
-
-            isLoading = true
-        } catch {
-            error.logError()
+        Task {
+            do {
+                try await threadProvider.updateName(name)
+            } catch {
+                _ = await MainActor.run { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    
+                    self.alertType = .genericError(localization: localization)
+                }
+            }
         }
     }
     
-    @MainActor
+    func showEndConversation() {
+        guard let thread else {
+            LogManager.error("Unexpected nil thread")
+            return
+        }
+        
+        LogManager.trace("Showing EndConversation view")
+        
+        self.isEndConversationShown = true
+        
+        self.containerViewModel?.showOverlay {
+            ChatDefaultOverlay(verticalOffset: StyleGuide.containerVerticalOffset) {
+                EndConversationView(
+                    onStartNewTapped: self.onEndConversationStartChatTapped,
+                    onBackToConversationTapped: self.onEndConversationBackTapped,
+                    onCloseChatTapped: self.onEndConversationCloseTapped,
+                    thread: thread
+                )
+            }
+        }
+    }
+
+    func onEndConversation() {
+        guard let thread, let threadProvider = try? chatProvider.threads.provider(for: thread.id) else {
+            LogManager.error("Unexpected nil thread")
+            return
+        }
+
+        guard threadProvider.chatThread.state != .closed else {
+            LogManager.info("Conversation has been already closed -> show end conversation view without interaction with the SDK")
+            return
+        }
+        
+        Task { @MainActor in
+            LogManager.trace("Ending live chat conversation")
+            
+            do {
+                try await threadProvider.endContact()
+                
+                showEndConversation()
+            } catch {
+                error.logError()
+                
+                alertType = .connectionErrorAlert(localization: localization) { [weak self] in
+                    self?.containerViewModel?.disconnect()
+                }
+            }
+        }
+    }
+    
     func onSendMessage(_ messageType: ChatMessageType, attachments: [AttachmentItem], postback: String? = nil) {
         LogManager.trace("Sending a message")
         
+        guard let thread, let threadProvider = try? chatProvider.threads.provider(for: thread.id) else {
+            LogManager.error("Unexpected nil thread")
+            return
+        }
+
         isProcessDialogVisible = !attachments.isEmpty
         
         let message: OutboundMessage
 
         switch messageType {
         case .text(let text):
-            message = OutboundMessage(text: text, attachments: attachments.compactMap(AttachmentItemMapper.map))
+            message = OutboundMessage(text: text, attachments: attachments.compactMap(AttachmentItemMapper.map), postback: postback)
         case .audio(let item):
-            message = OutboundMessage(text: "", attachments: [AttachmentItemMapper.map(item)])
+            message = OutboundMessage(text: "", attachments: [AttachmentItemMapper.map(item)], postback: postback)
         default:
             LogManager.info("Trying to send message of unexpected type - \(messageType)")
             return
@@ -238,30 +270,51 @@ extension ThreadViewModel {
         
         Task { @MainActor in
             do {
-                try await chatProvider.threads.messages.send(message, for: thread)
+                try await threadProvider.send(message)
             } catch {
                 error.logError()
                 
-                alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
+                switch error {
+                case CXoneChatError.invalidFileType:
+                    alertType = .invalidAttachmentType(localization: localization)
+                case CXoneChatError.invalidFileSize:
+                    alertType = .invalidAttachmentSize(localization: localization)
+                default:
+                    alertType = .genericError(localization: localization)
+                }
             }
             
             isProcessDialogVisible = false
         }
     }
     
-    func loadMoreMessages() {
-        guard thread.hasMoreMessagesToLoad else {
+    func loadMoreMessages() async {
+        LogManager.trace("Trying to load more messages")
+        
+        guard let thread, thread.hasMoreMessagesToLoad, let threadProvider = try? chatProvider.threads.provider(for: thread.id) else {
+            LogManager.error("Unexpected nil thread")
+
+            Task { @MainActor in
+                hasMoreMessagesToLoad = false
+            }
+
             return
         }
         
-        LogManager.trace("Trying to load more messages")
-        
         do {
-            try chatProvider.threads.messages.loadMore(for: thread)
+            try await threadProvider.loadMoreMessages()
         } catch {
             error.logError()
             
-            alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
+            _ = await MainActor.run { [weak self] in
+                guard let self else {
+                    return
+                }
+                
+                self.alertType = .connectionErrorAlert(localization: self.localization) {
+                    self.containerViewModel?.disconnect()
+                }
+            }
         }
     }
     
@@ -277,33 +330,109 @@ extension ThreadViewModel {
     func onUserTyping() {
         LogManager.trace("User has \(isUserTyping ? "started" : "ended") typing")
         
-        do {
-            try chatProvider.threads.reportTypingStart(isUserTyping, in: thread)
-        } catch {
-            error.logError()
-            
-            alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
+        guard let thread, let threadProvider = try? chatProvider.threads.provider(for: thread.id) else {
+            LogManager.error("Unexpected nil thread")
+            return
+        }
+
+        Task {
+            do {
+                try await threadProvider.reportTypingStart(isUserTyping)
+            } catch {
+                error.logError()
+                
+                _ = await MainActor.run { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    
+                    self.alertType = .connectionErrorAlert(localization: self.localization) {
+                        self.containerViewModel?.disconnect()
+                    }
+                }
+            }
         }
     }
     
     func onEndConversationStartChatTapped() {
         LogManager.trace("Create a new live chat conversation")
-        containerViewModel?.createThread {
-            self.containerViewModel?.disconnect()
-        } onSuccess: { thread in
-            self.containerViewModel?.show(thread: thread)
+
+        Task { @MainActor in
+            // Reset thread reference and isThreadPermanentlyClosed flag to allow proper handling of the new thread
+            self.thread = nil
+            isThreadPermanentlyClosed = false
+            
+            do {
+                // Hide the end conversation view before starting a new thread
+                isEndConversationShown = false
+                
+                // Hide any overlay before starting a new thread
+                containerViewModel?.hideOverlay()
+                
+                // Explicitly reset thread state to allow proper initialization of a new thread
+                // This prevents race conditions when quickly starting a new thread after a previous one was closed
+                self.thread = nil
+                
+                // Show loading state while creating the new thread
+                containerViewModel?.showLoading(message: localization.commonLoading)
+                
+                // The only situation when the ChatThreadProvider is `nil` is when the pre-chat form is cancelled.
+                guard let threadProvider = try await containerViewModel?.createThread() else {
+                    LogManager.trace("New thread was not created because customer cancelled a prechat survey -> disconnecting")
+
+                    containerViewModel?.disconnect()
+                    return
+                }
+                
+                try self.updateThread(with: ChatThreadMapper.map(from: threadProvider.chatThread))
+            } catch {
+                error.logError()
+                
+                self.alertType = .connectionErrorAlert(localization: self.localization) {
+                    self.containerViewModel?.disconnect()
+                }
+            }
         }
     }
     
+    @MainActor
+    func updateInputEnabledStateBasedOnThread() {
+        self.isInputEnabled = thread != nil
+        
+        // If thread was ever closed, keep input disabled
+        if isThreadPermanentlyClosed {
+            self.isThreadClosed = true
+            return
+        }
+        
+        // Otherwise check current thread state
+        if let thread {
+            self.isThreadClosed = thread.state == .closed
+        } else {
+            self.isThreadClosed = false
+        }
+    }
+    
+    @MainActor
     func onEndConversationBackTapped() {
         LogManager.trace("Return to the chat transcript")
         
-        isEndConversationVisible = false
+        // Reset flag before hiding overlay
+        isEndConversationShown = false
+        
+        // Ensure input is disabled if needed
+        updateInputEnabledStateBasedOnThread()
+        
+        // Hide any visible overlay if needed
+        containerViewModel?.hideOverlay()
     }
     
     func onEndConversationCloseTapped() {
         LogManager.trace("Close the chat and return to the host application")
-        isEndConversationVisible = false
+        
+        // Reset flag
+        isEndConversationShown = false
+        
         containerViewModel?.disconnect()
     }
 }
@@ -313,74 +442,67 @@ extension ThreadViewModel {
 extension ThreadViewModel: CXoneChatDelegate {
     
     func onChatUpdated(_ state: ChatState, mode: ChatMode) {
-        switch state {
-        case .connecting:
-            LogManager.trace("Connecting to the CXone chat services")
+        Task { @MainActor in
+            canEditCustomFields = chatProvider.mode == .multithread
+                && chatProvider.threads.preChatSurvey?.customFields.isEmpty == false
             
-            Task { @MainActor in
-                isLoading = true
+            do {
+                switch state {
+                case .ready:
+                    try await handleChatReadyState(for: mode)
+                case .offline:
+                    containerViewModel?.showOffline()
+                default:
+                    break
+                }
+            } catch {
+                error.logError()
+                
+                alertType = .connectionErrorAlert(localization: localization) { [weak self] in
+                    self?.containerViewModel?.disconnect()
+                }
             }
-        case .connected:
-            LogManager.trace("Did connect to the CXone chat services")
-        default:
+        }
+    }
+
+    func onThreadUpdated(_ updatedThread: CXoneChatSDK.ChatThread) {
+        // 1. When thread reference is nil (which happens after creating a new thread following a closed conversation),
+        // we need to accept any incoming thread update to properly display the new conversation.
+        // This prevents the issue where new threads weren't being displayed after closing a previous thread.
+        //
+        // 2. We only want to update the thread view state if the updatedThread is the one currently in use.
+        guard thread == nil || thread?.id == updatedThread.id else {
+            LogManager.trace("Ignoring thread update - the thread is not the current one")
             return
         }
-    }
-    
-    func onUnexpectedDisconnect() {
-        LogManager.trace("Reconnecting the CXone services")
-        
-        reconnect()
-    }
-    
-    func onThreadUpdated(_ updatedThread: ChatThread) {
-        LogManager.trace("Thread has been updated")
         
         Task { @MainActor in
-            if thread.id != updatedThread.id {
-                await differentThreadHasBeenUpdated(updatedThread)
-            } else {
-                messages = updatedThread.messages.map { ChatMessageMapper.map($0, localization: localization) }
-                set(title: updatedThread.chatTitle(localization: localization))
-                hasMoreMessagesToLoad = updatedThread.hasMoreMessagesToLoad
-                isInputEnabled = updatedThread.state != .closed
+            do {
+                try updateThread(with: ChatThreadMapper.map(from: updatedThread))
+            } catch {
+                error.logError()
                 
-                if !isEndConversationVisible, chatProvider.mode == .liveChat, updatedThread.state == .closed {
-                    if updatedThread.state != thread.state {
-                        isEndConversationVisible = true
-                    } else if updatedThread.assignedAgent == nil, thread.assignedAgent != nil {
-                        isEndConversationVisible = false
-                    }
+                // Hide any overlay
+                containerViewModel?.hideOverlay()
+                
+                alertType = .connectionErrorAlert(localization: localization) { [weak self] in
+                    self?.containerViewModel?.disconnect()
                 }
-                
-                canEditThreadName = chatProvider.threads.preChatSurvey?.customFields.isEmpty == false
-                
-                self.thread = updatedThread
-                
-                isLoading = false
             }
         }
     }
-    
-    func onAgentTyping(_ isTyping: Bool, threadId: UUID) {
-        guard threadId == thread.id else {
+
+    func onAgentTyping(_ isTyping: Bool, agent: Agent, threadId: UUID) {
+        guard threadId == thread?.id else {
             return
         }
         
         LogManager.trace("Agent \(isTyping ? "started" : "ended") typing")
         
-        Task { @MainActor in
-            isAgentTyping = isTyping
-        }
-    }
-    
-    func onError(_ error: Error) {
-        error.logError()
+        let agent = ChatUserMapper.map(from: agent)
         
         Task { @MainActor in
-            alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
-        
-            isLoading = false
+            typingAgent = isTyping ? agent : nil
         }
     }
 }
@@ -388,62 +510,204 @@ extension ThreadViewModel: CXoneChatDelegate {
 // MARK: - Private methods
 
 private extension ThreadViewModel {
-    
-    @MainActor
-    func differentThreadHasBeenUpdated(_ updatedThread: ChatThread) async {
-        let threads = self.cachedThreads
-        self.cachedThreads = chatProvider.threads.get()
 
-        // Check if count of threads has been changed (=> new message for different thread)
-        guard let cachedThread = threads.first(where: { $0.id == updatedThread.id }), cachedThread.messages.count != updatedThread.messages.count else {
-            // Thread has been updated but not messages are same = no interaction needed
-            LogManager.info("Thread with \(updatedThread.id) id has been updated")
-            return
-        }
-        guard let message = updatedThread.messages.last else {
-            LogManager.error("Unable to get last message for updated thread – invalid thread")
-            return
+    @MainActor
+    func updateThread(with updatedThread: CXoneChatUI.ChatThread?) throws {
+        LogManager.trace("updated state = \(String(describing: updatedThread?.state))")
+        
+        // Record if the thread has been closed
+        if updatedThread?.state == .closed {
+            isThreadPermanentlyClosed = true
+            LogManager.trace("Thread has been marked as closed")
         }
         
-        do {
-            let content = UNMutableNotificationContent()
-            content.title = message.senderInfo.fullName
-            content.subtitle = message.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: true) ?? ""
-            content.userInfo = ["messageFromDifferentThread": true]
-            content.sound = .default
+        // Trigger the load if the UI module entered the background or the thread is not loaded yet
+        if let updatedThread, (containerViewModel?.shouldRefreshThread == true) || (chatProvider.mode == .multithread && updatedThread.state == .loaded) {
+            containerViewModel?.shouldRefreshThread = false
             
-            try await UNUserNotificationCenter
-                .current()
-                .add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
-        } catch {
-            error.logError()
+            reloadThread(with: updatedThread.id)
+        } else if chatProvider.mode == .liveChat, updatedThread?.state != .ready, updatedThread?.positionInQueue == nil {
+            // Show loading before the BE sends position in queue
+            containerViewModel?.showLoading(message: localization.commonLoading)
+        } else if updatedThread?.state == .ready || (updatedThread?.state != .closed && updatedThread?.positionInQueue != nil) {
+            // Hide the loading overlay if the thread is ready or position in queue is set and EndConversation view is not being shown
+            if !isEndConversationShown {
+                containerViewModel?.hideOverlay()
+            }
+        }
+        
+        self.thread = updatedThread
+        self.threadName = updatedThread?.name ?? ""
+        
+        // Update input state now that we've potentially updated hasBeenClosed
+        updateInputEnabledStateBasedOnThread()
+        
+        self.messageGroups = updatedThread?
+            .messages
+            .map { ChatMessageMapper.map($0, localization: localization) }
+            .groupMessages(interval: Self.groupInterval)
+        ?? []
+        
+        handleLivechatPositionInQueueVisibility()
+
+        if let updatedThread {
+            LogManager.trace("\(updatedThread.messages.count) grouped into \(messageGroups.count)")
             
-            alertType = .genericError(localization: localization, primaryAction: onDisconnectTapped)
+            setAdditionalCustomFieldsIfNeeded(for: updatedThread)
+        }
+
+        hasMoreMessagesToLoad = updatedThread?.hasMoreMessagesToLoad ?? false
+
+        if chatProvider.mode == .liveChat, updatedThread?.state == .closed {
+            showEndConversation()
         }
     }
     
-    func reconnect() {
-        LogManager.trace("Reconnecting to the CXone chat services")
+    func reloadThread(with id: UUID) {
+        LogManager.trace("Recovering thread")
+        
+        containerViewModel?.showLoading(message: localization.commonLoading)
         
         Task {
             do {
-                try await chatProvider.connection.connect()
+                try await chatProvider.threads.load(with: id)
             } catch {
-                containerViewModel?.show(fatal: error)
+                error.logError()
+                
+                _ = await MainActor.run { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    
+                    self.alertType = .connectionErrorAlert(localization: self.localization) {
+                        self.containerViewModel?.disconnect()
+                    }
+                }
             }
+            
+            containerViewModel?.hideOverlay()
+        }
+    }
+    
+    @MainActor
+    func handleChatReadyState(for mode: ChatMode) async throws {
+        switch mode {
+        case .singlethread, .liveChat:
+            try await handleSingleThreadAndLivechatReadyState()
+        case .multithread:
+            try await handleMultithreadReadyState()
+        }
+        
+        if let thread, let threadProvider = try? chatProvider.threads.provider(for: thread.id) {
+            if thread.state == .ready {
+                LogManager.trace("Marking thread as read")
+                
+                try await threadProvider.markRead()
+            }
+        } else {
+            LogManager.error("Unable to mark thread as read - no thread provider available.")
+        }
+    }
+    
+    @MainActor
+    func handleSingleThreadAndLivechatReadyState() async throws {
+        if let thread = chatProvider.threads.get().first, thread.state != .closed {
+            try updateThread(with: ChatThreadMapper.map(from: thread))
+        } else if let threadProvider = try await containerViewModel?.createThread() {
+            try updateThread(with: ChatThreadMapper.map(from: threadProvider.chatThread))
+        } else {
+            LogManager.trace("New thread was not created because customer cancelled a prechat survey -> disconnecting")
+            
+            containerViewModel?.disconnect()
+        }
+    }
+    
+    @MainActor
+    func handleMultithreadReadyState() async throws {
+        if let thread, let sdkThread = chatProvider.threads.get().first(where: { $0.id == thread.id }) {
+            try updateThread(with: ChatThreadMapper.map(from: sdkThread))
+        } else {
+            LogManager.error("Unable to get thread")
+            
+            alertType = .connectionErrorAlert(localization: localization) { [weak self] in
+                self?.containerViewModel?.disconnect()
+            }
+        }
+    }
+    
+    func setAdditionalCustomFieldsIfNeeded(for thread: ChatThread) {
+        guard let additionalFields = containerViewModel?.chatConfiguration.additionalContactCustomFields, !additionalFields.isEmpty else {
+            return
+        }
+        guard didSetAdditionalCustomFields == false else {
+            return
+        }
+        
+        didSetAdditionalCustomFields = true
+        
+        Task {
+            LogManager.trace("Setting additional contact custom fields")
+
+            try await chatProvider.threads.customFields.set(additionalFields, for: thread.id)
+        }
+    }
+    
+    func handleLivechatPositionInQueueVisibility() {
+        guard chatProvider.mode == .liveChat, chatProvider.state.isChatAvailable else {
+            self.positionInQueue = nil
+            return
+        }
+        guard let thread else {
+            // The thread is nil so it is initializing -> can present the position in queue without information about the position in queue
+            positionInQueue = .min
+            return
+        }
+        
+        if thread.state == .closed {
+            self.positionInQueue = nil
+        } else if let positionInQueue = thread.positionInQueue {
+            self.positionInQueue = positionInQueue
+        } else if thread.assignedAgent == nil && thread.lastAssignedAgent == nil {
+            // No agent assigned yet -> show the position in queue without information about the position in queue
+            self.positionInQueue = .min
+        } else {
+            self.positionInQueue = nil
         }
     }
 }
 
-private extension ChatThread {
-    
-    func chatTitle(localization: ChatLocalization) -> String {
-        let title = assignedAgent?.fullName ?? lastAssignedAgent?.fullName
-        
-        if let title, !title.isEmpty {
-            return title
-        }
-        
-        return localization.commonUnassignedAgent
+// MARK: - Menu builder
+
+extension ThreadViewModel {
+
+    var menu: MenuBuilder {
+        MenuBuilder()
+            .add(
+                if: !isThreadClosed && canEditCustomFields,
+                name: localization.alertEditPrechatCustomFieldsTitle,
+                icon: Asset.ChatThread.editPrechatCustomFields,
+                action: onEditPrechatField
+            )
+            .add(
+                if: !isThreadClosed && containerViewModel?.chatProvider.mode == .multithread,
+                name: localization.chatMenuOptionUpdateName,
+                icon: Asset.ChatThread.editThreadName,
+                action: onEditThreadName
+            )
+            .add(
+                if: containerViewModel?.chatProvider.mode == .liveChat,
+                name: localization.chatMenuOptionEndConversation,
+                icon: Asset.close
+            ) { [weak self] in
+                guard let self else {
+                    return
+                }
+                
+                if thread?.state == .closed {
+                    showEndConversation()
+                } else {
+                    self.alertType = .endConversation(localization: self.localization, primaryAction: self.onEndConversation)
+                }
+            }
     }
 }

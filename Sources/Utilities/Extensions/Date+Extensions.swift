@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -17,27 +17,6 @@ import Foundation
 
 extension Date {
     
-    static func - (lhs: Date, rhs: Date) -> TimeInterval {
-        lhs.timeIntervalSinceReferenceDate - rhs.timeIntervalSinceReferenceDate
-    }
-    
-    static func from(year: Int, month: Int, day: Int, hour: Int? = nil, minute: Int? = nil, second: Int? = nil) -> Date {
-        guard
-            (0...).contains(year),
-            (1...12).contains(month),
-            (1...31).contains(day),
-            (0..<24).contains(hour ?? 0),
-            (0..<60).contains(minute ?? 0),
-            (0..<60).contains(second ?? 0)
-        else {
-            return Date.distantPast
-        }
-        
-        let components = DateComponents(calendar: .current, timeZone: .current, year: year, month: month, day: day, hour: hour, minute: minute, second: second)
-        
-        return Calendar.current.date(from: components).unsafelyUnwrapped
-    }
-    
     func formatted(format: String) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = format
@@ -45,12 +24,17 @@ extension Date {
         return dateFormatter.string(from: self)
     }
     
-    func formatted(useRelativeFormat: Bool) -> String {
+    func formatted(
+        useRelativeFormat: Bool = false,
+        timeZone: TimeZone = .current,
+        timeStyle: DateFormatter.Style = .short,
+        dateStyle: DateFormatter.Style = .medium
+    ) -> String {
         let formatter = DateFormatter()
-        formatter.timeZone = .current
+        formatter.timeZone = timeZone
         formatter.doesRelativeDateFormatting = useRelativeFormat
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
+        formatter.dateStyle = dateStyle
+        formatter.timeStyle = timeStyle
         
         return formatter.string(from: self)
     }

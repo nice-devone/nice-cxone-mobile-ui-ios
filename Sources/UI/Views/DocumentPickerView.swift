@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021-2024. NICE Ltd. All rights reserved.
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
 //
 // Licensed under the NICE License;
 // you may not use this file except in compliance with the License.
@@ -65,7 +65,13 @@ struct DocumentPickerView: UIViewControllerRepresentable {
         
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             parent.onSelected(urls.map { url in
-                AttachmentItem(url: url, friendlyName: url.lastPathComponent, mimeType: url.mimeType, fileName: url.lastPathComponent)
+                AttachmentItem(
+                    url: url,
+                    friendlyName: url.lastPathComponent,
+                    mimeType: url.mimeType,
+                    fileName: url.lastPathComponent,
+                    requiresSecurityScope: true
+                )
             })
             
             parent.presentationMode.wrappedValue.dismiss()
