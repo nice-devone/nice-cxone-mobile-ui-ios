@@ -1,3 +1,9 @@
+<a name="2.3.4"></a>
+# [2.3.4] - 2025-06-30
+
+## Dependencies
+- Update CXoneChatSDK from 2.3.3 to 2.3.4
+
 <a name="2.3.3"></a>
 # [2.3.3] - 2025-06-18
 
