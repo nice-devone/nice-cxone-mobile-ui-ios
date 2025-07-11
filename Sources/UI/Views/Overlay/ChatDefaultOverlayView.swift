@@ -188,7 +188,7 @@ struct ChatDefaultOverlayView<Content: View>: View, Themed {
             .buttonStyle(.primary)
             
             Button { } label: {
-                Text("Close the Chat")
+                Text("Close chat")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.destructive)
@@ -216,7 +216,7 @@ struct ChatDefaultOverlayView<Content: View>: View, Themed {
             .buttonStyle(.primary)
             
             Button { } label: {
-                Text("Close the Chat")
+                Text("Close chat")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.destructive)
@@ -232,7 +232,7 @@ struct ChatDefaultOverlayView<Content: View>: View, Themed {
             cardImage: Asset.LiveChat.offline
         ) { _ in
             Button { } label: {
-                Text("Close the Chat")
+                Text("Close chat")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.destructive)

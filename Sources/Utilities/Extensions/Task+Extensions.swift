@@ -12,12 +12,27 @@
 // OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
-//  ⚠️ Generated source file -> do NOT edit ⚠️
 
 import Foundation
 
-/// A generated structure that holds information about the module version.
-public struct CXoneChatUIModule {
-    /// The current marketing version of the CXoneChatUIModule
-    public static let version: String = "3.0.1"
+extension Task where Success == Never, Failure == Never {
+    
+    private static var secondInNanoseconds: TimeInterval {
+        1_000_000_000
+    }
+    
+    static func sleep(seconds: Double) async {
+        let duration = UInt64(seconds * secondInNanoseconds)
+        
+        do {
+            try await Task.sleep(nanoseconds: duration)
+        } catch {
+            switch error {
+            case is CancellationError:
+                break
+            default:
+                error.logError()
+            }
+        }
+    }
 }

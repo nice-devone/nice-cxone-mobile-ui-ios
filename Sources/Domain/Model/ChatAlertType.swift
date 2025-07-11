@@ -54,14 +54,20 @@ final class ChatAlertType: Identifiable {
         }
     }
     
-    static func cameraPermissionDenied(
-        localization: ChatLocalization,
-        goToSettings: @escaping () -> Void
-    ) -> ChatAlertType {
+    static func cameraPermissionDenied(localization: ChatLocalization, action: @escaping () -> Void) -> ChatAlertType {
         ChatAlertType(
             title: localization.commonAttention,
             message: localization.alertCameraPermissionMessage,
-            primary: .default(Text(localization.commonSettings), action: goToSettings),
+            primary: .default(Text(localization.commonSettings), action: action),
+            secondary: .cancel()
+        )
+    }
+    
+    static func microphonePermissionDenied(localization: ChatLocalization, action: @escaping () -> Void) -> ChatAlertType {
+        ChatAlertType(
+            title: localization.commonAttention,
+            message: localization.alertMicrophonePermissionMessage,
+            primary: .default(Text(localization.commonSettings), action: action),
             secondary: .cancel()
         )
     }

@@ -332,14 +332,30 @@ private extension AudioRecorder {
         time += 1
     }
     
+    @MainActor
     func isRecordPermissionGranted() async -> Bool {
         guard AVAudioSession.sharedInstance().recordPermission != .granted else {
             return true
         }
         
-        return await withCheckedContinuation { continuation in
-            AVAudioSession.sharedInstance().requestRecordPermission { granted in
-                continuation.resume(returning: granted)
+        if AVAudioSession.sharedInstance().recordPermission == .denied {
+            alertType = .microphonePermissionDenied(localization: localization) {
+                guard let url = URL(string: UIApplication.openSettingsURLString) else {
+                    LogManager.error("Unable to get Settings URL")
+                    return
+                }
+                
+                Task { @MainActor in
+                    UIApplication.shared.open(url)
+                }
+            }
+            
+            return false
+        } else {
+            return await withCheckedContinuation { continuation in
+                AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                    continuation.resume(returning: granted)
+                }
             }
         }
     }

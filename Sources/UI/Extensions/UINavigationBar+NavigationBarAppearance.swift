@@ -18,7 +18,7 @@ import UIKit
 
 extension UINavigationBar {
     
-    func chatAppearance(with customizableColors: any CustomizableStyleColors, isHidden: Bool) {
+    func chatAppearance(with customizableColors: any CustomizableStyleColors) {
         LogManager.trace("Set UINavigationBar appearance to chat appearance")
         
         let appearance = UINavigationBarAppearance()
@@ -35,7 +35,6 @@ extension UINavigationBar {
         appearance.titleTextAttributes = textAttributes
         appearance.largeTitleTextAttributes = textAttributes
         
-        self.isHidden = isHidden
         standardAppearance = appearance
         compactAppearance = appearance
         scrollEdgeAppearance = appearance
@@ -55,7 +54,6 @@ extension UINavigationBar {
         } else {
             LogManager.trace("Reset UINavigationBar appearance to default")
             
-            isHidden = false
             standardAppearance.configureWithDefaultBackground()
             compactAppearance = nil
             scrollEdgeAppearance = nil

@@ -31,15 +31,13 @@ public class ChatLocalization: ObservableObject {
     public lazy var commonCancel = lookup(key: "chatui_common_cancel")
     /// "Confirm"
     public lazy var commonConfirm = lookup(key: "chatui_common_confirm")
-    /// "Close"
-    public lazy var commonClose = lookup(key: "chatui_common_close")
     /// "Required"
     public lazy var commonRequired = lookup(key: "chatui_common_required")
-    /// "No Selection"
+    /// "No selection"
     public lazy var commonNoSelection = lookup(key: "chatui_common_noSelection")
-    /// "Invalid Email"
+    /// "Invalid email"
     public lazy var commonInvalidEmail = lookup(key: "chatui_common_invalidEmail")
-    /// "Invalid Number"
+    /// "Invalid number"
     public lazy var commonInvalidNumber = lookup(key: "chatui_common_invalidNumber")
     /// "Select"
     public lazy var commonSelect = lookup(key: "chatui_common_select")
@@ -57,14 +55,6 @@ public class ChatLocalization: ObservableObject {
     public lazy var commonConnecting = lookup(key: "chatui_common_connecting")
     /// "Loading..."
     public lazy var commonLoading = lookup(key: "chatui_common_loading")
-    /// "Fatal Error"
-    public lazy var commonFatalError = lookup(key: "chatui_common_fatalError")
-    /// "Back"
-    public lazy var commonBack = lookup(key: "chatui_common_back")
-    /// "Down"
-    public lazy var commonDown = lookup(key: "chatui_common_down")
-    /// "Reconnect"
-    public lazy var commonReconnect = lookup(key: "chatui_common_reconnect")
     /// "Try again"
     public lazy var commonTryAgain = lookup(key: "chatui_common_try_again")
     /// "Error"
@@ -74,23 +64,15 @@ public class ChatLocalization: ObservableObject {
 
     // MARK: - Alert
     
-    /// "Unable to create new thread"
-    public lazy var alertThreadCreationFailedMessage = lookup(key: "chatui_alert_threadCreationFailed_message")
-    /// "Received remote notification from unknown thread."
-    public lazy var alertDeeplinkUnknownThreadMessage = lookup(key: "chatui_alert_DeeplinkUnknownThread_message")
-    /// "Do you want to disconnect from the CXone services?"
-    public lazy var alertDisconnectMessage = lookup(key: "chatui_alert_disconnect_message")
     /// "Disconnect"
     public lazy var alertDisconnectConfirm = lookup(key: "chatui_alert_disconnect_confirm")
-    /// "Update Thread Name"
+    /// "Update thread name"
     public lazy var alertUpdateThreadNameTitle = lookup(key: "chatui_alert_updateThreadName_title")
-    /// "Enter a name for this thread"
-    public lazy var alertUpdateThreadNameMessage = lookup(key: "chatui_alert_updateThreadName_message")
-    /// "Thread Name"
+    /// "Thread name"
     public lazy var alertUpdateThreadNamePlaceholder = lookup(key: "chatui_alert_updateThreadName_placeholder")
-    /// "Edit Custom Fields"
+    /// "Edit custom field(s)"
     public lazy var alertEditPrechatCustomFieldsTitle = lookup(key: "chatui_alert_editPrechatCustomFields_title")
-    /// "Something went wrong. Try it again later or contact the CXone Mobile team"
+    /// "Something went wrong. Please, try again later."
     public lazy var alertGenericErrorMessage = lookup(key: "chatui_alert_genericError_message")
     /// "Oops! The chat encountered an issue and will disconnect. Please try again later."
     public lazy var alertDisconnectErrorMessage = lookup(key: "chatui_alert_disconnectError_message")
@@ -98,6 +80,8 @@ public class ChatLocalization: ObservableObject {
     public lazy var alertEndConversationMessage = lookup(key: "chatui_alert_endConverastion_message")
     /// "Camera access is required to take photos. Please allow camera access in Settings."
     public lazy var alertCameraPermissionMessage = lookup(key: "chatui_alert_cameraPermission_message")
+    /// "Microphone access is required to record a voice message. Please allow microphone access in Settings."
+    public lazy var alertMicrophonePermissionMessage = lookup(key: "chatui_alert_microphonePermission_message")
     /// "Oops!"
     public lazy var alertFileValidationTitle = lookup(key: "chatui_alert_fileValidation_title")
     /// "Unable to upload attachment(s) due to invalid file type."
@@ -116,13 +100,13 @@ public class ChatLocalization: ObservableObject {
     
     /// "Threads"
     public lazy var chatListTitle = lookup(key: "chatui_chatList_title")
-    /// "No Threads"
+    /// "No threads"
     public lazy var chatListEmpty = lookup(key: "chatui_chatList_empty")
     /// "Current"
     public lazy var chatListThreadStatusArchived = lookup(key: "chatui_chatList_threadStatus_archived")
     /// "Archived"
     public lazy var chatListThreadStatusCurrent = lookup(key: "chatui_chatList_threadStatus_current")
-    /// "New Converstation"
+    /// "New converstation"
     public lazy var chatListNewThread = lookup(key: "chatui_chatList_newThread")
     /// "Rename"
     public lazy var chatThreadContextMenuRename = lookup(key: "chatui_chatThread_contextMenu_rename")
@@ -152,17 +136,17 @@ public class ChatLocalization: ObservableObject {
     public lazy var chatMessageInputClosed = lookup(key: "chatui_chat_messageInput_closed")
     /// "Aa"
     public lazy var chatMessageInputPlaceholder = lookup(key: "chatui_chat_messageInput_placeholder")
-    /// "Attachments Source"
+    /// "Attachment source"
     public lazy var chatMessageInputAttachmentsOptionTitle = lookup(key: "chatui_chat_messageInput_attachmentsOption_title")
     /// "Camera"
     public lazy var chatMessageInputAttachmentsOptionCamera = lookup(key: "chatui_chat_messageInput_attachmentsOption_camera")
-    /// "Photo Library"
+    /// "Photo library"
     public lazy var chatMessageInputAttachmentsOptionPhotos = lookup(key: "chatui_chat_messageInput_attachmentsOption_photos")
-    /// "File Manager"
+    /// "File manager"
     public lazy var chatMessageInputAttachmentsOptionFiles = lookup(key: "chatui_chat_messageInput_attachmentsOption_files")
     /// "Recording"
     public lazy var chatMessageInputAudioRecorderRecording = lookup(key: "chatui_chat_messageInput_audioRecorder_recording")
-    /// "Audio Message"
+    /// "Audio message"
     public lazy var chatMessageInputAudioRecorderRecorded = lookup(key: "chatui_chat_messageInput_audioRecorder_recorded")
     /// "Playing"
     public lazy var chatMessageInputAudioRecorderPlaying = lookup(key: "chatui_chat_messageInput_audioRecorder_playing")
@@ -179,11 +163,9 @@ public class ChatLocalization: ObservableObject {
     public lazy var chatAttachmentsSelectedCount = lookup(key: "chatui_chat_attachments_selectedCount_message")
     /// "Uploading..."
     public lazy var chatAttachmentsUpload = lookup(key: "chatui_chat_attachments_upload")
-    /// "The document could not be downloaded at this time. Please check your internet connection and try again."
-    public lazy var chatAttachmentsDownloadFailed = lookup(key: "chatui_chat_attachments_download_failed")
-    /// "Loading Document.."
+    /// "Loading document.."
     public lazy var loadingDoc = lookup(key: "chatui_chat_attachments_loading_document")
-    /// "Loading Video..."
+    /// "Loading video..."
     public lazy var loadingVideo = lookup(key: "chatui_chat_attachments_loading_video")
     /// "Loading document failed"
     public lazy var loadingDocError = lookup(key: "chatui_chat_attachments_loading_document_error")
@@ -192,20 +174,16 @@ public class ChatLocalization: ObservableObject {
     
     // MARK: - Chat - Menu Actions
     
-    /// "Disconnect"
-    public lazy var chatMenuOptionDisconnect = lookup(key: "chatui_chat_menuOption_disconnect")
-    /// "Update Conversation Name"
+    /// "Update conversation name"
     public lazy var chatMenuOptionUpdateName = lookup(key: "chatui_chat_menuOption_updateName")
-    /// "Edit Custom Fields"
-    public lazy var chatMenuOptionEditPrechatCustomFields = lookup(key: "chatui_chat_menuOption_editPrechatCustomFields")
-    /// "End Conversation"
+    /// "End conversation"
     public lazy var chatMenuOptionEndConversation = lookup(key: "chatui_chat_menuOption_endConversation")
     
     // MARK: - Chat - TORM
     
-    /// "Option Selected"
+    /// "Option selected"
     public lazy var chatMessageRichContentOptionSelected = lookup(key: "chatui_chat_message_richContent_optionSelected")
-    /// "TAP TO SELECT AN OPTION"
+    /// "Tap to select an option"
     public lazy var chatMessageListPickerSheetOptionsTitle = lookup(key: "chatui_chat_message_listPicker_sheet_optionsTitle")
     /// "Done"
     public lazy var chatMessageListPickerSheetConfirm = lookup(key: "chatui_chat_message_listPicker_sheet_confirm")
@@ -216,8 +194,6 @@ public class ChatLocalization: ObservableObject {
     public lazy var liveChatOfflineTitle = lookup(key: "chatui_liveChat_offline_title")
     /// "Try again later"
     public lazy var liveChatOfflineMessage = lookup(key: "chatui_liveChat_offline_message")
-    /// "Disconnect"
-    public lazy var liveChatOfflineButtonTitle = lookup(key: "chatui_liveChat_offline_button_title")
 
     // MARK: - LiveChat - Queue
     
@@ -234,14 +210,14 @@ public class ChatLocalization: ObservableObject {
     public lazy var liveChatEndConversationNew = lookup(key: "chatui_liveChat_endConverastion_new")
     /// "Back to conversation"
     public lazy var liveChatEndConversationBack = lookup(key: "chatui_liveChat_endConverastion_back")
-    /// "Close the chat"
+    /// "Close chat"
     public lazy var liveChatEndConversationClose = lookup(key: "chatui_liveChat_endConverastion_close")
     /// "This conversation was closed"
     public lazy var liveChatEndConversationDefaultTitle = lookup(key: "chatui_liveChat_endConversation_default_title")
     
     // MARK: - PreContactSurvey
     
-    /// "Please fill out all fields and send the form."
+    /// "Please fill out all fields and submit the form."
     public lazy var prechatSurveySubtitle = lookup(key: "chatui_preChatSurvey_subtitle")
     
 	// MARK: - Init

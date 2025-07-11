@@ -91,14 +91,25 @@ struct ListFieldView: View, Themed {
         .onPreferenceChange(PreferenceKeys.ContentSizeThatFitsKey.self) { size in
             self.hStackWidth = size.width
         }
-        .actionSheet(isPresented: $isActionSheetVisible) {
-            var options: [ActionSheet.Button] = entity.options.map { option in
-                .default(Text(option.value)) { entity.value = option.key }
+        .confirmationDialog(entity.value, isPresented: $isActionSheetVisible) {
+            ForEach(Array(entity.options.keys), id: \.self) { key in
+                if let value = entity.options[key] {
+                    Button(value) {
+                        // Do not use actual value, it's necessary to use key which is unique identifier for the value
+                        entity.value = key
+                    }
+                } else {
+                    EmptyView()
+                        .onAppear {
+                            LogManager.error("Unable to get value for option \(key)")
+                        }
+                }
+                
             }
             
-            options.append(.cancel { entity.value = "" })
-
-            return ActionSheet(title: Text(entity.label), buttons: options)
+            Button(localization.commonCancel, role: .cancel) {
+                entity.value = ""
+            }
         }
         .animation(.default, value: isActionSheetVisible)
         .animation(.default, value: hStackWidth)

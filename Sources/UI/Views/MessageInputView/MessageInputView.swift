@@ -153,8 +153,26 @@ private extension MessageInputView {
         .disabled(!isInputEnabled)
         .foregroundColor(isInputEnabled ? colors.customizable.primary : colors.foreground.disabled)
         .frame(width: StyleGuide.buttonDimension, height: StyleGuide.buttonDimension)
-        .actionSheet(isPresented: $showAttachmentsSheet) {
-            attachmentsSourceActionSheet
+        .confirmationDialog(localization.chatMessageInputAttachmentsOptionTitle, isPresented: $showAttachmentsSheet) {
+            Button(localization.chatMessageInputAttachmentsOptionFiles) {
+                showDocumentPickerSheet = true
+            }
+            
+            if isAnyMimeTypeAllowed([UTType.imagePreffix, UTType.videoPreffix]) {
+                Button(localization.chatMessageInputAttachmentsOptionPhotos) {
+                    attachmentsPickerSheet = (true, .photoLibrary)
+                }
+            }
+            // `.camera` does not allow to have only `video` MIME type, it requires also image
+            if isAnyMimeTypeAllowed([UTType.imagePreffix]) {
+                Button(localization.chatMessageInputAttachmentsOptionCamera) {
+                    checkCameraPermissionAndShowPicker()
+                }
+            }
+            
+            Button(localization.commonCancel, role: .cancel) {
+                showDocumentPickerSheet = false
+            }
         }
         .sheet(isPresented: $attachmentsPickerSheet.visible) {
             MediaPickerView(attachmentRestrictions: attachmentRestrictions, sourceType: attachmentsPickerSheet.type) { attachment in
@@ -192,29 +210,6 @@ private extension MessageInputView {
         }
         .font(.largeTitle)
         .foregroundStyle(colors.customizable.onPrimary, colors.customizable.primary)
-    }
-    
-    var attachmentsSourceActionSheet: ActionSheet {
-        var buttons: [Alert.Button] = [
-            .default(Text(localization.chatMessageInputAttachmentsOptionFiles)) {
-                showDocumentPickerSheet = true
-            },
-            .cancel()
-        ]
-        
-        if isAnyMimeTypeAllowed([UTType.imagePreffix, UTType.videoPreffix]) {
-            buttons.append(.default(Text(localization.chatMessageInputAttachmentsOptionPhotos)) {
-                attachmentsPickerSheet = (true, .photoLibrary)
-            })
-        }
-        // `.camera` does not allow to have only `video` MIME type, it requires also image
-        if isAnyMimeTypeAllowed([UTType.imagePreffix]) {
-            buttons.append(.default(Text(localization.chatMessageInputAttachmentsOptionCamera)) {
-                checkCameraPermissionAndShowPicker()
-            })
-        }
-        
-        return ActionSheet(title: Text(localization.chatMessageInputAttachmentsOptionTitle), buttons: buttons)
     }
     
     var inputBar: some View {
@@ -381,15 +376,8 @@ private extension MessageInputView {
                     }
                 }
             }
-        case .denied, .restricted:
-            // Permission previously denied, show settings alert
-            alertType = .cameraPermissionDenied(localization: localization) {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            }
-        @unknown default:
-            // Handle any future status types gracefully
+        default:
+            // Permission previously denied or unhandled state -> show settings alert
             alertType = .cameraPermissionDenied(localization: localization) {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url)

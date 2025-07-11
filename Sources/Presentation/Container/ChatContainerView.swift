@@ -54,8 +54,11 @@ struct ChatContainerView: View, Themed, Alertable {
             NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification),
             perform: viewModel.didEnterBackground
         )
+        .fullScreenCover(isPresented: viewModel.isOverlayDisplayed) {
+            viewModel.overlay?()
+                .presentationWithBackgroundColor(.clear)
+        }
         .tint(colors.customizable.primary)
-        .navigationBarHidden(viewModel.chatState != .ready)
     }
 }
 
@@ -70,7 +73,11 @@ private extension ChatContainerView {
                 content
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) {
-                            Button(action: self.viewModel.disconnect) {
+                            Button {
+                                Task { @MainActor in
+                                    await viewModel.disconnect()
+                                }
+                            } label: {
                                 Asset.down
                                     .foregroundStyle(colors.customizable.primary)
                             }

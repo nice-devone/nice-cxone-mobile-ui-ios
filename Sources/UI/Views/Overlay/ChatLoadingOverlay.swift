@@ -76,7 +76,7 @@ struct ChatLoadingOverlay: View, Themed {
     }
 }
 
-// MARK: - Previews
+// MARK: - Preview
 
 private struct TestContentView: View {
     
@@ -133,6 +133,9 @@ private struct TestContentView: View {
             TestContentView()
         }
 
+        ChatDefaultOverlayPreview {
+            TestContentView()
+        }
         if isPresented {
             ChatLoadingOverlay(text: "Connecting...") {
                 isPresented = false

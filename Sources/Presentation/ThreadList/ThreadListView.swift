@@ -79,7 +79,12 @@ struct ThreadListView: View, Themed {
         .onAppear(perform: viewModel.onAppear)
         .onDisappear(perform: viewModel.onDisappear)
         .alert(localization.alertUpdateThreadNameTitle, isPresented: $viewModel.isEditingThreadName) {
-            AlertTextFieldView(isPresented: $viewModel.isEditingThreadName, onConfirm: viewModel.setThreadName)
+            AlertTextFieldView(isPresented: $viewModel.isEditingThreadName) { name in
+                Task { @MainActor in
+                    await viewModel.setThreadName(name)
+                }
+                
+            }
         }
     }
 
@@ -145,7 +150,9 @@ private extension ThreadListView {
                         viewModel.onEditThreadName(for: chatThread)
                     },
                     onArchive: {
-                        viewModel.onArchive(chatThread)
+                        Task { @MainActor in
+                            await viewModel.onArchive(chatThread)
+                        }
                     }
                 )
                 .listRowBackground(Constants.Colors.listRowBackground)
@@ -184,7 +191,9 @@ private extension ThreadListView {
                         viewModel.onEditThreadName(for: chatThread)
                     },
                     onArchive: {
-                        viewModel.onArchive(chatThread)
+                        Task { @MainActor in
+                            await viewModel.onArchive(chatThread)
+                        }
                     }
                 )
                 .listRowBackground(Constants.Colors.listRowBackground)

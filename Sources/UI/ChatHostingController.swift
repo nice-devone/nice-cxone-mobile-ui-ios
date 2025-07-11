@@ -93,7 +93,7 @@ class ChatHostingController<Content>: UIHostingController<Content> where Content
         
         didAppear = true
         
-        updateNavigationBarAppearance(for: traitCollection, isHidden: true)
+        updateNavigationBarAppearance(for: traitCollection)
         updateAlertControllerAppearance(for: traitCollection)
         updateSegmentedControlAppearance(for: traitCollection)
     }
@@ -124,7 +124,7 @@ class ChatHostingController<Content>: UIHostingController<Content> where Content
         super.traitCollectionDidChange(previousTraitCollection)
         
         if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
-            updateNavigationBarAppearance(for: traitCollection, isHidden: false)
+            updateNavigationBarAppearance(for: traitCollection)
             updateAlertControllerAppearance(for: traitCollection)
             updateSegmentedControlAppearance(for: traitCollection)
         }
@@ -139,7 +139,7 @@ class ChatHostingController<Content>: UIHostingController<Content> where Content
             ? UITraitCollection(userInterfaceStyle: .dark)
             : UITraitCollection(userInterfaceStyle: .light)
         
-        updateNavigationBarAppearance(for: newTrait, isHidden: false)
+        updateNavigationBarAppearance(for: newTrait)
         updateAlertControllerAppearance(for: newTrait)
         updateSegmentedControlAppearance(for: newTrait)
     }
@@ -151,7 +151,7 @@ class ChatHostingController<Content>: UIHostingController<Content> where Content
         let actualStyle = UITraitCollection.current.userInterfaceStyle
         
         if let navigationController {
-            navigationController.navigationBar.chatAppearance(with: customizableColors(for: actualStyle), isHidden: false)
+            navigationController.navigationBar.chatAppearance(with: customizableColors(for: actualStyle))
         } else {
             LogManager.error("Unable to update NavigationBar appearance")
         }
@@ -166,7 +166,7 @@ class ChatHostingController<Content>: UIHostingController<Content> where Content
 
 private extension ChatHostingController {
     
-    func updateNavigationBarAppearance(for traitCollection: UITraitCollection, isHidden: Bool) {
+    func updateNavigationBarAppearance(for traitCollection: UITraitCollection) {
         guard let navigationController else {
             LogManager.error("Unable to update NavigationBar appearance")
             return
@@ -188,7 +188,7 @@ private extension ChatHostingController {
         }
         
         // Update to chat appearance
-        navigationController.navigationBar.chatAppearance(with: customizableColors, isHidden: isHidden)
+        navigationController.navigationBar.chatAppearance(with: customizableColors)
     }
     
     func updateAlertControllerAppearance(for traitCollection: UITraitCollection) {
