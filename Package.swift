@@ -28,8 +28,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "3.0.0"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios.git", from: "3.0.0")
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "3.0.1"),
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios.git", from: "3.0.1")
     ],
     targets: [
         .target(

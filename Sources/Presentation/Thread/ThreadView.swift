@@ -71,15 +71,19 @@ struct ThreadView: View, Themed {
                 }
                 
                 Button(localization.commonConfirm) {
-                    viewModel.setThread(name: viewModel.threadName)
+                    Task {
+                        await viewModel.setThread(name: viewModel.threadName)
+                    }
                 }
             }
         }
         .onChange(of: viewModel.isProcessDialogVisible) { isVisible in
-            if isVisible {
-                viewModel.containerViewModel?.showLoading(message: localization.chatAttachmentsUpload)
-            } else {
-                viewModel.containerViewModel?.hideOverlay()
+            Task { @MainActor in
+                if isVisible {
+                    await viewModel.containerViewModel?.showLoading(message: localization.chatAttachmentsUpload)
+                } else {
+                    await viewModel.containerViewModel?.hideOverlay()
+                }
             }
         }
         .onChange(of: viewModel.isUserTyping) { _ in

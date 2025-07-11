@@ -1,3 +1,26 @@
+<a name="3.0.1"></a>
+# [3.0.1] - 2025-07-11
+
+## CXoneChatSDK
+
+### Fixes
+- Correct `eventType` for RefreshToken event
+- Fix condition to authorize a customer with token via OAuth
+- Extend `ErrorCode` of legacy consumer authorization/reconnect failed events
+
+## CXoneChatUI
+
+### Fixes
+- Working overlays for a pure SwiftUI application
+
+## Sample
+
+### Features
+- Skip prompt for Amazon OAuth if it's already authorized
+
+### Fixes
+- Resolved deeplinking issues
+
 <a name="3.0.0"></a>
 # [3.0.0] - 2025-06-05
 
@@ -351,9 +374,9 @@
     - failure
   - typing start/end
 
-[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.0...HEAD
-[3.0.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.3.1...3.0.0
-[2.3.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.3.0...2.3.1
+[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.1...HEAD
+[3.0.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.0...3.0.1
+[3.0.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.3.0...3.0.0
 [2.3.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.2.1...2.3.0
 [2.2.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.2.0...2.2.1
 [2.2.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.1.0...2.2.0

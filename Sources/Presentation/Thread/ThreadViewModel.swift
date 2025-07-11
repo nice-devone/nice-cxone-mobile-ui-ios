@@ -45,13 +45,14 @@ class ThreadViewModel: ObservableObject {
         set { containerViewModel?.alertType = newValue }
     }
     var chatTitle: String {
-        let title = thread?.assignedAgent?.fullName ?? thread?.lastAssignedAgent?.fullName
-
-        if let title, !title.isEmpty {
-            return title
-        }
-
-        return localization.commonUnassignedAgent
+        // The thread name has higher priority in multi-thread scenarios because it's set by the customer
+        thread?.name?.nilIfEmpty()
+            // If the thread name is not set, or it's a single-thread or live chat, use the assigned agent's full name
+            ?? thread?.assignedAgent?.fullName.nilIfEmpty()
+            // If no agent is currently assigned, but one was previously, use the last assigned agent's full name
+            ?? thread?.lastAssignedAgent?.fullName.nilIfEmpty()
+            // If none of the above are available, use "No agent"
+            ?? localization.commonUnassignedAgent
     }
     
     private let chatProvider: ChatProvider
@@ -84,12 +85,14 @@ class ThreadViewModel: ObservableObject {
         
         chatProvider.add(delegate: self)
         
-        Task {
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+            
+            await self.updateThread(with: thread)
+            
             do {
-                _ = try await MainActor.run {
-                    try updateThread(with: thread)
-                }
-                
                 guard let thread, let threadProvider = try? chatProvider.threads.provider(for: thread.id) else {
                     LogManager.error("Unexpected nil thread")
                     return
@@ -103,13 +106,9 @@ class ThreadViewModel: ObservableObject {
             } catch {
                 error.logError()
                 
-                _ = await MainActor.run { [weak self] in
-                    guard let self else {
-                        return
-                    }
-                    
-                    self.alertType = .connectionErrorAlert(localization: self.localization) {
-                        self.containerViewModel?.disconnect()
+                self.alertType = .connectionErrorAlert(localization: self.localization) {
+                    Task { @MainActor in
+                        await self.containerViewModel?.disconnect()
                     }
                 }
             }
@@ -127,7 +126,8 @@ class ThreadViewModel: ObservableObject {
 
 extension ThreadViewModel {
 
-    func onEditPrechatField() {
+    @MainActor
+    func onEditPrechatField() async {
         LogManager.trace("Trying to edit prechat custom fields")
         
         guard let thread else { 
@@ -144,24 +144,18 @@ extension ThreadViewModel {
             FormCustomFieldTypeMapper.map(definition, with: chatProvider.threads.customFields.get(for: thread.id))
         }
         
-        Task {
-            guard let answers = await containerViewModel?.showForm(title: localization.alertEditPrechatCustomFieldsTitle, fields: customFields) else {
-                return
-            }
+        guard let answers = await containerViewModel?.showForm(title: localization.alertEditPrechatCustomFieldsTitle, fields: customFields) else {
+            return
+        }
 
-            do {
-                try await chatProvider.threads.customFields.set(answers, for: thread.id)
-            } catch {
-                error.logError()
-                
-                _ = await MainActor.run { [weak self] in
-                    guard let self else {
-                        return
-                    }
-                    
-                    self.alertType = .connectionErrorAlert(localization: self.localization) {
-                        self.containerViewModel?.disconnect()
-                    }
+        do {
+            try await chatProvider.threads.customFields.set(answers, for: thread.id)
+        } catch {
+            error.logError()
+            
+            alertType = .connectionErrorAlert(localization: localization) { [weak self] in
+                Task { @MainActor in
+                    await self?.containerViewModel?.disconnect()
                 }
             }
         }
@@ -173,7 +167,8 @@ extension ThreadViewModel {
         isEditingThreadName = true
     }
     
-    func setThread(name: String) {
+    @MainActor
+    func setThread(name: String) async {
         LogManager.trace("Setting thread name to \(name) for thread \(String(describing: thread?.id))")
         
         guard let thread, let threadProvider = try? chatProvider.threads.provider(for: thread.id) else {
@@ -181,22 +176,17 @@ extension ThreadViewModel {
             return
         }
         
-        Task {
-            do {
-                try await threadProvider.updateName(name)
-            } catch {
-                _ = await MainActor.run { [weak self] in
-                    guard let self else {
-                        return
-                    }
-                    
-                    self.alertType = .genericError(localization: localization)
-                }
-            }
+        do {
+            try await threadProvider.updateName(name)
+        } catch {
+            error.logError()
+            
+            self.alertType = .genericError(localization: localization)
         }
     }
     
-    func showEndConversation() {
+    @MainActor
+    func showEndConversation() async {
         guard let thread else {
             LogManager.error("Unexpected nil thread")
             return
@@ -206,19 +196,32 @@ extension ThreadViewModel {
         
         self.isEndConversationShown = true
         
-        self.containerViewModel?.showOverlay {
+        await containerViewModel?.showOverlay {
             ChatDefaultOverlay(verticalOffset: StyleGuide.containerVerticalOffset) {
                 EndConversationView(
-                    onStartNewTapped: self.onEndConversationStartChatTapped,
-                    onBackToConversationTapped: self.onEndConversationBackTapped,
-                    onCloseChatTapped: self.onEndConversationCloseTapped,
+                    onStartNewTapped: {
+                        Task { @MainActor [weak self] in
+                            await self?.onEndConversationStartChatTapped()
+                        }
+                    },
+                    onBackToConversationTapped: {
+                        Task { @MainActor [weak self] in
+                            await self?.onEndConversationBackTapped()
+                        }
+                    },
+                    onCloseChatTapped: {
+                        Task { @MainActor [weak self] in
+                            await self?.onEndConversationCloseTapped()
+                        }
+                    },
                     thread: thread
                 )
             }
         }
     }
 
-    func onEndConversation() {
+    @MainActor
+    func onEndConversation() async {
         guard let thread, let threadProvider = try? chatProvider.threads.provider(for: thread.id) else {
             LogManager.error("Unexpected nil thread")
             return
@@ -229,18 +232,20 @@ extension ThreadViewModel {
             return
         }
         
-        Task { @MainActor in
-            LogManager.trace("Ending live chat conversation")
+        LogManager.trace("Ending live chat conversation")
+        
+        await containerViewModel?.hideOverlay()
+        
+        do {
+            try await threadProvider.endContact()
             
-            do {
-                try await threadProvider.endContact()
-                
-                showEndConversation()
-            } catch {
-                error.logError()
-                
-                alertType = .connectionErrorAlert(localization: localization) { [weak self] in
-                    self?.containerViewModel?.disconnect()
+            await showEndConversation()
+        } catch {
+            error.logError()
+            
+            alertType = .connectionErrorAlert(localization: localization) { [weak self] in
+                Task { @MainActor in
+                    await self?.containerViewModel?.disconnect()
                 }
             }
         }
@@ -288,16 +293,13 @@ extension ThreadViewModel {
         }
     }
     
+    @MainActor
     func loadMoreMessages() async {
         LogManager.trace("Trying to load more messages")
         
         guard let thread, thread.hasMoreMessagesToLoad, let threadProvider = try? chatProvider.threads.provider(for: thread.id) else {
             LogManager.error("Unexpected nil thread")
-
-            Task { @MainActor in
-                hasMoreMessagesToLoad = false
-            }
-
+            hasMoreMessagesToLoad = false
             return
         }
         
@@ -306,13 +308,9 @@ extension ThreadViewModel {
         } catch {
             error.logError()
             
-            _ = await MainActor.run { [weak self] in
-                guard let self else {
-                    return
-                }
-                
-                self.alertType = .connectionErrorAlert(localization: self.localization) {
-                    self.containerViewModel?.disconnect()
+            alertType = .connectionErrorAlert(localization: self.localization) {
+                Task { @MainActor [weak self] in
+                    await self?.containerViewModel?.disconnect()
                 }
             }
         }
@@ -335,9 +333,13 @@ extension ThreadViewModel {
             return
         }
 
-        Task {
+        Task { [weak self] in
+            guard let self else {
+                return
+            }
+            
             do {
-                try await threadProvider.reportTypingStart(isUserTyping)
+                try await threadProvider.reportTypingStart(self.isUserTyping)
             } catch {
                 error.logError()
                 
@@ -347,49 +349,48 @@ extension ThreadViewModel {
                     }
                     
                     self.alertType = .connectionErrorAlert(localization: self.localization) {
-                        self.containerViewModel?.disconnect()
+                        Task { @MainActor in
+                            await self.containerViewModel?.disconnect()
+                        }
                     }
                 }
             }
         }
     }
     
-    func onEndConversationStartChatTapped() {
+    @MainActor
+    func onEndConversationStartChatTapped() async {
         LogManager.trace("Create a new live chat conversation")
 
-        Task { @MainActor in
-            // Reset thread reference and isThreadPermanentlyClosed flag to allow proper handling of the new thread
-            self.thread = nil
-            isThreadPermanentlyClosed = false
+        // Explicitly reset thread state to allow proper initialization of a new thread
+        // This prevents race conditions when quickly starting a new thread after a previous one was closed
+        thread = nil
+        isThreadPermanentlyClosed = false
+        
+        // Hide the end conversation view before starting a new thread
+        isEndConversationShown = false
+        
+        // Hide any overlay before starting a new thread
+        await containerViewModel?.hideOverlay()
+        
+        // Show loading state while creating the new thread
+        await containerViewModel?.showLoading(message: localization.commonLoading)
+        
+        do {
+            // The only situation when the ChatThreadProvider is `nil` is when the pre-chat form is cancelled.
+            guard let threadProvider = try await containerViewModel?.createThread() else {
+                LogManager.trace("New thread was not created because customer cancelled a prechat survey -> disconnecting")
+                await containerViewModel?.disconnect()
+                return
+            }
             
-            do {
-                // Hide the end conversation view before starting a new thread
-                isEndConversationShown = false
-                
-                // Hide any overlay before starting a new thread
-                containerViewModel?.hideOverlay()
-                
-                // Explicitly reset thread state to allow proper initialization of a new thread
-                // This prevents race conditions when quickly starting a new thread after a previous one was closed
-                self.thread = nil
-                
-                // Show loading state while creating the new thread
-                containerViewModel?.showLoading(message: localization.commonLoading)
-                
-                // The only situation when the ChatThreadProvider is `nil` is when the pre-chat form is cancelled.
-                guard let threadProvider = try await containerViewModel?.createThread() else {
-                    LogManager.trace("New thread was not created because customer cancelled a prechat survey -> disconnecting")
-
-                    containerViewModel?.disconnect()
-                    return
-                }
-                
-                try self.updateThread(with: ChatThreadMapper.map(from: threadProvider.chatThread))
-            } catch {
-                error.logError()
-                
-                self.alertType = .connectionErrorAlert(localization: self.localization) {
-                    self.containerViewModel?.disconnect()
+            await self.updateThread(with: ChatThreadMapper.map(from: threadProvider.chatThread))
+        } catch {
+            error.logError()
+            
+            self.alertType = .connectionErrorAlert(localization: self.localization) {
+                Task { @MainActor [weak self] in
+                    await self?.containerViewModel?.disconnect()
                 }
             }
         }
@@ -414,7 +415,7 @@ extension ThreadViewModel {
     }
     
     @MainActor
-    func onEndConversationBackTapped() {
+    func onEndConversationBackTapped() async {
         LogManager.trace("Return to the chat transcript")
         
         // Reset flag before hiding overlay
@@ -424,16 +425,17 @@ extension ThreadViewModel {
         updateInputEnabledStateBasedOnThread()
         
         // Hide any visible overlay if needed
-        containerViewModel?.hideOverlay()
+        await containerViewModel?.hideOverlay()
     }
     
-    func onEndConversationCloseTapped() {
+    @MainActor
+    func onEndConversationCloseTapped() async {
         LogManager.trace("Close the chat and return to the host application")
         
         // Reset flag
         isEndConversationShown = false
         
-        containerViewModel?.disconnect()
+        await containerViewModel?.disconnect()
     }
 }
 
@@ -450,16 +452,16 @@ extension ThreadViewModel: CXoneChatDelegate {
                 switch state {
                 case .ready:
                     try await handleChatReadyState(for: mode)
-                case .offline:
-                    containerViewModel?.showOffline()
                 default:
                     break
                 }
             } catch {
                 error.logError()
                 
-                alertType = .connectionErrorAlert(localization: localization) { [weak self] in
-                    self?.containerViewModel?.disconnect()
+                alertType = .connectionErrorAlert(localization: localization) {
+                    Task { @MainActor [weak self] in
+                        await self?.containerViewModel?.disconnect()
+                    }
                 }
             }
         }
@@ -477,18 +479,7 @@ extension ThreadViewModel: CXoneChatDelegate {
         }
         
         Task { @MainActor in
-            do {
-                try updateThread(with: ChatThreadMapper.map(from: updatedThread))
-            } catch {
-                error.logError()
-                
-                // Hide any overlay
-                containerViewModel?.hideOverlay()
-                
-                alertType = .connectionErrorAlert(localization: localization) { [weak self] in
-                    self?.containerViewModel?.disconnect()
-                }
-            }
+            await updateThread(with: ChatThreadMapper.map(from: updatedThread))
         }
     }
 
@@ -512,81 +503,149 @@ extension ThreadViewModel: CXoneChatDelegate {
 private extension ThreadViewModel {
 
     @MainActor
-    func updateThread(with updatedThread: CXoneChatUI.ChatThread?) throws {
+    func updateThread(with updatedThread: CXoneChatUI.ChatThread?) async {
         LogManager.trace("updated state = \(String(describing: updatedThread?.state))")
         
         // Record if the thread has been closed
         if updatedThread?.state == .closed {
-            isThreadPermanentlyClosed = true
             LogManager.trace("Thread has been marked as closed")
-        }
-        
-        // Trigger the load if the UI module entered the background or the thread is not loaded yet
-        if let updatedThread, (containerViewModel?.shouldRefreshThread == true) || (chatProvider.mode == .multithread && updatedThread.state == .loaded) {
-            containerViewModel?.shouldRefreshThread = false
             
-            reloadThread(with: updatedThread.id)
-        } else if chatProvider.mode == .liveChat, updatedThread?.state != .ready, updatedThread?.positionInQueue == nil {
-            // Show loading before the BE sends position in queue
-            containerViewModel?.showLoading(message: localization.commonLoading)
-        } else if updatedThread?.state == .ready || (updatedThread?.state != .closed && updatedThread?.positionInQueue != nil) {
-            // Hide the loading overlay if the thread is ready or position in queue is set and EndConversation view is not being shown
-            if !isEndConversationShown {
-                containerViewModel?.hideOverlay()
-            }
+            isThreadPermanentlyClosed = true
         }
         
+        // Update the thread reference
         self.thread = updatedThread
-        self.threadName = updatedThread?.name ?? ""
+        
+        // Prepare flag that indicates if the `updateThread(with:)` method flow can continue
+        var flowContinues = true
+        
+        // Update the input state based on the channel configuration mode
+        switch chatProvider.mode {
+        case .singlethread:
+            await updateSinglethreadThread(updatedThread, flowContinues: &flowContinues)
+        case .multithread:
+            await updateMultithreadThread(updatedThread, flowContinues: &flowContinues)
+        case .liveChat:
+            await updateLiveChatThread(updatedThread, flowContinues: &flowContinues)
+        }
+        
+        // Check if the flow can continue or if it was canceled in specific configuration updated method
+        guard flowContinues else {
+            return
+        }
         
         // Update input state now that we've potentially updated hasBeenClosed
         updateInputEnabledStateBasedOnThread()
         
+        // Update the message groups for the thread
         self.messageGroups = updatedThread?
             .messages
             .map { ChatMessageMapper.map($0, localization: localization) }
             .groupMessages(interval: Self.groupInterval)
         ?? []
         
-        handleLivechatPositionInQueueVisibility()
-
+        // Log the number of messages grouped and set additional custom fields if needed
         if let updatedThread {
             LogManager.trace("\(updatedThread.messages.count) grouped into \(messageGroups.count)")
             
-            setAdditionalCustomFieldsIfNeeded(for: updatedThread)
+            await setAdditionalCustomFieldsIfNeeded(for: updatedThread)
         }
-
+        
+        // Update the state if there are more messages to load
         hasMoreMessagesToLoad = updatedThread?.hasMoreMessagesToLoad ?? false
-
-        if chatProvider.mode == .liveChat, updatedThread?.state == .closed {
-            showEndConversation()
+    }
+    
+    @MainActor
+    func updateSinglethreadThread(_ updatedThread: CXoneChatUI.ChatThread?, flowContinues: inout Bool) async {
+        LogManager.trace("Updating thread for singlethread channel configuration")
+        
+        if let updatedThread, containerViewModel?.shouldRefreshThread == true {
+            // Trigger the load if the UI module entered the background or the thread is not loaded yet
+            containerViewModel?.shouldRefreshThread = false
+            
+            await reloadThread(with: updatedThread.id)
+            // If the thread is not loaded, we don't want to update the view. It will be updated once the thread is loaded via `onThreadUpdated(_:)`.
+            flowContinues = false
+            return
+        } else if updatedThread?.state == .ready || updatedThread?.state != .closed {
+            // Hide the loading overlay if the thread is ready or not closed
+            await containerViewModel?.hideOverlay()
         }
     }
     
-    func reloadThread(with id: UUID) {
+    @MainActor
+    func updateMultithreadThread(_ updatedThread: CXoneChatUI.ChatThread?, flowContinues: inout Bool) async {
+        LogManager.trace("Updating thread for multithread channel configuration")
+        
+        if let updatedThread, (containerViewModel?.shouldRefreshThread == true) || updatedThread.state == .loaded {
+            // Trigger the load if the UI module entered the background or the thread is not loaded yet
+            containerViewModel?.shouldRefreshThread = false
+            
+            await reloadThread(with: updatedThread.id)
+            // If the thread is not loaded, we don't want to update the view. It will be updated once the thread is loaded via `onThreadUpdated(_:)`.
+            flowContinues = false
+            return
+        } else if updatedThread?.state == .ready || updatedThread?.state != .closed {
+            // Hide the loading overlay if the thread is ready or not closed
+            await containerViewModel?.hideOverlay()
+        }
+        
+        // Store the thread name to be able to display it in the update thread name textfield
+        self.threadName = updatedThread?.name ?? ""
+    }
+    
+    @MainActor
+    func updateLiveChatThread(_ updatedThread: CXoneChatUI.ChatThread?, flowContinues: inout Bool) async {
+        LogManager.trace("Updating thread for live chat channel configuration")
+        
+        if !chatProvider.state.isChatAvailable {
+            // If the chat is not available yet, we don't want to update the thread view at all
+            flowContinues = false
+            return
+        } else if let updatedThread, containerViewModel?.shouldRefreshThread == true {
+            // Trigger the load if the UI module entered the background or the thread is not loaded yet
+            containerViewModel?.shouldRefreshThread = false
+            
+            await reloadThread(with: updatedThread.id)
+            // If the thread is not loaded, we don't want to update the view. It will be updated once the thread is loaded via `onThreadUpdated(_:)`.
+            flowContinues = false
+            return
+        } else if updatedThread?.state == .closed, !isEndConversationShown {
+            // Show end conversation view when the state is `.closed` and only if it is not already shown
+            await showEndConversation()
+        } else if !isEndConversationShown, [.ready, .closed].contains(updatedThread?.state) == false, updatedThread?.positionInQueue == nil {
+            // Show loading before the BE sends position in queue
+            await containerViewModel?.showLoading(message: localization.commonLoading)
+            // If the thread is not ready and position in queue is not set, we want to show loading overlay
+            flowContinues = false
+            return
+        } else if updatedThread?.state == .ready || (updatedThread?.state != .closed && updatedThread?.positionInQueue != nil), !isEndConversationShown {
+            // Hide the loading overlay if the thread is ready or position in queue is set and EndConversation view is not being shown
+            await containerViewModel?.hideOverlay()
+        }
+        
+        handleLivechatPositionInQueueVisibility()
+    }
+    
+    @MainActor
+    func reloadThread(with id: UUID) async {
         LogManager.trace("Recovering thread")
+    
+        await containerViewModel?.showLoading(message: localization.commonLoading)
         
-        containerViewModel?.showLoading(message: localization.commonLoading)
-        
-        Task {
-            do {
-                try await chatProvider.threads.load(with: id)
-            } catch {
-                error.logError()
-                
-                _ = await MainActor.run { [weak self] in
-                    guard let self else {
-                        return
-                    }
-                    
-                    self.alertType = .connectionErrorAlert(localization: self.localization) {
-                        self.containerViewModel?.disconnect()
-                    }
+        do {
+            try await chatProvider.threads.load(with: id)
+        } catch {
+            error.logError()
+            
+            self.alertType = .connectionErrorAlert(localization: self.localization) {
+                Task { @MainActor [weak self] in
+                    await self?.containerViewModel?.disconnect()
                 }
             }
-            
-            containerViewModel?.hideOverlay()
         }
+        
+        await containerViewModel?.hideOverlay()
     }
     
     @MainActor
@@ -595,7 +654,7 @@ private extension ThreadViewModel {
         case .singlethread, .liveChat:
             try await handleSingleThreadAndLivechatReadyState()
         case .multithread:
-            try await handleMultithreadReadyState()
+            await handleMultithreadReadyState()
         }
         
         if let thread, let threadProvider = try? chatProvider.threads.provider(for: thread.id) {
@@ -612,30 +671,40 @@ private extension ThreadViewModel {
     @MainActor
     func handleSingleThreadAndLivechatReadyState() async throws {
         if let thread = chatProvider.threads.get().first, thread.state != .closed {
-            try updateThread(with: ChatThreadMapper.map(from: thread))
+            await updateThread(with: ChatThreadMapper.map(from: thread))
         } else if let threadProvider = try await containerViewModel?.createThread() {
-            try updateThread(with: ChatThreadMapper.map(from: threadProvider.chatThread))
+            await updateThread(with: ChatThreadMapper.map(from: threadProvider.chatThread))
         } else {
             LogManager.trace("New thread was not created because customer cancelled a prechat survey -> disconnecting")
             
-            containerViewModel?.disconnect()
+            await containerViewModel?.disconnect()
         }
     }
     
     @MainActor
-    func handleMultithreadReadyState() async throws {
+    func handleMultithreadReadyState() async {
         if let thread, let sdkThread = chatProvider.threads.get().first(where: { $0.id == thread.id }) {
-            try updateThread(with: ChatThreadMapper.map(from: sdkThread))
+            // Update the thread only if it exists and is in the `.pending` or `.loaded` state.
+            // If the state is `.pending`, we want to update the with the locally created thread
+            // If the state is `.loaded`, the `updateThread(with:)` triggers thread recover.
+            // If the state is `.ready`, or `.closed`, it will be handled via the `onThreadUpdated(_:)` method.
+            if [.pending, .loaded].contains(sdkThread.state) {
+                await updateThread(with: ChatThreadMapper.map(from: sdkThread))
+            }
         } else {
             LogManager.error("Unable to get thread")
             
-            alertType = .connectionErrorAlert(localization: localization) { [weak self] in
-                self?.containerViewModel?.disconnect()
+            await containerViewModel?.hideOverlay()
+            
+            alertType = .connectionErrorAlert(localization: localization) {
+                Task { @MainActor [weak self] in
+                    await self?.containerViewModel?.disconnect()
+                }
             }
         }
     }
     
-    func setAdditionalCustomFieldsIfNeeded(for thread: ChatThread) {
+    func setAdditionalCustomFieldsIfNeeded(for thread: ChatThread) async {
         guard let additionalFields = containerViewModel?.chatConfiguration.additionalContactCustomFields, !additionalFields.isEmpty else {
             return
         }
@@ -645,32 +714,40 @@ private extension ThreadViewModel {
         
         didSetAdditionalCustomFields = true
         
-        Task {
+        do {
             LogManager.trace("Setting additional contact custom fields")
 
             try await chatProvider.threads.customFields.set(additionalFields, for: thread.id)
+        } catch {
+            error.logError()
         }
     }
     
+    @MainActor
     func handleLivechatPositionInQueueVisibility() {
-        guard chatProvider.mode == .liveChat, chatProvider.state.isChatAvailable else {
-            self.positionInQueue = nil
+        // To be able to show numeric position in queue, chat needs to be available
+        guard chatProvider.state.isChatAvailable else {
+            // show the position in queue without information about the position in queue
+            self.positionInQueue = .min
             return
         }
         guard let thread else {
-            // The thread is nil so it is initializing -> can present the position in queue without information about the position in queue
+            // The thread is `nil` so it is initializing -> can present the position in queue without information about the position in queue
             positionInQueue = .min
             return
         }
         
         if thread.state == .closed {
+            // The thread is closed, don't show position in queue
             self.positionInQueue = nil
-        } else if let positionInQueue = thread.positionInQueue {
+        } else if let positionInQueue = thread.positionInQueue, thread.assignedAgent == nil {
+            // Set position in queue if it's set but no agent is assigned
             self.positionInQueue = positionInQueue
         } else if thread.assignedAgent == nil && thread.lastAssignedAgent == nil {
             // No agent assigned yet -> show the position in queue without information about the position in queue
             self.positionInQueue = .min
         } else {
+            // An agent is assigned to the thread, hide the position in queue view
             self.positionInQueue = nil
         }
     }
@@ -685,9 +762,11 @@ extension ThreadViewModel {
             .add(
                 if: !isThreadClosed && canEditCustomFields,
                 name: localization.alertEditPrechatCustomFieldsTitle,
-                icon: Asset.ChatThread.editPrechatCustomFields,
-                action: onEditPrechatField
-            )
+                icon: Asset.ChatThread.editPrechatCustomFields) {
+                    Task { @MainActor [weak self] in
+                        await self?.onEditPrechatField()
+                    }
+                }
             .add(
                 if: !isThreadClosed && containerViewModel?.chatProvider.mode == .multithread,
                 name: localization.chatMenuOptionUpdateName,
@@ -698,15 +777,21 @@ extension ThreadViewModel {
                 if: containerViewModel?.chatProvider.mode == .liveChat,
                 name: localization.chatMenuOptionEndConversation,
                 icon: Asset.close
-            ) { [weak self] in
-                guard let self else {
-                    return
-                }
-                
-                if thread?.state == .closed {
-                    showEndConversation()
-                } else {
-                    self.alertType = .endConversation(localization: self.localization, primaryAction: self.onEndConversation)
+            ) {
+                Task { @MainActor [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    
+                    if thread?.state == .closed {
+                        await self.showEndConversation()
+                    } else {
+                        self.alertType = .endConversation(localization: self.localization) {
+                            Task { @MainActor in
+                                await self.onEndConversation()
+                            }
+                        }
+                    }
                 }
             }
     }

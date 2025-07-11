@@ -1,42 +1,33 @@
 // Common
 "chatui_common_ok" = "Ok";
 "chatui_common_cancel" = "Cancel";
-"chatui_common_close" = "Close";
 "chatui_common_confirm" = "Confirm";
-"chatui_common_delete" = "Delete";
-"chatui_common_required" = "Required Field";
-"chatui_common_noSelection" = "No Selection";
-"chatui_common_invalidEmail" = "Invalid Email";
-"chatui_common_invalidNumber" = "Invalid Number";
+"chatui_common_required" = "Required field";
+"chatui_common_noSelection" = "No selection";
+"chatui_common_invalidEmail" = "Invalid email";
+"chatui_common_invalidNumber" = "Invalid number";
 "chatui_common_select" = "Select";
 "chatui_common_attachments" = "Attachments";
 "chatui_common_copy" = "Copy";
 "chatui_common_share" = "Share";
 "chatui_common_attention" = "Attention";
-"chatui_common_unassigned_agent" = "No Agent";
+"chatui_common_unassigned_agent" = "No agent";
 "chatui_common_connecting" = "Connecting...";
 "chatui_common_loading" = "Loading...";
-"chatui_common_fatalError" = "Fatal Error";
-"chatui_common_back" = "Back";
-"chatui_common_down" = "Down";
-"chatui_common_reconnect" = "Reconnect";
 "chatui_common_try_again" = "Try again";
 "chatui_common_error" = "Error";
 "chatui_common_settings" = "Settings";
 
 // Alert
-"chatui_alert_threadCreationFailed_message" = "Unable to create new conversation";
-"chatui_alert_DeeplinkUnknownThread_message" = "Received remote notification from unknown conversation.";
-"chatui_alert_disconnect_message" = "Do you want to disconnect from the CXone services?";
 "chatui_alert_disconnect_confirm" = "Disconnect";
-"chatui_alert_updateThreadName_title" = "Update Conversation Name";
-"chatui_alert_updateThreadName_message" = "Enter a name for this conversation";
-"chatui_alert_updateThreadName_placeholder" = "Conversation Name";
-"chatui_alert_editPrechatCustomFields_title" = "Edit Custom Fields";
-"chatui_alert_genericError_message" = "Something went wrong. Try it again later or contact the CXone Mobile team";
+"chatui_alert_updateThreadName_title" = "Update conversation name";
+"chatui_alert_updateThreadName_placeholder" = "Conversation name";
+"chatui_alert_editPrechatCustomFields_title" = "Edit custom field(s)";
+"chatui_alert_genericError_message" = "Something went wrong. Please, try again later.";
 "chatui_alert_disconnectError_message" = "Oops! The chat encountered an issue and will disconnect. Please try again later.";
 "chatui_alert_endConverastion_message" = "Are you sure you want to end this conversation?";
-"chatui_alert_cameraPermission_message" = "Camera access is required to take photos. Please allow camera access in Settings.";
+"chatui_alert_cameraPermission_message" = "Camera access is required to take photos or record videos. Please allow camera access in Settings.";
+"chatui_alert_microphonePermission_message" = "Microphone access is required to record a voice message. Please allow microphone access in Settings.";
 "chatui_alert_fileValidation_title" = "Oops!";
 "chatui_alert_invalidFileType_message" = "Unable to upload attachment(s) due to invalid file type.";
 "chatui_alert_invalidFileSize_message" = "Unable to upload attachment(s). Attachment(s) size greater than %1$d MB";
@@ -47,33 +38,30 @@
 
 // ChatList
 "chatui_chatList_title" = "Conversations";
-"chatui_chatList_empty" = "No Conversations";
+"chatui_chatList_empty" = "No conversations";
 "chatui_chatList_threadStatus_archived" = "Archived";
 "chatui_chatList_threadStatus_current" = "Current";
-"chatui_chatList_newThread" = "New Conversation";
+"chatui_chatList_newThread" = "New conversation";
 "chatui_chatThread_contextMenu_rename" = "Rename";
 "chatui_chatThread_contextMenu_archive" = "Archive";
 
 // Chat - Fallback Message
 "chatui_chat_fallbackMessage_attachments" = "%1$d attachment(s)";
-"chatui_chat_fallbackMessage_plugin_textAndButtons" = "Text and buttons message";
-"chatui_chat_fallbackMessage_plugin_quickReplies" = "Quick replies message";
-"chatui_chat_fallbackMessage_plugin_subElements" = "Sub elements message";
 "chatui_chat_fallbackMessage_torm_richLink" = "Rich link message";
 "chatui_chat_fallbackMessage_torm_quickReplies" = "Quick replies message";
 "chatui_chat_fallbackMessage_torm_listPicker" = "List picker message";
 "chatui_chat_fallbackMessage_unknown" = "Unknown message";
-"chatui_chat_fallbackMessage_noName" = "No Name";
+"chatui_chat_fallbackMessage_noName" = "No name";
 
 // Chat - Message Input Bar
 "chatui_chat_messageInput_archived" = "This conversation was archived.";
 "chatui_chat_messageInput_closed" = "This conversation was closed.";
 "chatui_chat_messageInput_placeholder" = "Aa";
-"chatui_chat_messageInput_attachmentsOption_title" = "Attachments Source";
+"chatui_chat_messageInput_attachmentsOption_title" = "Attachment source";
 "chatui_chat_messageInput_attachmentsOption_camera" = "Camera";
-"chatui_chat_messageInput_attachmentsOption_photos" = "Photo Library";
-"chatui_chat_messageInput_attachmentsOption_files" = "File Manager";
-"chatui_chat_messageInput_audioRecorder_recorded" = "Audio Message";
+"chatui_chat_messageInput_attachmentsOption_photos" = "Photo library";
+"chatui_chat_messageInput_attachmentsOption_files" = "File manager";
+"chatui_chat_messageInput_audioRecorder_recorded" = "Audio message";
 "chatui_chat_messageInput_audioRecorder_recording" = "Recording";
 "chatui_chat_messageInput_audioRecorder_playing" = "Playing";
 
@@ -83,38 +71,34 @@
 "chatui_chat_attachments_selectionMode" = "Select items";
 "chatui_chat_attachments_selectedCount_message" = "%1$d item(s) selected";
 "chatui_chat_attachments_upload" = "Uploading...";
-"chatui_chat_attachments_download_failed" = "The document could not be downloaded at this time. Please check your internet connection and try again.";
-"chatui_chat_attachments_loading_document" = "Loading Document...";
-"chatui_chat_attachments_loading_video" = "Loading Video...";
-"chatui_chat_attachments_loading_document_error" = "Loading Document failed";
+"chatui_chat_attachments_loading_document" = "Loading document...";
+"chatui_chat_attachments_loading_video" = "Loading video...";
+"chatui_chat_attachments_loading_document_error" = "Loading document failed";
 "chatui_chat_attachments_download_document_error" = "Error downloading file";
 
 // Chat - Menu Actions
-"chatui_chat_menuOption_disconnect" = "Disconnect";
-"chatui_chat_menuOption_updateName" = "Update Conversation Name";
-"chatui_chat_menuOption_editPrechatCustomFields" = "Edit Custom Fields";
-"chatui_chat_menuOption_endConversation" = "End Conversation";
+"chatui_chat_menuOption_updateName" = "Update conversation name";
+"chatui_chat_menuOption_endConversation" = "End conversation";
 
 // Chat - Message: TORM
-"chatui_chat_message_richContent_optionSelected" = "Option Selected";
-"chatui_chat_message_listPicker_sheet_optionsTitle" = "TAP TO SELECT AN OPTION";
+"chatui_chat_message_richContent_optionSelected" = "Option selected";
+"chatui_chat_message_listPicker_sheet_optionsTitle" = "Tap to select an option";
 "chatui_chat_message_listPicker_sheet_confirm" = "Done";
 
 // LiveChat - Offline
-"chatui_liveChat_offline_title" = "We Are Currently Offline";
+"chatui_liveChat_offline_title" = "We are currently offline";
 "chatui_liveChat_offline_message" = "Please check back soon.";
-"chatui_liveChat_offline_button_title" = "Disconnect";
 
 // LiveChat - Queue
-"chatui_liveChat_queue_title" = "You Are Number %1$d In Line";
+"chatui_liveChat_queue_title" = "You are number %1$d in line";
 "chatui_liveChat_queue_subtitle" = "Please hold, we'll be with you shortly.\n Your patience is appreciated!";
 
 // LiveChat - End Conversation
-"chatui_liveChat_endConverastion_assignedAgent" = "You Chatted With";
-"chatui_liveChat_endConverastion_new" = "Start a New Chat";
-"chatui_liveChat_endConverastion_back" = "Back to Conversation";
-"chatui_liveChat_endConverastion_close" = "Close the Chat";
+"chatui_liveChat_endConverastion_assignedAgent" = "You chatted with";
+"chatui_liveChat_endConverastion_new" = "Start a new chat";
+"chatui_liveChat_endConverastion_back" = "Back to conversation";
+"chatui_liveChat_endConverastion_close" = "Close chat";
 "chatui_liveChat_endConversation_default_title" = "This conversation was closed";
 
 // Formfield - PreChatSurvey
-"chatui_preChatSurvey_subtitle" = "Please fill out all fields and send the form.";
+"chatui_preChatSurvey_subtitle" = "Please fill out all fields and submit the form.";

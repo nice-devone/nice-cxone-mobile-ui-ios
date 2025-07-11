@@ -34,6 +34,8 @@ open class ChatCoordinator {
     public var chatLocalization: ChatLocalization
     /// The additional configuration for the chat interface (additional fields, flags etc.).
     public var chatConfiguration: ChatConfiguration
+    /// Indicates whether the chat is currectly active (i.e., a chat session is ongoing).
+    public private(set) var isActive = false
     
     // MARK: - Init
     
@@ -119,16 +121,21 @@ open class ChatCoordinator {
     ///
     /// This view is may be used within a `UIHostingController` for integration into a UIKit-based app.
     public func content(threadId: UUID? = nil, presentModally: Bool, onFinish: (() -> Void)? = nil) -> some View {
-        ChatContainerView(
+        isActive = true
+        
+        return ChatContainerView(
             viewModel: ChatContainerViewModel(
                 chatProvider: CXoneChat.shared,
                 threadToOpen: threadId,
                 chatLocalization: chatLocalization,
                 chatStyle: chatStyle,
                 chatConfiguration: chatConfiguration,
-                presentModally: presentModally,
-                onDismiss: onFinish
-            )
+                presentModally: presentModally
+            ) { [weak self] in
+                self?.isActive = false
+                
+                onFinish?()
+            }
         )
         .environmentObject(chatStyle)
         .environmentObject(chatLocalization)

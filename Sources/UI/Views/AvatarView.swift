@@ -13,8 +13,8 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
-import SwiftUI
 import Kingfisher
+import SwiftUI
 
 struct AvatarView: View {
     

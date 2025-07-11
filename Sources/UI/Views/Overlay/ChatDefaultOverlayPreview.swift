@@ -24,28 +24,58 @@ struct ChatDefaultOverlayPreview<Content: View>: View {
     // MARK: - Builder
     
     var body: some View {
-        ZStack {
-            NavigationView {
-                HStack {
-                    Spacer()
-                    
-                    VStack {
-                        Text("backer")
-                        
-                        Spacer()
-                    }
-                    .navigationTitle("Navigation")
-                    
-                    Spacer()
+        NavigationView {
+            viewContent
+                .fullScreenCover(isPresented: .constant(true)) {
+                    ChatDefaultOverlay(verticalOffset: StyleGuide.containerVerticalOffset, content)
+                        .presentationWithBackgroundColor(.clear)
                 }
-            }
-
-            ChatDefaultOverlay(verticalOffset: StyleGuide.containerVerticalOffset) {
-                content()
-            }
+                .navigationTitle("John Doe")
         }
         .environmentObject(ChatStyle())
         .environmentObject(ChatLocalization())
+    }
+    
+    private var viewContent: some View {
+        LazyVStack(spacing: 2) {
+            ChatMessageCell(
+                message: MockData.textMessage(user: MockData.agent),
+                messageGroupPosition: .first,
+                isProcessDialogVisible: .constant(false),
+                alertType: .constant(nil)
+            ) { _, _ in }
+            
+            ChatMessageCell(
+                message: MockData.textMessage(user: MockData.agent),
+                messageGroupPosition: .last,
+                isProcessDialogVisible: .constant(false),
+                alertType: .constant(nil)
+            ) { _, _ in }
+            
+            ChatMessageCell(
+                message: MockData.textMessage(user: MockData.customer),
+                messageGroupPosition: .first,
+                isProcessDialogVisible: .constant(false),
+                alertType: .constant(nil)
+            ) { _, _ in }
+            
+            ChatMessageCell(
+                message: MockData.textMessage(user: MockData.customer),
+                messageGroupPosition: .inside,
+                isProcessDialogVisible: .constant(false),
+                alertType: .constant(nil)
+            ) { _, _ in }
+            
+            ChatMessageCell(
+                message: MockData.textMessage(user: MockData.customer),
+                messageGroupPosition: .last,
+                isProcessDialogVisible: .constant(false),
+                alertType: .constant(nil)
+            ) { _, _ in }
+            
+            Spacer()
+        }
+        .padding()
     }
 }
 
@@ -60,6 +90,4 @@ struct ChatDefaultOverlayPreview<Content: View>: View {
         }
         .padding()
     }
-    .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }
