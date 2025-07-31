@@ -60,7 +60,6 @@ struct FormView: View, Themed {
             controlButtons
         }
         .interactiveDismissDisabled()
-        .ignoresSafeArea()
         .onTapGesture(perform: hideKeyboard)
         .padding(.top, Self.paddingTopContent)
         .background(colors.customizable.background)
