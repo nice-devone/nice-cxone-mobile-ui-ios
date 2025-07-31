@@ -79,6 +79,10 @@ struct ValidatedTextField: View, Themed {
                     .foregroundStyle(textColor)
                     .autocapitalization(.none)
                     .padding(.bottom, .zero)
+                    .submitLabel(.done)
+                    .onSubmit {
+                        isFocused = false
+                    }
                     .onReceive(Just(text)) { _ in
                         textColor = error == nil 
                             ? colors.customizable.onBackground

@@ -1,3 +1,10 @@
+<a name="3.0.2"></a>
+# [3.0.2] - 2025-07-31
+
+## Fixes
+- Resolved keyboard overlay issue on the Pre-contact Survey, ensuring cancel and confirm buttons remain accessible.
+
+
 <a name="3.0.1"></a>
 # [3.0.1] - 2025-07-11
 
@@ -6,6 +13,7 @@
 
 ## Dependencies
 - Update CXoneChatSDK from 3.0.0 to 3.0.1
+
 
 <a name="3.0.0"></a>
 # [3.0.0] - 2025-06-05
@@ -23,11 +31,13 @@
 ## Dependencies
 - Update CXoneChatSDK from 2.3.1 to 2.3.2
 
+
 <a name="2.3.1"></a>
 # [2.3.1] - 2025-04-11
 
 ## Dependencies
 - Update CXoneChatSDK from 2.3.0 to 2.3.1
+
 
 <a name="2.3.0"></a>
 # [2.3.0] - 2025-02-12
@@ -43,11 +53,13 @@
 ## Dependencies
 - Update CXoneChatSDK from 2.2.1 to 2.3.0
 
+
 <a name="2.2.1"></a>
 # [2.2.1] - 2024-12-06
 
 ## Dependencies
 - Update CXoneChatSDK from 2.2.0 to 2.2.1
+
 
 <a name="2.2.0"></a>
 # [2.2.0] - 2024-11-04
@@ -82,6 +94,7 @@
 ## Dependencies
 - Update CXoneChatSDK from 2.1.0 to 2.2.0
 
+
 <a name="2.1.0"></a>
 # [2.1.0] - 2024-07-29
 
@@ -108,11 +121,13 @@
 ## Dependencies
 - Update CXoneChatSDK from 2.0.1 to 2.1.0
 
+
 <a name="2.0.1"></a>
 # [2.0.1] - 2024-07-11
 
 ## Dependencies
 - Update CXoneChatSDK from 2.0.0 to 2.0.1
+
 
 <a name="2.0.0"></a>
 # [2.0.0] - 2024-05-22
@@ -360,7 +375,8 @@
     - failure
   - typing start/end
 
-[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.1...HEAD
+[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.2...HEAD
+[3.0.2]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.1...3.0.2
 [3.0.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.0...3.0.1
 [3.0.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.3.0...3.0.0
 [2.3.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.2.1...2.3.0
