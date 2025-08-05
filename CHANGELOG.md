@@ -1,8 +1,16 @@
+<a name="2.4.0"></a>
+# [2.4.0] - 2025-08-05
+
+## Dependencies
+- Update CXoneChatSDK from 2.3.4 to 2.4.0
+
+
 <a name="2.3.4"></a>
 # [2.3.4] - 2025-06-30
 
 ## Dependencies
 - Update CXoneChatSDK from 2.3.3 to 2.3.4
+
 
 <a name="2.3.3"></a>
 # [2.3.3] - 2025-06-18
@@ -10,17 +18,20 @@
 ## Dependencies
 - Update CXoneChatSDK from 2.3.2 to 2.3.3
 
+
 <a name="2.3.2"></a>
 # [2.3.2] - 2025-05-19
 
 ## Dependencies
 - Update CXoneChatSDK from 2.3.1 to 2.3.2
 
+
 <a name="2.3.1"></a>
 # [2.3.1] - 2025-04-11
 
 ### Dependencies
 - Update CXoneChatSDK from 2.3.0 to 2.3.1
+
 
 <a name="2.3.0"></a>
 # [2.3.0] - 2025-02-12
@@ -40,6 +51,7 @@
 ### Fixes
 - MessageGroupView no longer store group as a State property
 
+
 <a name="2.2.1"></a>
 # [2.2.1] - 2024-12-06
 
@@ -47,6 +59,7 @@
 
 ### Fixes
 - Set customer custom fields correctly for Livechat mode
+
 
 <a name="2.2.0"></a>
 # [2.2.0] - 2024-11-04
@@ -94,6 +107,7 @@
 
 ### Fixes
 - Exclude SwiftGen from workflows to separate script and fix "build", "deploy_app" and "deploy_documentation" workflows
+
 
 <a name="2.1.0"></a>
 # [2.1.0] - 2024-07-29
@@ -151,6 +165,7 @@
 - Bump tarides/changelog-check-action from 2 to 3
 - Update GitHub action runners to macos-latest
 
+
 <a name="2.0.1"></a>
 # [2.0.1] - 2024-07-11
 
@@ -158,6 +173,7 @@
 
 ### Bug Fixes
 - Correct live chat set position in queue
+
 
 <a name="2.0.0"></a>
 # [2.0.0] - 2024-05-22
@@ -405,7 +421,8 @@
     - failure
   - typing start/end
 
-[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.3.3...HEAD
+[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.4.0...HEAD
+[2.4.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.3.3...2.4.0
 [2.3.3]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.3.2...2.3.3
 [2.3.2]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.3.1...2.3.2
 [2.3.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.3.0...2.3.1
