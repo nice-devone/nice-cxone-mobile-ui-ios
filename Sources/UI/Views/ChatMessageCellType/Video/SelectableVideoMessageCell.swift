@@ -61,7 +61,7 @@ struct SelectableVideoMessageCell: View {
                 .clipped()
                 .onTapGesture {
                     if inSelectionMode {
-                        attachmentsViewModel.selectAttachment(uuid: item.id)
+                        attachmentsViewModel.selectAttachment(with: item.id)
                     } else {
                         isVideoSheetVisible.toggle()
                     }

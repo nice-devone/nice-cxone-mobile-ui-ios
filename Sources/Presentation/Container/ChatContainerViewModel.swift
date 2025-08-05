@@ -24,7 +24,7 @@ class ChatContainerViewModel: ObservableObject {
     @Published var currentChild: ChildViewModel
     
     let chatProvider: ChatProvider
-    var threadToOpen: UUID?
+    var threadToOpen: String?
     let chatLocalization: ChatLocalization
     let onDismiss: () -> Void
 
@@ -32,7 +32,7 @@ class ChatContainerViewModel: ObservableObject {
 
     init(
         chatProvider: ChatProvider,
-        threadToOpen: UUID? = nil,
+        threadToOpen: String? = nil,
         chatLocalization: ChatLocalization,
         onDismiss: @escaping () -> Void
     ) {
@@ -136,7 +136,7 @@ extension ChatContainerViewModel {
     }
 
     func show(thread: ChatThread, onBack: (() -> Void)? = nil) {
-        LogManager.trace("Showing thread with id: \(thread.id)")
+        LogManager.trace("Showing thread with id: \(thread.idString)")
         
         DispatchQueue.main.async { [weak self] in
             guard let model = self else {
@@ -270,7 +270,7 @@ extension ChatContainerViewModel: CXoneChatDelegate {
         
         switch chatProvider.mode {
         case .multithread:
-            if let uuid = threadToOpen, let thread = chatProvider.threads.get().first(where: { $0.id == uuid }) {
+            if let uuid = threadToOpen, let thread = chatProvider.threads.get().first(where: { $0.idString == uuid }) {
                 show(thread: thread, onBack: showThreadList)
             } else {
                 showThreadList()

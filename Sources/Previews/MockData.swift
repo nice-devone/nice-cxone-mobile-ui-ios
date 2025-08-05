@@ -33,9 +33,9 @@ enum MockData {
         AttachmentItem(url: imageUrl, friendlyName: "Photo", mimeType: imageUrl.mimeType, fileName: imageUrl.lastPathComponent)
     }
     
-    static let selectableVideoAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .video(videoItem))
-    static let selectableImageAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .image(imageItem))
-    static let selectableAudioAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .audio(audioItem))
+    static let selectableVideoAttachment = SelectableAttachment(id: UUID().uuidString.lowercased(), isSelected: false, messageType: .video(videoItem))
+    static let selectableImageAttachment = SelectableAttachment(id: UUID().uuidString.lowercased(), isSelected: false, messageType: .image(imageItem))
+    static let selectableAudioAttachment = SelectableAttachment(id: UUID().uuidString.lowercased(), isSelected: false, messageType: .audio(audioItem))
 
     static let audioUrl = URL(string: "https://www2.cs.uic.edu/~i101/SoundFiles/gettysburg10.wav").unsafelyUnwrapped
     static let audioItem = AttachmentItem(url: audioUrl, friendlyName: "Gettysburg", mimeType: audioUrl.mimeType, fileName: audioUrl.lastPathComponent)
@@ -54,14 +54,14 @@ enum MockData {
     static let quickRepliesItem = QuickRepliesItem(title: Lorem.word(), message: Lorem.sentence(), options: quickReplyOptions())
     static let richLinkItem = RichLinkItem(title: Lorem.words(), url: videoUrl, imageUrl: imageUrl)
     
-    static let customer = ChatUser(id: UUID().uuidString, userName: "Peter Parker", avatarURL: nil, isAgent: false)
-    static let agent = ChatUser(id: UUID().uuidString, userName: "John Doe", avatarURL: imageUrl, isAgent: true)
+    static let customer = ChatUser(id: UUID().uuidString.lowercased(), userName: "Peter Parker", avatarURL: nil, isAgent: false)
+    static let agent = ChatUser(id: UUID().uuidString.lowercased(), userName: "John Doe", avatarURL: imageUrl, isAgent: true)
     
     // MARK: - Methods
     
     static func textMessage(user: ChatUser? = nil, date: Date = Date()) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(Lorem.sentence())],
             date: date,
@@ -71,7 +71,7 @@ enum MockData {
     
     static func hyperlinkMessage(user: ChatUser? = nil, date: Date = Date()) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(hyperlinkContent)],
             date: date,
@@ -81,7 +81,7 @@ enum MockData {
     
     static func phoneNumberMessage(user: ChatUser? = nil, date: Date = Date()) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(phoneNumberContent)],
             date: date,
@@ -91,7 +91,7 @@ enum MockData {
     
     static func emojiMessage(count: Int = .zero, user: ChatUser? = nil, date: Date = Date()) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(randomEmoji(count: count).joined())],
             date: date,
@@ -101,7 +101,7 @@ enum MockData {
     
     static func imageMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date()) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .image(imageItem) },
             date: date,
@@ -111,7 +111,7 @@ enum MockData {
     
     static func imageMessageWithText(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date()) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(Lorem.sentence()), .image(imageItem)],
             date: date,
@@ -121,7 +121,7 @@ enum MockData {
     
     static func videoMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date()) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .video(videoItem) },
             date: date,
@@ -131,7 +131,7 @@ enum MockData {
     
     static func audioMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date()) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .audio(audioItem) },
             date: date,
@@ -141,7 +141,7 @@ enum MockData {
     
     static func linkPreviewMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date()) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .linkPreview(linkPreviewItem) },
             date: date,
@@ -151,7 +151,7 @@ enum MockData {
     
     static func multiAttachmentsMessage(user: ChatUser? = nil, date: Date = Date()) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [
                 .image(imageItem),
@@ -166,15 +166,15 @@ enum MockData {
     }
     
     static func quickRepliesMessage(date: Date = Date()) -> ChatMessage {
-        ChatMessage(id: UUID(), user: agent, types: [.richContent(.quickReplies(quickRepliesItem))], date: date, status: .seen)
+        ChatMessage(id: UUID().uuidString.lowercased(), user: agent, types: [.richContent(.quickReplies(quickRepliesItem))], date: date, status: .seen)
     }
     
     static func listPickerMessage(date: Date = Date()) -> ChatMessage {
-        ChatMessage(id: UUID(), user: agent, types: [.richContent(.listPicker(listPickerItem))], date: date, status: .seen)
+        ChatMessage(id: UUID().uuidString.lowercased(), user: agent, types: [.richContent(.listPicker(listPickerItem))], date: date, status: .seen)
     }
     
     static func richLinkMessage(date: Date = Date()) -> ChatMessage {
-        ChatMessage(id: UUID(), user: agent, types: [.richContent(.richLink(richLinkItem))], date: date, status: .seen)
+        ChatMessage(id: UUID().uuidString.lowercased(), user: agent, types: [.richContent(.richLink(richLinkItem))], date: date, status: .seen)
     }
     
     static let chatHistory: [ChatMessage] = [

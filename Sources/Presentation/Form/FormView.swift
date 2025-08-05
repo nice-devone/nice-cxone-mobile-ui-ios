@@ -94,8 +94,8 @@ struct FormView_Previews: PreviewProvider {
             isRequired: true,
             ident: "device",
             children: [
-                TreeNodeFieldEntity(label: "iPhone", value: "iphone"),
-                TreeNodeFieldEntity(label: "Samsung", value: "samsung")
+                TreeNodeFieldEntity(id: UUID().uuidString.lowercased(), label: "iPhone", value: "iphone"),
+                TreeNodeFieldEntity(id: UUID().uuidString.lowercased(), label: "Samsung", value: "samsung")
             ]
         )
     ]

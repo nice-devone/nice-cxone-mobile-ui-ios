@@ -107,7 +107,7 @@ struct MediaPickerView: UIViewControllerRepresentable {
                 throw CommonError.unableToParse("pngData")
             }
             
-            let localPath = documentsUrl.appendingPathComponent("\(UUID().uuidString).jpeg")
+            let localPath = documentsUrl.appendingPathComponent("\(UUID().uuidString.lowercased()).jpeg")
             try data.write(to: localPath)
             
             return localPath

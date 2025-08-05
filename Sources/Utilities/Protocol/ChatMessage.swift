@@ -23,7 +23,11 @@ import Foundation
 public struct ChatMessage: Identifiable {
     
     /// A unique identifier for the chat message.
+    @available(*, deprecated, renamed: "idString", message: "Use `idString`. It preserves the original case-sensitive identifier from the backend.")
     public let id: UUID
+    
+    /// A unique identifier for the chat message.
+    public let idString: String
     
     /// The sender of the chat message, conforming to the `ChatUser` protocol. Could be agent or customer.
     public let user: ChatUser
@@ -47,8 +51,30 @@ public struct ChatMessage: Identifiable {
     ///   - types: Types of the chat message (e.g., text, image, file).
     ///   - date: The date and time when the message was sent.
     ///   - status: The delivery or read status of the message.
+    @available(
+        *, deprecated,
+         message: "Use alternative with `String` parameter for `id` and `threadId`. It preserves the original case-sensitive identifier from the backend."
+    )
     public init(id: UUID, user: ChatUser, types: [ChatMessageType], date: Date, status: MessageStatus) {
         self.id = id
+        self.idString = id.uuidString.lowercased()
+        self.user = user
+        self.types = types
+        self.date = date
+        self.status = status
+    }
+    
+    /// Initialization of the ChatMessage
+    ///
+    /// - Parameters:
+    ///   - id: A unique identifier for the chat message.
+    ///   - user: The sender of the chat message, conforming to the `ChatUser` protocol. Could be agent or customer.
+    ///   - types: Types of the chat message (e.g., text, image, file).
+    ///   - date: The date and time when the message was sent.
+    ///   - status: The delivery or read status of the message.
+    public init(id: String, user: ChatUser, types: [ChatMessageType], date: Date, status: MessageStatus) {
+        self.id = UUID()
+        self.idString = id
         self.user = user
         self.types = types
         self.date = date
@@ -67,7 +93,7 @@ extension ChatMessage: Equatable {
     ///   - rhs: Another chat message.
     /// - Returns: `true` if the chat messages have the same unique identifier; otherwise, `false`.
     public static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
-        lhs.id == rhs.id
+        lhs.idString == rhs.idString
             && lhs.user == rhs.user
             && lhs.types == rhs.types
             && lhs.date == rhs.date

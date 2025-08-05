@@ -43,9 +43,17 @@ open class ChatCoordinator {
     }
 
     // MARK: - Methods
-    
+        
+    @available(
+        *, deprecated,
+         message: "Use alternative with `String` parameter for `threadId`. It preserves the original case-sensitive identifier from the backend."
+    )
     public func start(threadId: UUID? = nil, in parentViewController: UIViewController) {
-        LogManager.trace("Starting the chat coordinator with threadId: \(threadId?.uuidString ?? "nil")")
+        start(threadId: threadId?.uuidString, in: parentViewController)
+    }
+    
+    public func start(threadId: String? = nil, in parentViewController: UIViewController) {
+        LogManager.trace("Starting the chat coordinator with threadId: \(threadId ?? "nil")")
         
         let viewController = UIHostingController(rootView: content(threadId: threadId) {
             parentViewController.presentedViewController?.dismiss(animated: true)
@@ -54,7 +62,15 @@ open class ChatCoordinator {
         parentViewController.present(viewController, animated: true)
     }
 
+    @available(
+        *, deprecated,
+         message: "Use alternative with `String` parameter for `threadId`. It preserves the original case-sensitive identifier from the backend."
+    )
     public func content(threadId: UUID? = nil, onFinish: @escaping () -> Void) -> some View {
+        content(threadId: threadId?.uuidString, onFinish: onFinish)
+    }
+    
+    public func content(threadId: String? = nil, onFinish: @escaping () -> Void) -> some View {
         ChatContainerView(
             viewModel: ChatContainerViewModel(
                 chatProvider: CXoneChat.shared,

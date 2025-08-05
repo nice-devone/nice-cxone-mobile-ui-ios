@@ -56,7 +56,11 @@ public class TreeNodeFieldEntity: ObservableObject, Identifiable {
     // MARK: - Properties
     
     /// The unique identifier of the tree node.
+    @available(*, deprecated, renamed: "idString", message: "Use `idString`. It preserves the original case-sensitive identifier from the backend.")
     public let id: UUID
+    
+    /// The unique identifier of the tree node.
+    public let idString: String
     
     /// The label or name associated with the tree node.
     public let label: String
@@ -74,12 +78,33 @@ public class TreeNodeFieldEntity: ObservableObject, Identifiable {
     
     /// Initialization of the ListFieldEntity
     ///
+    /// - `id`: The unique identifier of the tree node.
     /// - `label`: The label or name associated with the tree node.
     /// - `value`: The value or unique identifier of the tree node.
     /// - `children`: An array of `TreeNodeFieldEntity` objects, representing child nodes within the tree.
     /// - `isSelected`: A boolean flag indicating whether the tree node is currently selected.
+    @available(
+        *, deprecated,
+         message: "Use alternative with `String` parameter for `id`. It preserves the original case-sensitive identifier from the backend."
+    )
     public init(id: UUID = UUID(), label: String, value: String, children: [TreeNodeFieldEntity]? = nil, isSelected: Bool = false) {
         self.id = id
+        self.idString = id.uuidString.lowercased()
+        self.label = label
+        self.value = value
+        self.children = children
+        self.isSelected = isSelected
+    }
+    
+    /// Initialization of the ListFieldEntity
+    /// - `id`: The unique identifier of the tree node.
+    /// - `label`: The label or name associated with the tree node.
+    /// - `value`: The value or unique identifier of the tree node.
+    /// - `children`: An array of `TreeNodeFieldEntity` objects, representing child nodes within the tree.
+    /// - `isSelected`: A boolean flag indicating whether the tree node is currently selected.
+    public init(id: String = UUID().uuidString.lowercased(), label: String, value: String, children: [TreeNodeFieldEntity]? = nil, isSelected: Bool = false) {
+        self.id = UUID() // `replaced with `idString`
+        self.idString = id
         self.label = label
         self.value = value
         self.children = children

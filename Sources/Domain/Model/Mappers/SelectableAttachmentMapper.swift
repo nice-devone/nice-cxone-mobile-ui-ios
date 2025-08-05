@@ -18,6 +18,6 @@ import Foundation
 enum SelectableAttachmentMapper {
     
     static func map(_ entity: ChatMessageType) -> SelectableAttachment {
-        SelectableAttachment(id: UUID(), isSelected: false, messageType: entity)
+        SelectableAttachment(id: UUID().uuidString.lowercased(), isSelected: false, messageType: entity)
     }
 }

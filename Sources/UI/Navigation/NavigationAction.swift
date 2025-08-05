@@ -22,7 +22,7 @@ struct NavigationAction: View {
     // Note that id is necessary to distinguish between two buttons with the same image
     // and title but different actions, e.g. stacked back buttons.  Otherwise, NavigationBar
     // doesn't detect the button change so doesn't use the correct action.
-    private let id = UUID()
+    private let id = UUID().uuidString.lowercased()
     
     let title: String
     let image: Image

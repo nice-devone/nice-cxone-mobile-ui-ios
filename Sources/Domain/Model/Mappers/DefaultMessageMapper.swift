@@ -20,7 +20,7 @@ enum ChatMessageMapper {
     
     static func map(_ message: Message, localization: ChatLocalization) -> ChatMessage {
         ChatMessage(
-            id: message.id,
+            id: message.idString,
             user: message.getUser(localization: localization),
             types: ChatMessageTypeMapper.map(message, localization: localization),
             date: message.createdAt,
@@ -36,14 +36,14 @@ private extension Message {
     func getUser(localization: ChatLocalization) -> ChatUser {
         if self.direction == .toClient {
             return ChatUser(
-                id: authorUser.map { String($0.id) } ?? UUID().uuidString,
+                id: authorUser.map { String($0.id) } ?? UUID().uuidString.lowercased(),
                 userName: authorUser.map(\.fullName) ?? localization.commonUnknownAgent,
                 avatarURL: authorUser.map { URL(string: $0.imageUrl) } ?? nil,
                 isAgent: true
             )
         } else {
             return ChatUser(
-                id: authorEndUserIdentity?.id ?? UUID().uuidString,
+                id: authorEndUserIdentity?.id ?? UUID().uuidString.lowercased(),
                 userName: authorEndUserIdentity?.fullName ?? "Unknown Customer",
                 avatarURL: nil,
                 isAgent: false

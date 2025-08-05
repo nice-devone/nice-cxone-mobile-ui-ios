@@ -65,7 +65,7 @@ struct SelectableAudioMessageCell: View {
             .cornerRadius(StyleGuide.Message.cornerRadius, corners: .allCorners)
             .onTapGesture {
                 if inSelectionMode {
-                    attachmentsViewModel.selectAttachment(uuid: item.id)
+                    attachmentsViewModel.selectAttachment(with: item.id)
                 }
             }
 
@@ -126,7 +126,7 @@ private extension SelectableAudioMessageCell {
 
             Button {
                 if inSelectionMode {
-                    attachmentsViewModel.selectAttachment(uuid: item.id)
+                    attachmentsViewModel.selectAttachment(with: item.id)
                 } else {
                     if audioPlayer.isPlaying {
                         audioPlayer.pause()

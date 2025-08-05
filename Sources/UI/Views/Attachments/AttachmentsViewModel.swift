@@ -42,8 +42,8 @@ class AttachmentsViewModel: ObservableObject {
 
 extension AttachmentsViewModel {
 
-    func selectAttachment(uuid: UUID) {
-        guard let index = attachments.firstIndex(where: { $0.id == uuid }) else {
+    func selectAttachment(with id: String) {
+        guard let index = attachments.firstIndex(where: { $0.id == id }) else {
             LogManager.error(.failed("Unable to get index of selected attachment"))
             return
         }

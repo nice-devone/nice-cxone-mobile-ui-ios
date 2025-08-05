@@ -137,7 +137,7 @@ extension ThreadViewModel {
             if thread.state == .loaded {
                 isLoading = true
 
-                try chatProvider.threads.load(with: thread.id)
+                try chatProvider.threads.load(with: thread.idString)
             }
 
             // To be able to handle receiving new messages from different thread, it is necessary to cache current thread list
@@ -164,7 +164,7 @@ extension ThreadViewModel {
         }
 
         let customFields = prechatCustomFields.map { definition in
-            FormCustomFieldTypeMapper.map(definition, with: chatProvider.threads.customFields.get(for: thread.id))
+            FormCustomFieldTypeMapper.map(definition, with: chatProvider.threads.customFields.get(for: thread.idString))
         }
         
         containerViewModel?.showForm(
@@ -172,7 +172,7 @@ extension ThreadViewModel {
             fields: customFields,
             onAccept: { [self] customFields in
                 do {
-                    try chatProvider.threads.customFields.set(customFields, for: self.thread.id)
+                    try chatProvider.threads.customFields.set(customFields, for: self.thread.idString)
                 } catch {
                     error.logError()
                     containerViewModel?.disconnect()
@@ -193,7 +193,7 @@ extension ThreadViewModel {
     
     func setThread(name: String?) {
         do {
-            try chatProvider.threads.updateName(threadName, for: thread.id)
+            try chatProvider.threads.updateName(threadName, for: thread.idString)
         } catch {
             containerViewModel?.show(fatal: error)
         }
@@ -337,7 +337,7 @@ extension ThreadViewModel: CXoneChatDelegate {
         LogManager.trace("Thread has been updated")
         
         Task { @MainActor in
-            if thread.id != updatedThread.id {
+            if thread.idString != updatedThread.idString {
                 await differentThreadHasBeenUpdated(updatedThread)
             } else {
                 messages = updatedThread.messages.map { ChatMessageMapper.map($0, localization: localization) }
@@ -362,8 +362,8 @@ extension ThreadViewModel: CXoneChatDelegate {
         }
     }
     
-    func onAgentTyping(_ isTyping: Bool, threadId: UUID) {
-        guard threadId == thread.id else {
+    func onAgentTyping(_ isTyping: Bool, threadId: String) {
+        guard threadId == thread.idString else {
             return
         }
         
@@ -395,9 +395,11 @@ private extension ThreadViewModel {
         self.cachedThreads = chatProvider.threads.get()
 
         // Check if count of threads has been changed (=> new message for different thread)
-        guard let cachedThread = threads.first(where: { $0.id == updatedThread.id }), cachedThread.messages.count != updatedThread.messages.count else {
+        guard let cachedThread = threads.first(where: { $0.idString == updatedThread.idString }),
+              cachedThread.messages.count != updatedThread.messages.count
+        else {
             // Thread has been updated but not messages are same = no interaction needed
-            LogManager.info("Thread with \(updatedThread.id) id has been updated")
+            LogManager.info("Thread with \(updatedThread.idString) id has been updated")
             return
         }
         guard let message = updatedThread.messages.last else {
@@ -414,7 +416,7 @@ private extension ThreadViewModel {
             
             try await UNUserNotificationCenter
                 .current()
-                .add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
+                .add(UNNotificationRequest(identifier: UUID().uuidString.lowercased(), content: content, trigger: nil))
         } catch {
             error.logError()
             

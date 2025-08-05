@@ -17,7 +17,7 @@ import Foundation
 
 struct SelectableAttachment: Hashable {
     
-    let id: UUID
+    let id: String
     
     var isSelected: Bool
     

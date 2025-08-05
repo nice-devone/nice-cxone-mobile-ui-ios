@@ -18,7 +18,13 @@ import UIKit
 extension UIDevice {
     
     var hasHomeButton: Bool {
-        guard let window = UIApplication.shared.windows.first else {
+        let window = UIApplication
+        .shared
+        .connectedScenes
+        .flatMap { ($0 as? UIWindowScene)?.windows ?? [] }
+        .first { $0.isKeyWindow }
+        
+        guard let window else {
             return false
         }
         

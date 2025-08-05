@@ -64,6 +64,6 @@ enum FormCustomFieldTypeMapper {
 private extension FormCustomFieldTypeMapper {
     
     static func mapChild(_ entity: CustomFieldHierarchicalNode) -> TreeNodeFieldEntity {
-        TreeNodeFieldEntity(label: entity.label, value: entity.value, children: entity.children.map(mapChild))
+        TreeNodeFieldEntity(id: UUID().uuidString.lowercased(), label: entity.label, value: entity.value, children: entity.children.map(mapChild))
     }
 }
