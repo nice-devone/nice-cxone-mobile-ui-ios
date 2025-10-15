@@ -610,8 +610,9 @@ private extension ThreadViewModel {
             // If the thread is not loaded, we don't want to update the view. It will be updated once the thread is loaded via `onThreadUpdated(_:)`.
             flowContinues = false
             return
-        } else if updatedThread?.state == .closed, !isEndConversationShown {
+        } else if updatedThread?.state == .closed, !isEndConversationShown, containerViewModel?.disconnecting == false {
             // Show end conversation view when the state is `.closed` and only if it is not already shown
+            // Skip if we're already disconnecting to prevent race condition with rapid button taps
             await showEndConversation()
         } else if !isEndConversationShown, [.ready, .closed].contains(updatedThread?.state) == false, updatedThread?.positionInQueue == nil {
             // Show loading before the BE sends position in queue

@@ -71,22 +71,19 @@ struct FormView: View, Themed {
                 ForEach(viewModel.customFields) { entity in
                     switch entity {
                     case let entity as TreeFieldEntity:
-                        TreeFieldView(entity: entity)
-                            .onReceive(entity.$value) {_ in
-                                self.isFormValid = viewModel.isValid()
-                            }
+                        TreeFieldView(entity: entity) {
+                            self.isFormValid = viewModel.isValid()
+                        }
                     case let entity as ListFieldEntity:
-                        ListFieldView(entity: entity)
-                            .onReceive(entity.$value) {_ in
-                                self.isFormValid = viewModel.isValid()
-                            }
-                            .padding(.trailing, Self.paddingHorizontalGroup)
+                        ListFieldView(entity: entity) {
+                            self.isFormValid = viewModel.isValid()
+                        }
+                        .padding(.trailing, Self.paddingHorizontalGroup)
                     default:
-                        TextFieldView(entity: entity)
-                            .onReceive(entity.$value) {_ in
-                                self.isFormValid = viewModel.isValid()
-                            }
-                            .padding(.trailing, Self.paddingHorizontalGroup)
+                        TextFieldView(entity: entity) {
+                            self.isFormValid = viewModel.isValid()
+                        }
+                        .padding(.trailing, Self.paddingHorizontalGroup)
                     }
                 }
             }
@@ -139,10 +136,12 @@ struct FormView: View, Themed {
         title: "Title",
         customFields: [
             MockData.textFieldEntity(),
-            MockData.listFieldEntity(),
+            MockData.listFieldEntity(isRequired: true),
             MockData.treeFieldEntity()
         ],
-        onAccept: { _ in },
+        onAccept: { customFields in
+            print("CustomFields: \(customFields)")
+        },
         onCancel: {}
     )
     

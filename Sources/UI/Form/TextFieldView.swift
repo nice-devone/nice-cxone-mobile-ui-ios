@@ -27,6 +27,8 @@ struct TextFieldView: View {
         (entity as? TextFieldEntity)?.isEmail ?? false
     }
 
+    let onChange: () -> Void
+    
     // MARK: - Content
     
     var body: some View {
@@ -44,39 +46,48 @@ struct TextFieldView: View {
                 .textContentType(.emailAddress)
                 .keyboardType(.emailAddress)
         }
+        .onChange(of: entity.value) { _ in
+            onChange()
+        }
     }
 }
 
 // MARK: - Previews
 
-struct TextFieldView_Previews: PreviewProvider {
-
-    private static let firstNameEntity = TextFieldEntity(label: "First Name", isRequired: true, ident: "firstName", isEmail: false)
-    private static let ageEntity = TextFieldEntity(label: "Age", isRequired: false, ident: "age", isEmail: false)
-    private static let emailEntity = TextFieldEntity(label: "E-mail", isRequired: false, ident: "email", isEmail: true)
-
-    static var previews: some View {
-        Group {
-            VStack {
-                TextFieldView(entity: firstNameEntity)
-                
-                TextFieldView(entity: ageEntity)
-                
-                TextFieldView(entity: emailEntity)
-            }
-            .previewDisplayName("Light Mode")
-            
-            VStack {
-                TextFieldView(entity: firstNameEntity)
-                
-                TextFieldView(entity: ageEntity)
-                
-                TextFieldView(entity: emailEntity)
-            }
-            .previewDisplayName("Dark Mode")
-            .preferredColorScheme(.dark)
+@available(iOS 17.0, *)
+#Preview {
+    @Previewable @State var firstNameEntity = TextFieldEntity(label: "First Name", isRequired: true, ident: "firstName", isEmail: false)
+    @Previewable @State var ageEntity = TextFieldEntity(label: "Age", isRequired: false, ident: "age", isEmail: false)
+    @Previewable @State var emailEntity = TextFieldEntity(label: "E-mail", isRequired: false, ident: "email", isEmail: true)
+    @Previewable @State var isValid = false
+    
+    VStack {
+        TextFieldView(entity: firstNameEntity) {
+            isValid = firstNameEntity.value.isEmpty == false
         }
-        .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
+        
+        TextFieldView(entity: ageEntity) {
+            isValid = firstNameEntity.value.isEmpty == false
+        }
+        
+        TextFieldView(entity: emailEntity) {
+            isValid = firstNameEntity.value.isEmpty == false
+        }
+        
+        HStack {
+            if isValid {
+                Image(systemName: "checkmark.circle")
+                
+                Text("Valid")
+            } else {
+                Image(systemName: "xmark.circle")
+                
+                Text("Invalid")
+            }
+        }
+        .foregroundStyle(isValid ? .green : .red)
     }
+    .padding()
+    .environmentObject(ChatStyle())
+    .environmentObject(ChatLocalization())
 }

@@ -31,10 +31,13 @@ struct TreeFieldView: View, Themed {
     static let paddingLeadingIndentation: CGFloat = 22
     static let paddingVerticalCell: CGFloat = 10
     
+    let onChange: () -> Void
+    
     // MARK: - Init
     
-    init(entity: TreeFieldEntity) {
+    init(entity: TreeFieldEntity, onChange: @escaping () -> Void) {
         self.entity = entity
+        self.onChange = onChange
     }
     
     // MARK: - Content
@@ -100,6 +103,8 @@ private extension TreeFieldView {
             } else {
                 entity.value = node.value
             }
+            
+            onChange()
         }
     }
 
@@ -170,7 +175,7 @@ struct TreeFieldView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             ScrollView {
-                TreeFieldView(entity: MockData.treeFieldEntity())
+                TreeFieldView(entity: MockData.treeFieldEntity()) { }
             }
             .previewDisplayName("Light Mode")
         }
