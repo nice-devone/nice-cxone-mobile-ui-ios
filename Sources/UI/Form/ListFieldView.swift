@@ -38,6 +38,8 @@ struct ListFieldView: View, Themed {
     static let placeholderOpacity: CGFloat = 0.5
     static let valueDisclosureSpacing: CGFloat = 16
 
+    let onChange: () -> Void
+    
     // MARK: - Content
 
     var body: some View {
@@ -97,6 +99,7 @@ struct ListFieldView: View, Themed {
                     Button(value) {
                         // Do not use actual value, it's necessary to use key which is unique identifier for the value
                         entity.value = key
+                        onChange()
                     }
                 } else {
                     EmptyView()
@@ -127,7 +130,7 @@ struct ListFieldView: View, Themed {
         value: "yellow"
     )
     
-    return ListFieldView(entity: entity)
+    ListFieldView(entity: entity) { }
         .environmentObject(ChatStyle())
         .environmentObject(ChatLocalization())
 }

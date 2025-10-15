@@ -219,9 +219,10 @@ extension ChatContainerViewModel {
     func disconnect() async {
         LogManager.trace("Disconnecting from chat services")
         
-        await hideOverlay()
-        
+        // Set disconnecting flag immediately to prevent race conditions with backend events
         disconnecting = true
+        
+        await hideOverlay()
         
         chatProvider.remove(delegate: self)
         

@@ -1,3 +1,13 @@
+<a name="3.0.3"></a>
+# [3.0.3] - 2025-10-15
+
+## CXoneChatUI
+
+### Fixes
+- Fix pre-chat survey form validation
+- Fix conversation closed overlay appearing twice when rapidly tapping close chat
+
+
 <a name="3.0.2"></a>
 # [3.0.2] - 2025-07-31
 
@@ -375,7 +385,8 @@
     - failure
   - typing start/end
 
-[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.2...HEAD
+[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.3...HEAD
+[3.0.3]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.2...3.0.3
 [3.0.2]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.1...3.0.2
 [3.0.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.0...3.0.1
 [3.0.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/2.3.0...3.0.0

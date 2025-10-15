@@ -61,6 +61,6 @@ public class FormCustomFieldType: ObservableObject, Identifiable {
         self.label = label
         self.isRequired = isRequired
         self.ident = ident
-        self.value = value
+        self._value = Published(initialValue: value)
     }
 }

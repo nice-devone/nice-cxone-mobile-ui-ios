@@ -221,18 +221,18 @@ enum MockData {
         ChatMessage(id: UUID(), user: agent, types: [.richContent(.richLink(richLinkItem))], date: date, status: status)
     }
 
-    static func textFieldEntity() -> TextFieldEntity {
-        TextFieldEntity(label: "First Name", isRequired: true, ident: "firstName", isEmail: false)
+    static func textFieldEntity(isRequired: Bool = false) -> TextFieldEntity {
+        TextFieldEntity(label: "First Name", isRequired: isRequired, ident: "firstName", isEmail: false)
     }
 
-    static func listFieldEntity() -> ListFieldEntity {
-        ListFieldEntity(label: "Color", isRequired: false, ident: "color", options: ["blue": "Blue", "yellow": "Yellow"])
+    static func listFieldEntity(isRequired: Bool = false) -> ListFieldEntity {
+        ListFieldEntity(label: "Color", isRequired: isRequired, ident: "color", options: ["blue": "Blue", "yellow": "Yellow"])
     }
 
-    static func treeFieldEntity() -> TreeFieldEntity {
+    static func treeFieldEntity(isRequired: Bool = false) -> TreeFieldEntity {
         TreeFieldEntity(
             label: "Devices",
-            isRequired: true,
+            isRequired: isRequired,
             ident: "devices",
             children: treeNodeFieldEntityChildren(),
             value: "iphone_14"
