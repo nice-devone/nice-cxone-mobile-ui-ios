@@ -12,6 +12,7 @@
 // OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
+// swiftlint:disable file_length
 
 import CXoneChatSDK
 import SwiftUI
@@ -23,7 +24,7 @@ class ChatContainerViewModel: ObservableObject {
     @Published var sheet: (() -> AnyView)?
     @Published var overlay: (() -> AnyView)?
     @Published var alertType: ChatAlertType?
-    
+
     let chatProvider: ChatProvider
     let chatLocalization: ChatLocalization
     let chatStyle: ChatStyle
@@ -37,6 +38,7 @@ class ChatContainerViewModel: ObservableObject {
     var threadToOpen: UUID?
     var disconnecting = false
     var processingDeeplink = false
+    @Published var isRecoveringThread = false
     
     lazy var isSheetDisplayed = Binding { [weak self] in
         self?.sheet != nil
@@ -56,6 +58,8 @@ class ChatContainerViewModel: ObservableObject {
     private var directNavigationToken: NSObjectProtocol?
     // To be able to handle receiving new messages from different thread, it is necessary to cache current thread list
     private var cachedThreadMessageCount = [UUID: Int]()
+    private var isProcessingChatUpdate = false
+    private var pendingChatUpdateTasks = [() -> Void]()
     
     // MARK: - Init
 
@@ -75,7 +79,7 @@ class ChatContainerViewModel: ObservableObject {
         self.chatConfiguration = chatConfiguration
         self.presentModally = presentModally
         self.onDismiss = onDismiss
-        
+
         directNavigationToken = NotificationCenter.default.threadDeeplinkObserver { [weak self] notification in
             guard let threadId = notification.userInfo?["threadId"] as? UUID else {
                 LogManager.error("Unable to retrieve threadId from notification")
@@ -84,7 +88,7 @@ class ChatContainerViewModel: ObservableObject {
             
             LogManager.trace("ChatContainerViewModel received notification to navigate directly to thread: \(threadId)")
             
-            if !chatProvider.state.isChatAvailable {
+            if self?.chatProvider.state.isChatAvailable == false {
                 self?.threadToOpen = threadId
             } else {
                 // Navigate directly to the thread
@@ -137,6 +141,11 @@ class ChatContainerViewModel: ObservableObject {
     func onAppear() {
         LogManager.trace("View did appear")
         
+        guard chatProvider.state == .prepared else {
+            LogManager.warning("Chat is in incorrect state (= .\(chatProvider.state)) -> unable to trigger connect")
+            return
+        }
+        
         chatProvider.add(delegate: self)
 
         Task { @MainActor [weak self] in
@@ -168,6 +177,7 @@ class ChatContainerViewModel: ObservableObject {
             return
         }
         
+        cachedThreadViewModel?.isShowingInactivityPopup = false
         disconnecting = true
         
         chatProvider.remove(delegate: self)
@@ -219,10 +229,9 @@ extension ChatContainerViewModel {
     func disconnect() async {
         LogManager.trace("Disconnecting from chat services")
         
-        // Set disconnecting flag immediately to prevent race conditions with backend events
-        disconnecting = true
-        
         await hideOverlay()
+        
+        disconnecting = true
         
         chatProvider.remove(delegate: self)
         
@@ -247,14 +256,13 @@ extension ChatContainerViewModel {
     /// - Note: The only situation when the ChatThreadProvider is `nil` is when the pre-chat form is cancelled.
     ///
     /// - Returns: An optional `ChatThreadProvider` instance representing the created thread, or `nil` if the thread creation process is interrupted.
-    @MainActor
     func createThread() async throws -> ChatThreadProvider? {
         // Hide overlay so a pre-chat form or empty thread can be presented
         await hideOverlay()
         
         // Check if a pre-chat survey is available
         if let preChatSurvey = chatProvider.threads.preChatSurvey {
-            LogManager.trace("Present pre-chat form because thread creation")
+            LogManager.trace("Present pre-chat form before thread creation")
 
             let fieldEntities = preChatSurvey.customFields.map { prechatField in
                 FormCustomFieldTypeMapper.map(prechatField, with: [:])
@@ -266,17 +274,24 @@ extension ChatContainerViewModel {
                 return nil
             }
 
+            LogManager.trace("Pre-chat form completed -> create thread with custom fields")
+            
             return try await createNewThread(with: customFields)
         } else {
-            LogManager.trace("Create thread with no prechat")
+            LogManager.trace("No pre-chat available -> create thread")
             
             return try await createNewThread()
         }
     }
 
-    // periphery:ignore:parameters output
+    // periphery:ignore:parameters output - for inline usage in the view
     func willEnterForeground(_ output: NotificationCenter.Publisher.Output) {
         LogManager.trace("Enter foreground")
+        
+        guard chatProvider.state == .prepared else {
+            LogManager.warning("Chat is in incorrect state (= .\(chatProvider.state)) -> unable to trigger connect")
+            return
+        }
         
         // Force thread reload if there is a thread already opened
         if cachedThreadViewModel != nil {
@@ -292,9 +307,16 @@ extension ChatContainerViewModel {
         }
     }
     
-    // periphery:ignore:parameters output
+    // periphery:ignore:parameters output - for inline usage in the view
     func didEnterBackground(_ output: NotificationCenter.Publisher.Output) {
         LogManager.trace("Enter background")
+   
+        // Stop inactivity popup if any is being shown to be able to present it again next time
+        cachedThreadViewModel?.isShowingInactivityPopup = false
+        
+        Task { @MainActor [weak self] in
+            await self?.hideOverlay()
+        }
         
         CXoneChat.shared.connection.disconnect()
     }
@@ -349,15 +371,15 @@ extension ChatContainerViewModel {
             return
         }
         
-        await MainActor.run { [weak self] in
-            self?.overlay = {
-                AnyView(overlay())
-            }
+        self.overlay = {
+            AnyView(overlay())
         }
+        
         // Optional delay to ensure UI updates are smooth because the overlay's fullScreenCover transition is not instant
         await Task.sleep(seconds: 0.5)
     }
 
+    @MainActor
     func hideOverlay(file: StaticString = #file, line: UInt = #line) async {
         guard overlay != nil else {
             // No overlay to hide
@@ -366,9 +388,8 @@ extension ChatContainerViewModel {
         
         LogManager.trace("Hiding overlay", file: file, line: line)
         
-        await MainActor.run { [weak self] in
-            self?.overlay = nil
-        }
+        self.overlay = nil
+        
         // Optional delay to ensure UI updates are smooth because the overlay's fullScreenCover transition is not instant
         await Task.sleep(seconds: 0.5)
     }
@@ -391,13 +412,37 @@ extension ChatContainerViewModel {
         LogManager.trace("Showing offline view overlay", file: file, line: line)
         
         await showOverlay(file: file, line: line) {
-            ChatDefaultOverlay(verticalOffset: StyleGuide.containerVerticalOffset) {
-                OfflineView {
-                    Task { @MainActor [weak self] in
-                        await self?.disconnect()
-                    }
+            OfflineView {
+                Task { @MainActor [weak self] in
+                    await self?.disconnect()
                 }
             }
+        }
+    }
+
+    @MainActor
+    func showInactivityPopup(popup: InactivityPopup, file: StaticString = #file, line: UInt = #line) async {
+        LogManager.trace("Showing inactivity popup overlay with countdown: \(popup.numberOfSeconds) seconds", file: file, line: line)
+        
+        await showOverlay(file: file, line: line) {
+            InactivityPopupView(
+                title: popup.title,
+                message: popup.message,
+                startedAt: popup.startedAt,
+                numberOfSeconds: popup.numberOfSeconds,
+                refreshButtonText: popup.refreshButton.text,
+                expireButtonText: popup.expireButton.text,
+                onRefresh: { [weak self] in
+                    Task { @MainActor in
+                        await self?.handleInactivityPopupResponse(refreshSession: true, popup: popup)
+                    }
+                },
+                onExpire: { [weak self] in
+                    Task { @MainActor in
+                        await self?.handleInactivityPopupResponse(refreshSession: false, popup: popup)
+                    }
+                }
+            )
         }
     }
 }
@@ -407,55 +452,38 @@ extension ChatContainerViewModel {
 extension ChatContainerViewModel: CXoneChatDelegate {
     
     func onChatUpdated(_ chatState: ChatState, mode: ChatMode) {
-        LogManager.scope {
-            LogManager.trace("updated state = \(String(describing: chatState))")
+        LogManager.trace("Chat state updated to \(chatState) in mode \(mode)")
+        
+        // Check if the viewModel is currently processing a chat update
+        if isProcessingChatUpdate {
+            LogManager.trace("Already processing chat update, queueing the task")
             
-            Task { [weak self] in
+            // If a chat update is already in progress, queue the task for later execution
+            let futureTask = {
+                self.onChatUpdated(chatState, mode: mode)
+            }
+            self.pendingChatUpdateTasks.append(futureTask)
+        } else {
+            LogManager.trace("Processing chat update now")
+            
+            // No chat update is currently being processed, so we can handle it immediately
+            isProcessingChatUpdate = true
+            
+            Task { @MainActor [weak self] in
                 guard let self else {
                     return
                 }
                 
-                switch chatState {
-                case .connecting:
-                    await self.showLoading(message: self.chatLocalization.commonConnecting)
-                case .connected:
-                    await handleAdditionalConfigurationIfNeeded()
+                // Handle the chat update immediately
+                await self.handleChatUpdate(chatState, mode: mode)
+                // Once the chat update is handled, reset the processing flag
+                self.isProcessingChatUpdate = false
+                
+                // If there are any pending tasks, execute the last one
+                if let pendingTask = self.pendingChatUpdateTasks.first {
+                    self.pendingChatUpdateTasks.removeFirst()
                     
-                    do {
-                        LogManager.trace("Reporting chat window open event")
-                        
-                        try await self.chatProvider.analytics.chatWindowOpen()
-                    } catch {
-                        // No need to show alert here, as this is not a fatal error
-                        error.logError()
-                    }
-                    
-                    await self.showLoading(message: self.chatLocalization.commonLoading)
-                case .offline:
-                    // Hide any existing overlays before showing the offline view
-                    await self.hideOverlay()
-                    // Show the offline view
-                    await self.showOffline()
-                case .ready:
-                    // Cache to be able to handle local notifications
-                    chatProvider.threads.get().forEach { thread in
-                        self.cachedThreadMessageCount[thread.id] = thread.messages.count
-                    }
-                    
-                    if cachedThreadViewModel == nil {
-                        await self.hideOverlay()
-                    } else {
-                        LogManager.info("Chat is ready, but some thread is active and it needs to be recovered - keep the loading overlay")
-                        
-                        if let threadToOpen {
-                            // Navigate directly to the thread
-                            await self.navigateDirectlyToThread(threadToOpen)
-                            
-                            self.threadToOpen = nil
-                        }
-                    }
-                default:
-                    LogManager.trace("ChatCoordinatorViewModel: ignoring \(chatState)")
+                    pendingTask()
                 }
             }
         }
@@ -480,6 +508,11 @@ extension ChatContainerViewModel: CXoneChatDelegate {
             }
         } else if !processingDeeplink {
             LogManager.trace("The thread is not the currently displayed one = try to schedule a local notification")
+            
+            guard chatThread.messages.last?.customerStatistics?.seenAt == nil else {
+                LogManager.trace("The message is already seen by a customer")
+                return
+            }
             
             // Store the previous message count before updating the cache
             let cachedThreadMessageCount = self.cachedThreadMessageCount
@@ -519,11 +552,34 @@ extension ChatContainerViewModel: CXoneChatDelegate {
                 return
             }
             
+            await self.hideOverlay()
+            
             self.alertType = .connectionErrorAlert(localization: self.chatLocalization) {
                 Task { @MainActor in
                     await self.disconnect()
                 }
             }
+        }
+    }
+    
+    func onProactiveActionReceived(of type: ProactiveActionType) {
+        switch type {
+        case .inactivityPopup(let entity):
+            guard cachedThreadViewModel?.isShowingInactivityPopup == false else {
+                LogManager.trace("Inactivity popup is already being shown, ignoring new one")
+                return
+            }
+            
+            cachedThreadViewModel?.isShowingInactivityPopup = true
+            
+            Task { @MainActor [weak self] in
+                // Hide any existing overlays before showing the inactivity popup
+                await self?.hideOverlay()
+                
+                await self?.showInactivityPopup(popup: entity)
+            }
+        case .customPopupBox:
+            LogManager.warning("Custom popup box is not supported in the Chat UI")
         }
     }
 }
@@ -533,25 +589,81 @@ extension ChatContainerViewModel: CXoneChatDelegate {
 private extension ChatContainerViewModel {
     
     @MainActor
+    func handleChatUpdate(_ chatState: ChatState, mode: ChatMode) async {
+        LogManager.trace("Handling chat update: \(chatState) in mode \(mode)")
+        
+        switch chatState {
+        case .connecting:
+            await self.showLoading(message: self.chatLocalization.commonConnecting)
+        case .connected:
+            // Hide `connecting` overlay and replace it with a `loading` one
+            await self.hideOverlay()
+            // Show loading overlay
+            await self.showLoading(message: self.chatLocalization.commonLoading)
+            
+            do {
+                LogManager.trace("Reporting chat window open event")
+                
+                try await self.chatProvider.analytics.chatWindowOpen()
+            } catch {
+                // No need to show alert here, as this is not a fatal error
+                error.logError()
+            }
+            
+            // Handle additional configuration if needed
+            await handleAdditionalConfigurationIfNeeded()
+        case .offline:
+            // Hide any existing overlays before showing the offline view
+            await self.hideOverlay()
+            // Show the offline view
+            await self.showOffline()
+        case .ready:
+            // Cache to be able to handle local notifications
+            chatProvider.threads.get().forEach { thread in
+                self.cachedThreadMessageCount[thread.id] = thread.messages.count
+            }
+            
+            if cachedThreadViewModel == nil {
+                await self.hideOverlay()
+            } else {
+                LogManager.info("Chat is ready, but some thread is active and it needs to be recovered - keep the loading overlay")
+                
+                if let threadToOpen {
+                    // Navigate directly to the thread
+                    await self.navigateDirectlyToThread(threadToOpen)
+                    
+                    self.threadToOpen = nil
+                }
+            }
+        default:
+            LogManager.trace("ChatCoordinatorViewModel: ignoring \(chatState)")
+        }
+    }
+    
+    @MainActor
     func createNewThread(with customFields: [String: String]? = nil) async throws -> ChatThreadProvider {
+        LogManager.trace("Creating new thread")
+        
         if let customFields {
             return try await chatProvider.threads.create(with: customFields)
         } else {
             return try await chatProvider.threads.create()
         }
     }
-}
-
-// MARK: - Private methods
-
-private extension ChatContainerViewModel {
     
-    func handleAdditionalConfigurationIfNeeded() async {
+    func handleInactivityPopupResponse(refreshSession: Bool, popup: InactivityPopup) async {
+        LogManager.trace("Handling inactivity popup response: refreshSession = \(refreshSession)")
+        
         do {
-            if !chatConfiguration.additionalCustomerCustomFields.isEmpty {
-                // Provide additional customer custom fields
-                try await chatProvider.customerCustomFields.set(chatConfiguration.additionalCustomerCustomFields)
+            if refreshSession {
+                try await chatProvider.proactiveAction.trigger(.refreshSession(popup))
+                
+                await hideOverlay()
+            } else {
+                try await chatProvider.proactiveAction.trigger(.expireSession(popup))
             }
+            
+            cachedThreadViewModel?.isShowingInactivityPopup = false
         } catch {
             error.logError()
             
@@ -560,8 +672,19 @@ private extension ChatContainerViewModel {
                     return
                 }
                 
-                self.alertType = .genericError(localization: chatLocalization)
+                self.alertType = .genericError(localization: self.chatLocalization)
             }
+        }
+    }
+
+    func handleAdditionalConfigurationIfNeeded() async {
+        do {
+            if !chatConfiguration.additionalCustomerCustomFields.isEmpty {
+                // Provide additional customer custom fields
+                try await chatProvider.customerCustomFields.set(chatConfiguration.additionalCustomerCustomFields)
+            }
+        } catch {
+            error.logError()
         }
     }
     
@@ -594,6 +717,7 @@ private extension ChatContainerViewModel {
         
         guard let thread = threads.first(where: { $0.id == threadId }) else {
             LogManager.error("Could not find thread with ID: \(threadId)")
+            processingDeeplink = false
             return
         }
         
@@ -620,67 +744,6 @@ private extension ChatContainerViewModel {
                 cachedListViewModel?.hiddenThreadToShow = nil
             }
         }
+        processingDeeplink = false
     }
-}
-
-// MARK: - Previews
-
-#Preview("Offline") {
-    let localization = ChatLocalization()
-    let chatStyle = ChatStyle()
-    
-    let viewModel = ChatContainerViewModel(
-        chatProvider: CXoneChat.shared,
-        chatLocalization: localization,
-        chatStyle: chatStyle,
-        chatConfiguration: ChatConfiguration(),
-        presentModally: true
-    ) {}
-
-    return ChatContainerView(viewModel: viewModel)
-        .environmentObject(chatStyle)
-        .environmentObject(localization)
-        .task {
-            await viewModel.showOffline()
-        }
-}
-
-#Preview("Loading") {
-    let localization = ChatLocalization()
-    let chatStyle = ChatStyle()
-
-    let viewModel = ChatContainerViewModel(
-        chatProvider: CXoneChat.shared,
-        chatLocalization: localization,
-        chatStyle: chatStyle,
-        chatConfiguration: ChatConfiguration(),
-        presentModally: true
-    ) {}
-
-    return ChatContainerView(viewModel: viewModel)
-        .environmentObject(chatStyle)
-        .environmentObject(localization)
-        .task {
-            await viewModel.showLoading(message: "Loading...")
-        }
-}
-
-#Preview("Fatal") {
-    let localization = ChatLocalization()
-    let chatStyle = ChatStyle()
-
-    let viewModel = ChatContainerViewModel(
-        chatProvider: CXoneChat.shared,
-        chatLocalization: localization,
-        chatStyle: chatStyle,
-        chatConfiguration: ChatConfiguration(),
-        presentModally: true
-    ) {}
-
-    return ChatContainerView(viewModel: viewModel)
-        .environmentObject(chatStyle)
-        .environmentObject(localization)
-        .task {
-            viewModel.alertType = .connectionErrorAlert(localization: localization) { }
-        }
 }

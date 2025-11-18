@@ -16,26 +16,28 @@
 import PDFKit
 import SwiftUI
 
-// This struct wraps PDFView for use in SwiftUI
-struct PDFKitView: UIViewRepresentable {
-    let document: PDFDocument
-
-    func makeUIView(context: Context) -> PDFView {
-        let pdfView = PDFView()
-        pdfView.document = document
-        pdfView.autoScales = true
-        return pdfView
-    }
+struct PDFViewer: View, Themed {
     
-    func updateUIView(_ uiView: PDFView, context: Context) {}
-}
-
-struct PDFViewer: View {
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Spacing {
+            static let elementsSpacing: CGFloat = 8
+        }
+        
+        enum Padding {
+            static let titleTop: CGFloat = 10
+        }
+    }
     
     // MARK: - Properties
     
     @EnvironmentObject var localization: ChatLocalization
-
+    @EnvironmentObject var style: ChatStyle
+    
+    @SwiftUI.Environment(\.colorScheme) var scheme
+    
     @ObservedObject var viewModel: PDFViewModel
     
     // MARK: - Builder
@@ -53,34 +55,54 @@ struct PDFViewer: View {
 
 private extension PDFViewer {
     
-    private var errorView: some View {
-        VStack {
+    var errorView: some View {
+        VStack(spacing: Constants.Spacing.elementsSpacing) {
             Asset.warning
                 .font(.largeTitle)
-                .foregroundColor(.red)
+                .foregroundStyle(colors.status.error)
+            
             Text(localization.loadingDocError)
-                .padding(.top)
-            Button(localization.commonTryAgain) {
-                viewModel.preparePDFForViewing()
-            }
-            .padding(.top)
+                .padding(.top, Constants.Padding.titleTop)
+                .foregroundStyle(colors.content.primary)
+            
+            Button(localization.commonTryAgain, action: viewModel.preparePDFForViewing)
+                .foregroundStyle(colors.brand.primary)
         }
+        .background(colors.background.default)
     }
+}
+
+// MARK: - UIViewRepresentable
+
+private struct PDFKitView: UIViewRepresentable {
+    
+    // MARK: - Properties
+    
+    let document: PDFDocument
+
+    // MARK: - Methods
+    
+    func makeUIView(context: Context) -> PDFView {
+        let pdfView = PDFView()
+        pdfView.document = document
+        pdfView.autoScales = true
+        
+        return pdfView
+    }
+    
+    func updateUIView(_ uiView: PDFView, context: Context) { }
 }
 
 // MARK: - Previews
 
-struct PDFViewerPreview: PreviewProvider {
-    
-    static var previews: some View {
+#Preview("PDF") {
+    PDFViewer(viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem))
+       .environmentObject(ChatLocalization())
+       .environmentObject(ChatStyle())
+}
 
-        PDFViewer(viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem))
-           .environmentObject(ChatLocalization())
-            .previewDisplayName("Light Mode")
-        
-        PDFViewer(viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem))
-            .environmentObject(ChatLocalization())
-            .preferredColorScheme(.dark)
-            .previewDisplayName("Dark Mode")
-    }
+#Preview("Error") {
+    PDFViewer(viewModel: PDFViewModel(attachmentItem: MockData.docPreviewItem))
+       .environmentObject(ChatLocalization())
+       .environmentObject(ChatStyle())
 }

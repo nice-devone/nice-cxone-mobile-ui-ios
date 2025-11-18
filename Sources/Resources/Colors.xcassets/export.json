@@ -1,0 +1,99 @@
+{
+  "base": {
+    "baseWhite": "#ffffff",
+    "baseBlack": "#030712"
+  },
+  "brand": {
+      "primary": {
+          "primary50": "#e5ebff",
+          "primary100": "#ccd7ff",
+          "primary200": "#8aa3ff",
+          "primary300": "#6680ff",
+          "primary400": "#3360ff",
+          "primary500": "#254fe5",
+          "primary600": "#0833cc",
+          "primary700": "#0f2e99",
+          "primary800": "#0a1e66",
+          "primary900": "#0f1733",
+          "primary950": "#00061a"
+      },
+      "secondary": {
+          "secondary50": "#f8ffeb",
+          "secondary100": "#f2ffd6",
+          "secondary200": "#e7ffb3",
+          "secondary300": "#daff8a",
+          "secondary400": "#ceff66",
+          "secondary500": "#c1ff3d",
+          "secondary600": "#aeff00",
+          "secondary700": "#80bd00",
+          "secondary800": "#578000",
+          "secondary900": "#2a3d00",
+          "secondary950": "#151f00"
+      }
+  },
+    "neutral": {
+      "neutral50": "#f7f8f8",
+      "neutral100": "#e6e6e8",
+      "neutral200": "#d4d5d8",
+      "neutral300": "#bfc1c6",
+      "neutral400": "#adafb6",
+      "neutral500": "#8c8f98",
+      "neutral600": "#666a76",
+      "neutral700": "#404453",
+      "neutral800": "#333848",
+      "neutral900": "#1f2333",
+      "neutral950": "#1d2029"
+    },
+    "positive": {
+      "positive50": "#e5ffee",
+      "positive100": "#ccffdd",
+      "positive200": "#99ffbc",
+      "positive300": "#80ffab",
+      "positive400": "#66ff9a",
+      "positive500": "#4dff89",
+      "positive600": "#14cc53",
+      "positive700": "#0f993e",
+      "positive800": "#006623",
+      "positive900": "#003311",
+      "positive950": "#001a09"
+    },
+    "negative": {
+      "negative50": "#ffebef",
+      "negative100": "#ffd1dc",
+      "negative200": "#ffa8bd",
+      "negative300": "#ff7a9a",
+      "negative400": "#ff527b",
+      "negative500": "#ff265a",
+      "negative600": "#e5174e",
+      "negative700": "#ad002a",
+      "negative800": "#75001c",
+      "negative900": "#38000d",
+      "negative950": "#1f0007"
+    },
+    "warning": {
+      "warning50": "#fff8eb",
+      "warning100": "#ffefd1",
+      "warning200": "#ffdfa3",
+      "warning300": "#ffcf75",
+      "warning400": "#ffc047",
+      "warning500": "#ffb01a",
+      "warning600": "#e09300",
+      "warning700": "#a86e00",
+      "warning800": "#704900",
+      "warning900": "#382500",
+      "warning950": "#1f1400"
+    },
+    "info": {
+      "info50": "#f2ebff",
+      "info100": "#e6d6ff",
+      "info200": "#cdadff",
+      "info300": "#b385ff",
+      "info400": "#9a5cff",
+      "info500": "#7f30ff",
+      "info600": "#5d00f5",
+      "info700": "#4600b8",
+      "info800": "#2f007a",
+      "info900": "#17003d",
+      "info950": "#0c001f"
+    }
+  }

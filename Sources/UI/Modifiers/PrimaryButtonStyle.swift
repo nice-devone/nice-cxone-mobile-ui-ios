@@ -37,8 +37,8 @@ struct PrimaryButtonStyle: ButtonStyle, Themed {
     func makeBody(configuration: Configuration) -> some View {
         CustomButton(
             configuration: configuration,
-            foregroundColor: colors.customizable.onPrimary,
-            backgroundColor: colors.customizable.primary
+            foregroundColor: colors.brand.onPrimary,
+            backgroundColor: colors.brand.primary
         )
     }
 }

@@ -22,7 +22,6 @@ class DocumentStateViewModel: ObservableObject {
     
     @Published var localURL: URL?
     @Published var isDownloading = false
-    @Published var showError = false
     @Published var isReadyToPresent = false
     
     @Binding var alertType: ChatAlertType?
@@ -48,10 +47,10 @@ class DocumentStateViewModel: ObservableObject {
         do {
             let (tempLocalUrl, response) = try await URLSession.shared.download(from: url)
             
-            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let cachesPath = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             
             let originalFileName = (response as? HTTPURLResponse)?.suggestedFilename ?? url.lastPathComponent
-            let destinationURL = documentsPath.appendingPathComponent(originalFileName)
+            let destinationURL = cachesPath.appendingPathComponent(originalFileName)
             
             if FileManager.default.fileExists(atPath: destinationURL.path) {
                 try FileManager.default.removeItem(at: destinationURL)
@@ -73,7 +72,6 @@ class DocumentStateViewModel: ObservableObject {
                 }
                 
                 self.isDownloading = false
-                self.showError = true
                 
                 self.alertType = .genericError(localization: self.localization)
             }

@@ -24,14 +24,17 @@ class ChatHostingController<Content>: UIHostingController<Content> where Content
         let standard: UINavigationBarAppearance
         let compact: UINavigationBarAppearance?
         let scrollEdge: UINavigationBarAppearance?
+        let compactScrollEdge: UINavigationBarAppearance?
         let tintColor: UIColor
         let isTranslucent: Bool
     }
     
     struct SegmentControlAppearance {
         let selectedSegmentTintColor: UIColor?
-        let normalTitleColor: UIColor
-        let selectedTitleColor: UIColor
+        let normalTitleColor: UIColor?
+        let normalFont: UIFont?
+        let selectedTitleColor: UIColor?
+        let selectedFont: UIFont?
         let backgroundColor: UIColor?
     }
     
@@ -50,7 +53,7 @@ class ChatHostingController<Content>: UIHostingController<Content> where Content
     private var didAppear = false
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
-        UIColor(customizableColors(for: traitCollection.userInterfaceStyle).background).isLight ? .darkContent : .lightContent
+        UIColor(styleColors(for: traitCollection.userInterfaceStyle).background.default).isLight ? .darkContent : .lightContent
     }
     
     // MARK: - Init
@@ -93,9 +96,13 @@ class ChatHostingController<Content>: UIHostingController<Content> where Content
         
         didAppear = true
         
-        updateNavigationBarAppearance(for: traitCollection)
-        updateAlertControllerAppearance(for: traitCollection)
-        updateSegmentedControlAppearance(for: traitCollection)
+        updateNavigationBarAppearance(for: .light)
+        updateSegmentedControlAppearance(for: .light)
+        updateAlertControllerAppearance(for: .light)
+        
+        updateNavigationBarAppearance(for: .dark)
+        updateSegmentedControlAppearance(for: .dark)
+        updateAlertControllerAppearance(for: .dark)
     }
     
     override func willMove(toParent parent: UIViewController?) {
@@ -115,9 +122,13 @@ class ChatHostingController<Content>: UIHostingController<Content> where Content
         
         canHandleWillDisappear = false
         
-        navigationController?.navigationBar.resetChatAppearance(with: previousNavigationAppearance)
-        UISegmentedControl.appearance(for: traitCollection).resetChatAppearance(with: previousSegmentControlAppearance)
-        UIView.resetChatAppearance(with: previousAlertControllerAppearance, for: traitCollection)
+        UINavigationBar.appearance(for: .light).resetChatAppearance(with: previousNavigationAppearance)
+        UISegmentedControl.appearance(for: .light).resetChatAppearance(with: previousSegmentControlAppearance)
+        UIView.resetChatAppearance(with: previousAlertControllerAppearance, for: .light)
+        
+        UINavigationBar.appearance(for: .dark).resetChatAppearance(with: previousNavigationAppearance)
+        UISegmentedControl.appearance(for: .dark).resetChatAppearance(with: previousSegmentControlAppearance)
+        UIView.resetChatAppearance(with: previousAlertControllerAppearance, for: .dark)
     }
     
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -135,9 +146,7 @@ class ChatHostingController<Content>: UIHostingController<Content> where Content
     @objc private func onColorSchemeChanged() {
         LogManager.trace("Color scheme changed in a subview")
         
-        let newTrait = traitCollection.userInterfaceStyle == .light
-            ? UITraitCollection(userInterfaceStyle: .dark)
-            : UITraitCollection(userInterfaceStyle: .light)
+        let newTrait: UITraitCollection = traitCollection.userInterfaceStyle == .light ? .dark : .light
         
         updateNavigationBarAppearance(for: newTrait)
         updateAlertControllerAppearance(for: newTrait)
@@ -151,7 +160,7 @@ class ChatHostingController<Content>: UIHostingController<Content> where Content
         let actualStyle = UITraitCollection.current.userInterfaceStyle
         
         if let navigationController {
-            navigationController.navigationBar.chatAppearance(with: customizableColors(for: actualStyle))
+            navigationController.navigationBar.chatAppearance(with: styleColors(for: actualStyle))
         } else {
             LogManager.error("Unable to update NavigationBar appearance")
         }
@@ -174,21 +183,20 @@ private extension ChatHostingController {
         
         LogManager.trace("Updating NavigationBar appearance for \(traitCollection.userInterfaceStyle)")
         
-        let customizableColors = customizableColors(for: traitCollection.userInterfaceStyle)
-        
         // Persist previous appearance to restore it when the view disappears if needed
         if let tintColor = navigationController.navigationBar.tintColor {
             previousNavigationAppearance = NavigationBarAppearance(
                 standard: navigationController.navigationBar.standardAppearance,
                 compact: navigationController.navigationBar.compactAppearance,
                 scrollEdge: navigationController.navigationBar.scrollEdgeAppearance,
+                compactScrollEdge: navigationController.navigationBar.compactScrollEdgeAppearance,
                 tintColor: tintColor,
                 isTranslucent: navigationController.navigationBar.isTranslucent
             )
         }
         
         // Update to chat appearance
-        navigationController.navigationBar.chatAppearance(with: customizableColors)
+        navigationController.navigationBar.chatAppearance(with: styleColors(for: traitCollection.userInterfaceStyle))
     }
     
     func updateAlertControllerAppearance(for traitCollection: UITraitCollection) {
@@ -199,35 +207,33 @@ private extension ChatHostingController {
             previousAlertControllerAppearance = AlertControllerAppearance(tintColor: tintColor)
         }
         
-        let customizableColors = customizableColors(for: traitCollection.userInterfaceStyle)
-        
         // Update to chat appearance
-        UIView.defaultAlertAppearance(with: customizableColors, for: traitCollection)
+        UIView.chatAlertAppearance(with: styleColors(for: traitCollection.userInterfaceStyle), for: traitCollection)
     }
     
     func updateSegmentedControlAppearance(for traitCollection: UITraitCollection) {
         LogManager.trace("Updating SegmentedControl appearance for \(traitCollection.userInterfaceStyle)")
         
         // Persist previous appearance to restore it when the view disappears
-        if let backgroundColor = UISegmentedControl.appearance(for: traitCollection).backgroundColor {
+        let previousAppearance = UISegmentedControl.appearance(for: traitCollection)
+        
+        if let backgroundColor = previousAppearance.backgroundColor {
             previousSegmentControlAppearance = SegmentControlAppearance(
-                selectedSegmentTintColor: UISegmentedControl.appearance(for: traitCollection).selectedSegmentTintColor,
-                normalTitleColor: UISegmentedControl.appearance(for: traitCollection).titleForegroundColor(for: .normal, traitCollection: traitCollection),
-                selectedTitleColor: UISegmentedControl.appearance(for: traitCollection).titleForegroundColor(for: .selected, traitCollection: traitCollection),
+                selectedSegmentTintColor: previousAppearance.selectedSegmentTintColor,
+                normalTitleColor: previousAppearance.attribute(.foregroundColor, for: .normal),
+                normalFont: previousAppearance.attribute(.font, for: .normal),
+                selectedTitleColor: previousAppearance.attribute(.foregroundColor, for: .selected),
+                selectedFont: previousAppearance.attribute(.font, for: .selected),
                 backgroundColor: backgroundColor
             )
         }
         
-        let customizableColors = customizableColors(for: traitCollection.userInterfaceStyle)
-        
         // Update to chat appearance
-        UISegmentedControl.chatAppearance(with: customizableColors, for: traitCollection)
+        UISegmentedControl.chatAppearance(with: styleColors(for: traitCollection.userInterfaceStyle), for: traitCollection)
     }
         
-    func customizableColors(for userInterfaceStyle: UIUserInterfaceStyle) -> any CustomizableStyleColors {
-        userInterfaceStyle == .light
-            ? chatStyle.colors.light.customizable
-            : chatStyle.colors.dark.customizable
+    func styleColors(for userInterfaceStyle: UIUserInterfaceStyle) -> any StyleColors {
+        userInterfaceStyle == .light ? chatStyle.colors.light : chatStyle.colors.dark
     }
 }
 
@@ -235,12 +241,8 @@ private extension ChatHostingController {
 
 private extension UISegmentedControl {
     
-    func titleForegroundColor(for state: UIControl.State, traitCollection: UITraitCollection) -> UIColor {
-        if let attributes = titleTextAttributes(for: state)?[.foregroundColor] as? UIColor {
-            return attributes
-        } else {
-            return traitCollection.userInterfaceStyle == .light ? .black : .white
-        }
+    func attribute<T: Any>(_ attribute: NSAttributedString.Key, for state: UIControl.State) -> T? {
+        titleTextAttributes(for: state)?[attribute] as? T
     }
 }
 

@@ -13,9 +13,29 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
+import Lottie
 import SwiftUI
 
 struct LivechatPositionInQueueView: View, Themed {
+    
+    // MARK: - Constants
+    
+    private enum Constants {
+        static let animationKeypath = "**.Stroke 1.Color"
+        
+        enum Sizing {
+            static let cornerRadius: CGFloat = 16
+            static let animationDimension: CGFloat = 34
+        }
+        enum Spacing {
+            static let contentHorizontal: CGFloat = 16
+            static let titleMessageVertical: CGFloat = 4
+        }
+        enum Padding {
+            static let content: CGFloat = 16
+            static let animation: CGFloat = 10
+        }
+    }
     
     // MARK: - Properties
     
@@ -24,15 +44,7 @@ struct LivechatPositionInQueueView: View, Themed {
     @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
-    @State private var isHeaderVisible = true
-    
     let positionInQueue: Int
-
-    private static let cornerRadius: CGFloat = 32
-    private static let containerShadowRadius: CGFloat = 8
-    private static let containerShadowPositionX: CGFloat = 0
-    private static let containerShadowPositionY: CGFloat = 4
-    private static let containerShadowColor = Color.black.opacity(0.25)
     
     // MARK: - Init
     
@@ -43,30 +55,47 @@ struct LivechatPositionInQueueView: View, Themed {
     // MARK: - Builder
     
     var body: some View {
-        ChatDefaultOverlayView(
-            title: positionInQueue > 0 ? String(format: localization.liveChatQueueTitle, positionInQueue) : nil,
-            subtitle: localization.liveChatQueueSubtitle,
-            cardImage: Asset.LiveChat.personWithClock,
-            isHeaderVisible: $isHeaderVisible
+        HStack(spacing: Constants.Spacing.contentHorizontal) {
+            hourglassAnimation
+            
+            VStack(alignment: .leading, spacing: Constants.Spacing.titleMessageVertical) {
+                if positionInQueue > .zero {
+                    Text(String(format: localization.liveChatQueueTitle, positionInQueue))
+                        .fontWeight(.medium)
+                        .foregroundStyle(colors.content.primary)
+                }
+                
+                Text(localization.liveChatQueueSubtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(colors.content.secondary)
+            }
+            .multilineTextAlignment(.leading)
+        }
+        .padding(Constants.Padding.content)
+        .background(
+            RoundedRectangle(cornerRadius: Constants.Sizing.cornerRadius)
+                .fill(colors.background.surface.emphasis)
         )
-        .cornerRadius(Self.cornerRadius)
-        .shadow(
-            color: Self.containerShadowColor,
-            radius: Self.containerShadowRadius,
-            x: Self.containerShadowPositionX,
-            y: Self.containerShadowPositionY
-        )
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.keyboardWillShowNotification), perform: handleKeyboardVisibility)
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.keyboardWillHideNotification), perform: handleKeyboardVisibility)
     }
 }
 
-// MARK: - Helpers
+// MARK: - Subviews
 
 private extension LivechatPositionInQueueView {
-    
-    func handleKeyboardVisibility(_ notification: Notification) {
-        self.isHeaderVisible = notification.name != UIApplication.keyboardWillShowNotification
+
+    var hourglassAnimation: some View {
+        LottieView(animation: try? LottieAnimation.from(data: Asset.Images.lottieHourglass.data.data))
+            .playing(loopMode: .loop)
+            .valueProvider(
+                ColorValueProvider(UIColor(colors.brand.onPrimary).lottieColorValue),
+                for: AnimationKeypath(keypath: Constants.animationKeypath)
+            )
+            .frame(width: Constants.Sizing.animationDimension, height: Constants.Sizing.animationDimension)
+            .padding(Constants.Padding.animation)
+            .background {
+                Circle()
+                    .fill(colors.brand.primary)
+            }
     }
 }
 
@@ -78,13 +107,12 @@ private extension LivechatPositionInQueueView {
     NavigationView {
         VStack {
             LivechatPositionInQueueView(position: 1)
-                .padding(.top, 32)
                 .padding(.horizontal, 16)
             
             Spacer()
             
             MessageInputView(
-                attachmentRestrictions: MockData.attachmentResrictions,
+                attachmentRestrictions: MockData.attachmentRestrictions,
                 isEditing: .constant(false),
                 isInputEnabled: .constant(true),
                 alertType: .constant(nil),

@@ -27,6 +27,8 @@ extension Asset {
     static let close = Image(systemName: "xmark")
     /// `checkmark`
     static let check = Image(systemName: "checkmark")
+    /// `checkmark.circle.fill`
+    static let checkCircleFill = Image(systemName: "checkmark.circle.fill")
     /// `"ellipsis`
     static let menu = Image(systemName: "ellipsis")
     /// `chevron.down`
@@ -35,6 +37,10 @@ extension Asset {
     static let right = Image(systemName: "chevron.right")
     /// 'exclamationmark.triangle'
     static let warning = Image(systemName: "exclamationmark.triangle")
+    /// `hand.tap`
+    static let handTap = Image(systemName: "hand.tap")
+    /// `hand.point.down`
+    static let handPointDown = Image(systemName: "hand.point.down")
     
     // MARK: - List
     
@@ -45,6 +51,8 @@ extension Asset {
         static let rename = Image(systemName: "gearshape")
         /// `archivebox`
         static let archive = Image(systemName: "archivebox")
+        /// `circlebadge.fill`
+        static let unreadIndicator = Image(systemName: "circlebadge.fill")
     }
     
     // MARK: - Chat Thread
@@ -75,10 +83,14 @@ extension Asset {
         static let archive = Image(systemName: "archivebox")
         /// `person.fill`
         static let fallbackAvatar = Image(systemName: "person.fill")
-        
+        /// `questionmark.circle`
+        static let tooltip = Image(systemName: "exclamationmark.circle")
+
         enum RichContent {
             /// `link`
             static let link = Image(systemName: "link")
+            /// `checkmark.circle`
+            static let optionSelected = Image(systemName: "checkmark.circle")
         }
     }
     
@@ -88,9 +100,9 @@ extension Asset {
         /// `xmark.circle.fill`
         static let remove = Image(systemName: "xmark.circle.fill")
         /// `play.fill`
-        static let play = Image(systemName: "play.fill")
+        static let play = Image(systemName: "play.circle.fill")
         /// `pause.fill`
-        static let pause = Image(systemName: "pause.fill")
+        static let pause = Image(systemName: "pause.circle.fill")
         /// `stop.circle.fill`
         static let stop = Image(systemName: "stop.circle.fill")
         /// `gobackward.10`
@@ -114,9 +126,18 @@ extension Asset {
     // MARK: - LiveChat - End Conversation
     
     enum LiveChat {
-        /// `moon.zzz`
-        static let offline = Image(systemName: "moon.zzz.fill")
         /// `person.crop.circle.badge.clock`
         static let personWithClock = Image(systemName: "person.crop.circle.badge.clock")
+        
+        enum EndConversation {
+            /// `bubble.left.and.text.bubble.right`
+            static let startNewChat = Image(systemName: "bubble.left.and.text.bubble.right")
+            /// `arrow.left`
+            static let backToConversation = Image(systemName: "arrow.left")
+        }
+        enum Inactivity {
+            /// `arrow.right`
+            static let refresh = Image(systemName: "arrow.right")
+        }
     }
 }

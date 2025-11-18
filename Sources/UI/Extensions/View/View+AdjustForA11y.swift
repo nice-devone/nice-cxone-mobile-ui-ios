@@ -28,6 +28,6 @@ private struct AdjustForA11yModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .frame(minWidth: 44, minHeight: 44)
+            .frame(minWidth: StyleGuide.Sizing.buttonRegularDimension, minHeight: StyleGuide.Sizing.buttonRegularDimension)
     }
 }

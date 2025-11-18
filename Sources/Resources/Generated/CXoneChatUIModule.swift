@@ -19,5 +19,5 @@ import Foundation
 /// A generated structure that holds information about the module version.
 public struct CXoneChatUIModule {
     /// The current marketing version of the CXoneChatUIModule
-    public static let version: String = "3.0.3"
+    public static let version: String = "3.1.0"
 }

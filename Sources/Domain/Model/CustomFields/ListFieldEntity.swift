@@ -59,9 +59,3 @@ public class ListFieldEntity: FormCustomFieldType {
         super.init(label: label, isRequired: isRequired, ident: ident, value: value ?? "")
     }
 }
-
-extension ListFieldEntity {
-    var formattedTitle: String {
-        isRequired ? "\(label) *" : label
-    }
-}

@@ -34,8 +34,8 @@ class VideoMessageCellViewModel: ObservableObject {
         self._alertType = alertType
         self.localization = localization
         
-        Task { @MainActor in
-            await cacheVideoFromURL()
+        Task { @MainActor [weak self] in
+            await self?.cacheVideoFromURL()
         }
     }
     
@@ -48,7 +48,9 @@ class VideoMessageCellViewModel: ObservableObject {
             LogManager.error(.failed("Unable to get Caches directory URL"))
             return
         }
+        
         let fileURL = cacheDirectoryURL.appendingPathComponent(item.fileName)
+        
         do {
             if !FileManager.default.fileExists(atPath: fileURL.path) {
                 isLoading = true
@@ -60,6 +62,7 @@ class VideoMessageCellViewModel: ObservableObject {
             }
         } catch {
             error.logError()
+            
             alertType = .genericError(localization: localization)
             isLoading = false
         }

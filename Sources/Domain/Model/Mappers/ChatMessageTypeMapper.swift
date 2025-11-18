@@ -31,8 +31,8 @@ enum ChatMessageTypeMapper {
             result.append(contentsOf: Attachment.map(entity.attachments))
             
             return result
-        } else if let richMessage = handleRichMessage(entity, textMessage: message) {
-            return [richMessage]
+        } else if let messageType = handleMessageType(entity, textMessage: message) {
+            return [messageType]
         } else {
             return []
         }
@@ -66,7 +66,7 @@ private extension Attachment {
 
 private extension ChatMessageTypeMapper {
 
-    static func handleRichMessage(_ entity: Message, textMessage: String?) -> ChatMessageType? {
+    static func handleMessageType(_ entity: Message, textMessage: String?) -> ChatMessageType? {
         switch entity.contentType {
         case .richLink(let content):
             return .richContent(.richLink(RichLinkItem(title: content.title, url: content.url, imageUrl: content.fileUrl)))
@@ -85,7 +85,9 @@ private extension ChatMessageTypeMapper {
             }
             
             return .richContent(.listPicker(ListPickerItem(title: content.title, message: content.text, buttons: richMessageButtons)))
-        default:
+        case .unknown:
+            return textMessage.map(ChatMessageType.unknown)
+        case .text:
             return textMessage.map(ChatMessageType.text)
         }
     }

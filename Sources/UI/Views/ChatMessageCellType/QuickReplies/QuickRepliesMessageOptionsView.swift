@@ -17,6 +17,25 @@ import SwiftUI
 
 struct QuickRepliesMessageOptionsView: View, Themed {
     
+    // MARK: - Constants
+    
+    enum Constants {
+        
+        enum Spacing {
+            static let elementsVertical: CGFloat = 8
+            static let elementsHorizontal: CGFloat = 8
+        }
+        
+        enum Sizing {
+            static let optionCornerRadius: CGFloat = 8
+        }
+        
+        enum Padding {
+            static let optionsVertical: CGFloat = 8
+            static let optionsHorizontal: CGFloat = 16
+        }
+    }
+    
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
@@ -25,10 +44,6 @@ struct QuickRepliesMessageOptionsView: View, Themed {
     
     let item: QuickRepliesItem
     let optionSelected: (RichMessageButton) -> Void
-    
-    private static let optionCornerRadius: CGFloat = 8
-    private static let optionPaddingVertical: CGFloat = 10
-    private static let optionPaddingHorizontal: CGFloat = 16
     
     // MARK: - Init
     
@@ -47,13 +62,13 @@ struct QuickRepliesMessageOptionsView: View, Themed {
                 Text(option.title)
                     .multilineTextAlignment(.leading)
             }
-            .font(.footnote)
-            .foregroundStyle(colors.customizable.primary)
-            .padding(.horizontal, Self.optionPaddingHorizontal)
-            .padding(.vertical, Self.optionPaddingVertical)
+            .font(.subheadline)
+            .foregroundStyle(colors.brand.primary)
+            .padding(.horizontal, Constants.Padding.optionsHorizontal)
+            .padding(.vertical, Constants.Padding.optionsVertical)
             .background(
-                RoundedRectangle(cornerRadius: Self.optionCornerRadius)
-                    .fill(colors.customizable.agentBackground)
+                RoundedRectangle(cornerRadius: Constants.Sizing.optionCornerRadius)
+                    .fill(colors.background.surface.emphasis)
             )
         }
     }
@@ -62,13 +77,12 @@ struct QuickRepliesMessageOptionsView: View, Themed {
 // MARK: - Helpers
 
 private struct OptionsView<Content: View>: View where Data.Element: Hashable {
+    typealias Constants = QuickRepliesMessageOptionsView.Constants
     
     // MARK: - Properties
     
     @State var elementsSize = [RichMessageButton: CGSize]()
     @State var screenWidth = CGFloat()
-    
-    private let spacing: CGFloat = 8
     
     let options: [RichMessageButton]
     let content: (RichMessageButton) -> Content
@@ -76,7 +90,7 @@ private struct OptionsView<Content: View>: View where Data.Element: Hashable {
     // MARK: - Builder
     
     var body: some View {
-        VStack(alignment: .leading, spacing: spacing) {
+        VStack(alignment: .leading, spacing: Constants.Spacing.elementsVertical) {
             ForEach(computeElements(), id: \.self) { rowElements in
                 horizontalStack(for: rowElements)
             }
@@ -94,7 +108,7 @@ private struct OptionsView<Content: View>: View where Data.Element: Hashable {
 private extension OptionsView {
     
     func horizontalStack(for elements: [RichMessageButton]) -> some View {
-        HStack(alignment: .top, spacing: spacing) {
+        HStack(alignment: .top, spacing: Constants.Spacing.elementsHorizontal) {
             ForEach(elements, id: \.self) { element in
                 content(element)
                     .readSize { size in
@@ -115,9 +129,9 @@ private extension OptionsView {
         var remainingWidth = screenWidth
         
         for element in options {
-            let elementWidthWithSpacing = elementsSize[element, default: CGSize(width: screenWidth, height: 1)].width + spacing
+            let elementWidthWithSpacing = elementsSize[element, default: CGSize(width: screenWidth, height: 1)].width + Constants.Spacing.elementsHorizontal
             
-            if !(remainingWidth - elementWidthWithSpacing).isLessThanOrEqualTo(0) {
+            if !(remainingWidth - elementWidthWithSpacing).isLessThanOrEqualTo(.zero) {
                 rows[currentRow].append(element)
             } else {
                 currentRow += 1
@@ -134,27 +148,10 @@ private extension OptionsView {
 
 // MARK: - Previews
 
-#Preview("Light mode") {
-    let options = (0..<Int.random(in: 5...15))
-        .map { _ -> RichMessageButton in
-            RichMessageButton(title: Lorem.words(nbWords: Int.random(in: 1..<10)), iconUrl: nil)
-        }
-    let item = QuickRepliesItem(title: Lorem.sentence(), message: Lorem.sentence(), options: options)
+#Preview {
+    let item = QuickRepliesItem(title: Lorem.sentence(), message: Lorem.sentence(), options: MockData.quickReplyOptions(range: 5...15))
     
-    return QuickRepliesMessageOptionsView(item: item) { _ in }
+    QuickRepliesMessageOptionsView(item: item) { _ in }
         .padding(.horizontal, 12)
         .environmentObject(ChatStyle())
-}
-
-#Preview("Dark mode") {
-    let options = (0..<Int.random(in: 5...15))
-        .map { _ -> RichMessageButton in
-            RichMessageButton(title: Lorem.words(nbWords: Int.random(in: 1..<10)), iconUrl: nil)
-        }
-    let item = QuickRepliesItem(title: Lorem.sentence(), message: Lorem.sentence(), options: options)
-    
-    return QuickRepliesMessageOptionsView(item: item) { _ in }
-        .padding(.horizontal, 12)
-        .environmentObject(ChatStyle())
-        .preferredColorScheme(.dark)
 }

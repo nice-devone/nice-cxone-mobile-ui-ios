@@ -20,6 +20,9 @@ enum MockData {
     
     // MARK: - Properties
     
+    static var unsupportedMessageContent: String {
+        Lorem.sentence() + "\nPLUGIN – SATISFACTION_SURVEY"
+    }
     static var hyperlinkContent: String {
         Lorem.words(nbWords: Int.random(in: 0..<5)) + " \(imageUrl.absoluteString) " + Lorem.words(nbWords: Int.random(in: 0..<5))
     }
@@ -30,13 +33,14 @@ enum MockData {
         URL(string: "https://picsum.photos/id/\(Int.random(in: 1...700))/300/300").unsafelyUnwrapped
     }
     static var imageItem: AttachmentItem {
-        AttachmentItem(url: imageUrl, friendlyName: "photo_300/300", mimeType: imageUrl.mimeType, fileName: "\(imageUrl.lastPathComponent).jpg")
+        AttachmentItem(url: imageUrl, friendlyName: "\(imageUrl.lastPathComponent).jpg", mimeType: "image/jpg", fileName: "\(imageUrl.lastPathComponent).jpg")
     }
     
     static let selectableVideoAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .video(videoItem))
     static let selectableImageAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .image(imageItem))
     static let selectableAudioAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .audio(audioItem))
     static let selectableDocumentAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .documentPreview(docPreviewItem))
+    static let selectablePDFAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .documentPreview(pdfPreviewItem))
 
     static let audioUrl = URL(string: "https://file-examples.com/storage/fe11f9541a67d9f2f9b2038/2017/11/file_example_MP3_700KB.mp3").unsafelyUnwrapped
     static let audioItem = AttachmentItem(
@@ -79,12 +83,12 @@ enum MockData {
     )
     static let listPickerItem = ListPickerItem(title: Lorem.word(), message: Lorem.sentence(), buttons: richMessageOptions())
     static let quickRepliesItem = QuickRepliesItem(title: Lorem.sentence(), message: Lorem.sentence(), options: quickReplyOptions())
-    static let richLinkItem = RichLinkItem(title: Lorem.words(), url: videoUrl, imageUrl: imageUrl)
+    static let richLinkItem = RichLinkItem(title: Lorem.words(), url: imageUrl, imageUrl: imageUrl)
     
     static let customer = ChatUser(id: UUID().uuidString, userName: "Peter Parker", avatarURL: nil, isAgent: false)
     static let agent = ChatUser(id: UUID().uuidString, userName: "John Doe", avatarURL: imageUrl, isAgent: true)
     
-    static let attachmentResrictions = AttachmentRestrictions(
+    static let attachmentRestrictions = AttachmentRestrictions(
         allowedFileSize: 40,
         allowedTypes: ["image/*", "video/*", "audio/*"],
         areAttachmentsEnabled: true
@@ -175,6 +179,32 @@ enum MockData {
         )
     }
     
+    static func documentMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+        ChatMessage(
+            id: UUID(),
+            user: user ?? [customer, agent].random().unsafelyUnwrapped,
+            types: (1...(elementsCount ?? 1)).map { _ in
+                [
+                    .documentPreview(docPreviewItem),
+                    .documentPreview(xlsPreviewItem),
+                    .documentPreview(pptPreviewItem)
+                ].random().unsafelyUnwrapped
+            },
+            date: date,
+            status: status
+        )
+    }
+    
+    static func pdfMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+        ChatMessage(
+            id: UUID(),
+            user: user ?? [customer, agent].random().unsafelyUnwrapped,
+            types: (1...(elementsCount ?? 1)).map { _ in .documentPreview(pdfPreviewItem) },
+            date: date,
+            status: status
+        )
+    }
+    
     static func multipleMediaAttachmentsMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
             id: UUID(),
@@ -182,9 +212,8 @@ enum MockData {
             types: [
                 .text(Lorem.sentence()),
                 .image(imageItem),
-                .documentPreview(pdfPreviewItem),
-                .image(imageItem),
-                .audio(audioItem),
+                .image(audioItem),
+                .audio(videoItem),
                 .image(imageItem)
             ],
             date: date,
@@ -281,6 +310,16 @@ enum MockData {
             TreeNodeFieldEntity(label: "Other", value: "other")
         ]
     }
+    
+    static func unsupportedMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+        ChatMessage(
+            id: UUID(),
+            user: agent,
+            types: [.unknown(Self.unsupportedMessageContent)],
+            date: date,
+            status: status
+        )
+    }
 }
 
 // MARK: - Helpers
@@ -304,8 +343,8 @@ extension MockData {
         return result
     }
     
-    static func quickReplyOptions() -> [RichMessageButton] {
-        (0..<Int.random(in: 2...5))
+    static func quickReplyOptions(range: ClosedRange<Int> = 2...5) -> [RichMessageButton] {
+        (0..<Int.random(in: range))
             .map { _ -> RichMessageButton in
                 RichMessageButton(title: Lorem.words(nbWords: Int.random(in: 1..<3)), iconUrl: nil)
             }

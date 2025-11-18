@@ -17,9 +17,17 @@ import SwiftUI
 
 struct ResizedSymbol: View {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Sizing {
+            static let scalingFactor: CGFloat = 0.95
+        }
+    }
+    
     // MARK: - Properties
     
-    let scalingFactor: CGFloat = 0.95
     let image: Image
     let targetSize: CGFloat
     
@@ -37,6 +45,8 @@ struct ResizedSymbol: View {
             return createiOS16Image()
         } else {
             return image
+                .resizable()
+                .frame(width: targetSize, height: targetSize)
         }
     }
     
@@ -54,7 +64,7 @@ struct ResizedSymbol: View {
             let scale = min(
                 targetSize / imageSize.width,
                 targetSize / imageSize.height
-            ) * scalingFactor // Apply a scaling factor to make it slightly smaller
+            ) * Constants.Sizing.scalingFactor // Apply a scaling factor to make it slightly smaller
             
             let scaledWidth = imageSize.width * scale
             let scaledHeight = imageSize.height * scale
@@ -63,12 +73,41 @@ struct ResizedSymbol: View {
             let xcoord = (targetSize - scaledWidth) / 2
             let ycoord = (targetSize - scaledHeight) / 2
             
-            ctx.draw(resolvedImage, in: CGRect(
-                x: xcoord,
-                y: ycoord,
-                width: scaledWidth,
-                height: scaledHeight
-            ))
+            ctx.draw(
+                resolvedImage,
+                in: CGRect(
+                    x: xcoord,
+                    y: ycoord,
+                    width: scaledWidth,
+                    height: scaledHeight
+                )
+            )
+        }
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    HStack(spacing: 32) {
+        VStack {
+            Text("Legacy")
+                .font(.headline)
+            
+            ForEach(1..<5) { index in
+                Asset.List.archive
+                    .resizable()
+                    .frame(width: CGFloat(16 * index), height: CGFloat(16 * index))
+            }
+        }
+        
+        VStack {
+            Text("iOS 16+")
+                .font(.headline)
+            
+            ForEach(1..<5) { index in
+                ResizedSymbol(image: Asset.List.archive, targetSize: CGFloat(16 * index))
+            }
         }
     }
 }

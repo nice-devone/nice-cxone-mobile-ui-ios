@@ -37,6 +37,8 @@ public enum ChatMessageType: Hashable, Equatable {
     
     case richContent(ChatRichMessageType)
     
+    case unknown(String)
+    
     // MARK: - Properties
     
     /// Indicates whether the message is of a attachment type (image, video, audio).

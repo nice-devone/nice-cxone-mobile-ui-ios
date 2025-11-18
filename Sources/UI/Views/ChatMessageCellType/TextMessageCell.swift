@@ -17,14 +17,22 @@ import SwiftUI
 
 struct TextMessageCell: View {
 
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Padding {
+            static let LargeEmojiVertical: CGFloat = 6
+            static let largeEmojiHorizontal: CGFloat = 0
+        }
+    }
+    
     // MARK: - Properties
 
     private let message: ChatMessage
     private let attributedText: AttributedString
     private let text: String
     private let position: MessageGroupPosition
-
-    private static let paddingLargeEmojiVertical: CGFloat = 6
     
     // MARK: - Init
 
@@ -46,8 +54,8 @@ struct TextMessageCell: View {
             }
             
             Text(attributedText)
-                .padding(.vertical, isLargeEmojiText ? Self.paddingLargeEmojiVertical : StyleGuide.Message.paddingVertical)
-                .padding(.horizontal, isLargeEmojiText ? 0 : StyleGuide.Message.paddingHorizontal)
+                .padding(.vertical, isLargeEmojiText ? Constants.Padding.LargeEmojiVertical : StyleGuide.Padding.Message.contentVertical)
+                .padding(.horizontal, isLargeEmojiText ? Constants.Padding.largeEmojiHorizontal : StyleGuide.Padding.Message.contentHorizontal)
                 .messageChatStyle(message, position: position, text: text)
             
             if message.isUserAgent {

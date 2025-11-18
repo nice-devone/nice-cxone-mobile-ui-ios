@@ -1,9 +1,32 @@
+<a name="3.1.0"></a>
+# [3.1.0] - 2025-11-18
+
+## Features
+- Refactor constants to enum pattern
+- Extend thread list cell of unread message state
+- Disable the selection of the Quick Replies options if the message is not the last one.
+- Prepare unsupported message cell with fallback text and tooltip for SDK's unsupported message types
+- Dynamic attachment sizes
+- Add accessibility identifiers for the selectable circle in AttachmentsView, the tooltip for a message, the status indicators in the message group and the cell unread indicator in the thread list
+- Support for Inactivity Popup
+- Add colors for new design system
+- Add color customization for UI module
+
+## Fixes
+- Fix app freeze when swapping the thread list from Current to Archived
+- Selecting the "Camera" attachment source incorrectly opened the photo library
+- Fix voice recording state when permission is not granted
+- Remove UI alerts for custom fields validation errors
+- Replace documentDirectory with cachesDirectory for attachment storage to prevent clutter in Files app
+- Fix remote push notification handling on iOS 15/16
+
+## Dependencies
+- Update CXoneChatSDK and CXoneGuideUtility to 3.1.0
+
 <a name="3.0.3"></a>
 # [3.0.3] - 2025-10-15
 
-## CXoneChatUI
-
-### Fixes
+## Fixes
 - Fix pre-chat survey form validation
 - Fix conversation closed overlay appearing twice when rapidly tapping close chat
 
@@ -385,7 +408,8 @@
     - failure
   - typing start/end
 
-[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.3...HEAD
+[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.1.0...HEAD
+[3.1.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.3...3.1.0
 [3.0.3]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.2...3.0.3
 [3.0.2]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.1...3.0.2
 [3.0.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.0.0...3.0.1

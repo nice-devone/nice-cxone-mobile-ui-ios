@@ -31,8 +31,8 @@ extension Message {
             return entity.title.nilIfEmpty() ?? (useFallback ? localization.chatFallbackMessageTORMQuickReplies : nil)
         case .listPicker(let entity):
             return entity.title.nilIfEmpty() ?? (useFallback ? localization.chatFallbackMessageTORMListPicker : nil)
-        case .unknown:
-            return useFallback ? localization.chatFallbackMessageUnknown : nil
+        case .unknown(let fallbackText):
+            return fallbackText?.nilIfEmpty() ?? (useFallback ? localization.chatFallbackMessageUnknown : nil)
         }
     }
 }

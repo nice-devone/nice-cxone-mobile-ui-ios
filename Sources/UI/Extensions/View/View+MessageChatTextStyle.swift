@@ -26,6 +26,15 @@ extension View {
 
 private struct ChatTextStyleModifier: ViewModifier, Themed {
 
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Sizing {
+            static let cornerRadiusBetweenMessages: CGFloat = 4
+        }
+    }
+    
 	// MARK: - Properties
 
     @EnvironmentObject var style: ChatStyle
@@ -50,12 +59,12 @@ private struct ChatTextStyleModifier: ViewModifier, Themed {
         content
             .font(font)
             .background(background)
-            .foregroundColor(message.isUserAgent ? colors.customizable.agentText : colors.customizable.customerText)
-            .tint(message.isUserAgent ? colors.customizable.agentText : colors.customizable.customerText)
-            .cornerRadius(topLeftCornerRadius, corners: .topLeft)
-            .cornerRadius(topRightCornerRadius, corners: .topRight)
-            .cornerRadius(bottomLeftCornerRadius, corners: .bottomLeft)
-            .cornerRadius(bottomRightCornerRadius, corners: .bottomRight)
+            .foregroundColor(message.isUserAgent ? colors.content.primary : colors.brand.onPrimary)
+            .tint(message.isUserAgent ? colors.content.primary : colors.brand.onPrimary)
+            .cornerRadius(position.topLeftCornerRadius(isUserAgent: message.isUserAgent), corners: .topLeft)
+            .cornerRadius(position.topRightCornerRadius(isUserAgent: message.isUserAgent), corners: .topRight)
+            .cornerRadius(position.bottomLeftCornerRadius(isUserAgent: message.isUserAgent), corners: .bottomLeft)
+            .cornerRadius(position.bottomRightCornerRadius(isUserAgent: message.isUserAgent), corners: .bottomRight)
     }
 }
 
@@ -68,43 +77,7 @@ private extension ChatTextStyleModifier {
         if text?.isLargeEmoji == true {
             Color.clear
         } else {
-            message.isUserAgent ? colors.customizable.agentBackground : colors.customizable.customerBackground
+            message.isUserAgent ? colors.background.surface.default : colors.brand.primary
         }
-    }
-    
-    private static let cornerRadiusBetweenMessages: CGFloat = 4
-    
-    // MARK: - Helpers
-    
-    var topLeftCornerRadius: CGFloat {
-        guard position != .single, message.isUserAgent else {
-            return StyleGuide.Message.cornerRadius
-        }
-        
-        return position == .first ? StyleGuide.Message.cornerRadius : Self.cornerRadiusBetweenMessages
-    }
-    
-    var topRightCornerRadius: CGFloat {
-        guard position != .single, !message.isUserAgent else {
-            return StyleGuide.Message.cornerRadius
-        }
-        
-        return position == .first ? StyleGuide.Message.cornerRadius : Self.cornerRadiusBetweenMessages
-    }
-    
-    var bottomLeftCornerRadius: CGFloat {
-        guard position != .single, message.isUserAgent else {
-            return StyleGuide.Message.cornerRadius
-        }
-        
-        return [.first, .inside].contains(position) ? Self.cornerRadiusBetweenMessages : StyleGuide.Message.cornerRadius
-    }
-    
-    var bottomRightCornerRadius: CGFloat {
-        guard position != .single, !message.isUserAgent else {
-            return StyleGuide.Message.cornerRadius
-        }
-        
-        return [.first, .inside].contains(position) ? Self.cornerRadiusBetweenMessages : StyleGuide.Message.cornerRadius
     }
 }

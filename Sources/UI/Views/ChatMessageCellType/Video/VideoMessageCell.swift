@@ -19,6 +19,15 @@ import SwiftUI
 
 struct VideoMessageCell: View, Themed {
 
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Spacing {
+            static let shareButtonMinLength: CGFloat = 0
+        }
+    }
+    
     // MARK: - Properties
     
     @StateObject private var viewModel: VideoMessageCellViewModel
@@ -30,24 +39,22 @@ struct VideoMessageCell: View, Themed {
 
     @State private var isVideoSheetVisible = false
     
-    private let displayMode: VideoThumbnailDisplayMode
+    private let displayMode: AttachmentThumbnailDisplayMode = .regular
     private let message: ChatMessage
-    private let position: MessageGroupPosition
+    private let position: MessageGroupPosition?
     
     // MARK: - Init
     
     init(
         message: ChatMessage,
         item: AttachmentItem,
-        displayMode: VideoThumbnailDisplayMode,
-        position: MessageGroupPosition,
+        position: MessageGroupPosition? = nil,
         alertType: Binding<ChatAlertType?>,
         localization: ChatLocalization
     ) {
         self.message = message
-        self.displayMode = displayMode
-        _viewModel = StateObject(wrappedValue: VideoMessageCellViewModel(item: item, alertType: alertType, localization: localization))
         self.position = position
+        self._viewModel = StateObject(wrappedValue: VideoMessageCellViewModel(item: item, alertType: alertType, localization: localization))
     }
     
     // MARK: - Builder
@@ -55,55 +62,201 @@ struct VideoMessageCell: View, Themed {
     var body: some View {
         ZStack(alignment: message.isUserAgent ? .bottomLeading : .bottomTrailing) {
             if viewModel.isLoading {
-                AttachmentLoadingView(title: localization.loadingVideo)
-                    .frame(width: displayMode.width, height: displayMode.height)
-            } else {
-                VideoThumbnailView(
-                    url: viewModel.cachedVideoURL,
-                    displayMode: displayMode
+                AttachmentLoadingView(
+                    title: localization.loadingVideo,
+                    width: displayMode.size.width,
+                    height: displayMode.size.height
                 )
+            } else {
+                Button {
+                    isVideoSheetVisible = true
+                } label: {
+                    VideoThumbnailView(
+                        url: viewModel.cachedVideoURL,
+                        displayMode: displayMode
+                    )
+                }
                 .sheet(isPresented: $isVideoSheetVisible) {
                     if let videoURL = viewModel.cachedVideoURL {
                         VideoPlayer(player: AVPlayer(url: videoURL))
                     }
                 }
-                .onTapGesture {
-                    isVideoSheetVisible = true
-                }
             }
         }
-        .if(displayMode == .large) { view in
+        .ifNotNil(position) { view, position in
             view
                 .messageChatStyle(message, position: position)
-                .shareable(message, attachments: [viewModel.item], spacerLength: 0)
+                .shareable(message, attachments: [viewModel.item], spacerLength: Constants.Spacing.shareButtonMinLength)
         }
     }
 }
 
 // MARK: - Preview
 
-#Preview {
+#Preview("Single") {
     let localization = ChatLocalization()
     
-    VStack(spacing: 4) {
-        VideoMessageCell(
-            message: MockData.videoMessage(user: MockData.agent),
-            item: MockData.videoItem,
-            displayMode: .large,
-            position: .single,
-            alertType: .constant(nil),
-            localization: localization
-        )
+    ScrollView {
+        VStack(spacing: 4) {
+            VideoMessageCell(
+                message: MockData.videoMessage(user: MockData.agent),
+                item: MockData.videoItem,
+                position: .single,
+                alertType: .constant(nil),
+                localization: localization
+            )
 
-        VideoMessageCell(
-            message: MockData.videoMessage(user: MockData.customer),
-            item: MockData.videoItem,
-            displayMode: .large,
-            position: .single,
-            alertType: .constant(nil),
-            localization: localization
+            VideoMessageCell(
+                message: MockData.videoMessage(user: MockData.customer),
+                item: MockData.videoItem,
+                position: .single,
+                alertType: .constant(nil),
+                localization: localization
+            )
+            
+            VStack(spacing: 4) {
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.agent),
+                    item: MockData.videoItem,
+                    position: .first,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.agent),
+                    item: MockData.videoItem,
+                    position: .inside,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.agent),
+                    item: MockData.videoItem,
+                    position: .last,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+            
+            VStack(spacing: 4) {
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.customer),
+                    item: MockData.videoItem,
+                    position: .first,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.customer),
+                    item: MockData.videoItem,
+                    position: .inside,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.customer),
+                    item: MockData.videoItem,
+                    position: .last,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+        }
+        .padding(.horizontal, 16)
+    }
+    .environmentObject(ChatStyle())
+    .environmentObject(localization)
+}
+
+@available(iOS 17, *)
+#Preview("Multiple") {
+    @Previewable @Environment(\.colorScheme) var scheme
+    
+    let style = ChatStyle()
+    let localization = ChatLocalization()
+    VStack {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.agent),
+                    item: MockData.videoItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.agent),
+                    item: MockData.videoItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+            
+            HStack(spacing: 12) {
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.agent),
+                    item: MockData.videoItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.agent),
+                    item: MockData.videoItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(style.colors(for: scheme).background.surface.default)
+        )
+        
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.customer),
+                    item: MockData.videoItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.customer),
+                    item: MockData.videoItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+            
+            HStack(spacing: 12) {
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.customer),
+                    item: MockData.videoItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                VideoMessageCell(
+                    message: MockData.videoMessage(user: MockData.customer),
+                    item: MockData.videoItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(style.colors(for: scheme).brand.primary)
         )
     }
-    .padding(.horizontal, 10)
-    .environmentObject(ChatStyle())
+    .environmentObject(style)
+    .environmentObject(localization)
 }

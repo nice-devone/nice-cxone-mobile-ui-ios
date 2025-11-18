@@ -16,7 +16,7 @@
 import SwiftUI
 
 protocol Alertable {
-    // periphery:ignore
+    // periphery:ignore - false positive
     var localization: ChatLocalization { get }
     
     func alertContent(for alertType: ChatAlertType) -> Alert

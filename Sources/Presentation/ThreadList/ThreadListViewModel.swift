@@ -203,25 +203,25 @@ extension ThreadListViewModel: CXoneChatDelegate {
     }
 
     func onThreadsUpdated(_ chatThreads: [CXoneChatSDK.ChatThread]) {
-        LogManager.scope {
+        LogManager.scope { [weak self] in
             Task { @MainActor in
-                updateCurrentThreads(with: chatThreads)
+                self?.updateCurrentThreads(with: chatThreads)
             }
         }
     }
     
     func onThreadUpdated(_ chatThread: CXoneChatSDK.ChatThread) {
-        LogManager.scope {
+        LogManager.scope { [weak self] in
             if chatThread.state.isLoaded {
                 LogManager.trace("Setting shouldRefreshThread flag to refresh the thread")
                 
-                containerViewModel?.shouldRefreshThread = true
+                self?.containerViewModel?.shouldRefreshThread = true
             } else {
                 LogManager.trace("Skipping thread refresh - the thread is not loaded")
             }
             
             Task { @MainActor in
-                updateCurrentThreads()
+                self?.updateCurrentThreads()
             }
         }
     }
@@ -242,23 +242,5 @@ private extension ThreadListViewModel {
                 return latestMessage1 > latestMessage2
             }
             .compactMap(ChatThreadMapper.map)
-    }
-}
-
-// MARK: - ThreadListView helpers
-
-extension ThreadListViewModel {
-
-    var menu: MenuBuilder {
-        MenuBuilder()
-            .add(
-                if: threadStatus == .current && chatProvider.state.isChatAvailable,
-                name: localization.chatListNewThread,
-                icon: Asset.List.new
-            ) {
-                Task { @MainActor [weak self] in
-                    await self?.onCreateNewThread()
-                }
-            }
     }
 }

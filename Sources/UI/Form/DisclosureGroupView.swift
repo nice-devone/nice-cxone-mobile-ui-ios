@@ -41,11 +41,11 @@ struct DisclosureGroupView<Label, Content>: View, Themed where Label: View, Cont
     var body: some View {
         if #available(iOS 16, *) {
             DisclosureGroup(isExpanded: $isExpanded, content: content, label: label)
-                .foregroundStyle(colors.customizable.primary)
+                .foregroundStyle(isExpanded ? colors.brand.primary : colors.content.tertiary)
                 .disclosureGroupStyle(.custom)
         } else {
             DisclosureGroup(isExpanded: $isExpanded, content: content, label: label)
-                .foregroundStyle(colors.customizable.primary)
+                .foregroundStyle(isExpanded ? colors.brand.primary : colors.content.tertiary)
         }
     }
 }
@@ -61,6 +61,19 @@ extension DisclosureGroupStyle where Self == CustomDisclosureGroupStyle {
 @available(iOS 16.0, *)
 private struct CustomDisclosureGroupStyle: DisclosureGroupStyle, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        static let chevronExpandedAngle: CGFloat = 90
+        
+        enum Spacing {
+            static let labelHorizontal: CGFloat = 0
+        }
+        enum Padding {
+            static let chevronHorizontal: CGFloat = 4
+        }
+    }
+    
     // MARK: - Properties
     
     @Environment(\.colorScheme) var scheme
@@ -71,26 +84,55 @@ private struct CustomDisclosureGroupStyle: DisclosureGroupStyle, Themed {
     
     func makeBody(configuration: Configuration) -> some View {
         VStack(alignment: .leading, spacing: .zero) {
-            Button(action: {
-                withAnimation {
-                    configuration.isExpanded.toggle()
-                }
-            }, label: {
-                HStack(alignment: .center) {
+            Button {
+                configuration.isExpanded.toggle()
+            } label: {
+                HStack(alignment: .center, spacing: Constants.Spacing.labelHorizontal) {
                     configuration.label
-                                        
-                    (configuration.isExpanded ? Asset.down : Asset.right)
-                        .padding(.trailing, TreeFieldView.disclosureIndicatorTrailingPadding)
+
+                    Spacer()
+                    
+                    Asset.right
+                        .rotationEffect(Angle(degrees: configuration.isExpanded ? Constants.chevronExpandedAngle : .zero))
+                        .font(.footnote.weight(.bold))
+                        .padding(.horizontal, Constants.Padding.chevronHorizontal)
                 }
-            })
-            .buttonStyle(.plain)
+                .background(colors.background.default)
+            }
             
-            ColoredDivider(colors.customizable.onBackground.opacity(0.1))
-                .padding(.vertical, TreeFieldView.paddingVerticalCell)
+            ColoredDivider(colors.border.default)
             
             if configuration.isExpanded {
                 configuration.content
             }
         }
+        .animation(.easeInOut(duration: StyleGuide.animationDuration), value: configuration.isExpanded)
     }
+}
+
+// MARK: - Previews
+
+#Preview {
+    DisclosureGroupView(isExpanded: false) {
+        VStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("iPhone 17 Air")
+                
+                ColoredDivider(Color(.systemGray3))
+            }
+            .padding(.top, 16)
+            
+            VStack(alignment: .leading, spacing: 16) {
+                Text("iPhone 17 Pro")
+                
+                ColoredDivider(Color(.systemGray3))
+            }
+            .padding(.top, 16)
+        }
+    } label: {
+        Text("iPhone")
+            .padding(.vertical, 16)
+    }
+    .padding(.horizontal, 16)
+    .environmentObject(ChatStyle())
 }

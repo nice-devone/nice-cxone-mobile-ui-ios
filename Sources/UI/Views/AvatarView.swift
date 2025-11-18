@@ -56,6 +56,15 @@ struct AvatarView: View {
 
 private struct CircleText: View, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Spacing {
+            static let initialsLineLimit: Int = 1
+        }
+    }
+    
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
@@ -69,26 +78,25 @@ private struct CircleText: View, Themed {
     // MARK: - Builder
     
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(colors.customizable.accent)
-            
-            Group {
-                if let text {
-                    Text(text)
-                } else {
-                    Asset.Message.fallbackAvatar
+        GeometryReader { proxy in
+            ZStack {
+                Circle()
+                    .fill(colors.brand.primaryContainer)
+                
+                Group {
+                    if let text {
+                        Text(text)
+                    } else {
+                        Asset.Message.fallbackAvatar
+                    }
                 }
+                .foregroundStyle(colors.brand.onPrimaryContainer)
+                .font(
+                    .system(size: proxy.size.height > proxy.size.width ? proxy.size.width * 0.4: proxy.size.height * 0.4)
+                    .bold()
+                )
+                .lineLimit(Constants.Spacing.initialsLineLimit)
             }
-            .foregroundStyle(colors.customizable.onAccent)
-            .font(
-                .system(size: $size.height.wrappedValue > $size.width.wrappedValue ? $size.width.wrappedValue * 0.4: $size.height.wrappedValue * 0.4)
-                .bold()
-            )
-            .lineLimit(1)
-        }
-        .readSize { size in
-            self.size = size
         }
     }
 }

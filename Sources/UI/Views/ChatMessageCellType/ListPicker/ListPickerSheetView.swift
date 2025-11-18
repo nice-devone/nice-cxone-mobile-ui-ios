@@ -18,6 +18,37 @@ import SwiftUI
 
 struct ListPickerSheetView: View, Themed {
 
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Sizing {
+            static let optionImageCornerRadius: CGFloat = 16
+        }
+        
+        enum Padding {
+            static let contentTop: CGFloat = 48
+            static let contentHorizontal: CGFloat = 16
+            static let optionsTitleInnerTop: CGFloat = 36
+            static let optionsTitleBottom: CGFloat = 8
+            static let optionsTitleOuterTop: CGFloat = 10
+            static let optionImageTrailing: CGFloat = 12
+            static let optionTop: CGFloat = 10
+            static let listOptionsTop: CGFloat = 24
+            static let controlButtonsTop: CGFloat = 11
+            static let controlButtonsBottom: CGFloat = 47
+        }
+        
+        enum Spacing {
+            static let elementsSpacing: CGFloat = 0
+        }
+        
+        enum LineLimit {
+            static let optionTitle: Int = 1
+            static let optionDescription: Int = 2
+        }
+    }
+    
     // MARK: - Properties
     
     @EnvironmentObject private var localization: ChatLocalization
@@ -31,18 +62,6 @@ struct ListPickerSheetView: View, Themed {
     let item: ListPickerItem
     let onFinished: (RichMessageButton) -> Void
     
-    private static let paddingHorizontalSheet: CGFloat = 16
-    private static let paddingTopSheetOptionsTitle: CGFloat = 36
-    private static let paddingBottomSheetOptionsTitle: CGFloat = 8
-    private static let paddingTopSheetOptionsTitleSection: CGFloat = 10
-    private static let spacingSheetOptionsDivider: CGFloat = 10
-    private static let sizeOptionImage: CGFloat = 64
-    private static let cornerRadiusOptionImage: CGFloat = 16
-    private static let paddingTrailingSheetOptionImage: CGFloat = 12
-    private static let paddingTopOption: CGFloat = 10
-    private static let paddingTopSheetControlButtons: CGFloat = 12
-    private static let paddingBottomSheetControlButtons: CGFloat = 40
-    
     // MARK: - Init
     
     init(item: ListPickerItem, onFinished: @escaping (RichMessageButton) -> Void) {
@@ -53,14 +72,16 @@ struct ListPickerSheetView: View, Themed {
     // MARK: - Builder
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: Constants.Spacing.elementsSpacing) {
             content
             
             Spacer()
             
+            ColoredDivider(colors.border.default)
+            
             controlButtons
         }
-        .background(colors.customizable.background)
+        .background(colors.background.default)
     }
 }
 
@@ -69,59 +90,54 @@ struct ListPickerSheetView: View, Themed {
 private extension ListPickerSheetView {
     
     var content: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: Constants.Spacing.elementsSpacing) {
             Text(item.title)
-                .font(.title3)
-                .bold()
-                .foregroundStyle(colors.customizable.onBackground)
-                .padding(.horizontal, Self.paddingHorizontalSheet)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(colors.content.primary)
+                .padding(.horizontal, Constants.Padding.contentHorizontal)
             
             if let message = item.message {
                 Text(message)
                     .font(.footnote)
-                    .foregroundStyle(colors.customizable.onBackground.opacity(0.5))
-                    .padding(.horizontal, Self.paddingHorizontalSheet)
+                    .foregroundStyle(colors.content.secondary)
+                    .padding(.horizontal, Constants.Padding.contentHorizontal)
             }
             
-            Text(localization.chatMessageListPickerSheetOptionsTitle)
-                .font(.footnote)
-                .foregroundStyle(colors.customizable.onBackground.opacity(0.5))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, Self.paddingTopSheetOptionsTitle)
-                .padding(.horizontal, Self.paddingHorizontalSheet)
-                .padding(.bottom, Self.paddingBottomSheetOptionsTitle)
-                .background(colors.customizable.onBackground.opacity(0.05))
-                .padding(.top, Self.paddingTopSheetOptionsTitleSection)
-            
             listOptions
+                .padding(.top, Constants.Padding.listOptionsTop)
         }
-        .padding(.top, 48)
+        .padding(.top, Constants.Padding.contentTop)
     }
     
     var listOptions: some View {
         ScrollView {
-            VStack(spacing: 0) {
+            VStack(spacing: Constants.Spacing.elementsSpacing) {
                 ForEach(item.buttons, id: \.self) { element in
-                    Button {
-                        withAnimation {
-                            if selectedOption == element {
-                                selectedOption = nil
-                            } else {
-                                selectedOption = element
-                            }
+                    let isSelected = (selectedOption == element)
+
+                    VStack(spacing: Constants.Spacing.elementsSpacing) {
+                        Button {
+                            withAnimation { selectedOption = isSelected ? nil : element }
+                        } label: {
+                            labelForItemOption(element)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
                         }
-                    } label: {
-                        labelForItemOption(element)
+                        .background(
+                            isSelected
+                                ? colors.background.surface.emphasis
+                                : colors.background.default)
+
+                        ColoredDivider(colors.border.default)
                     }
-                    .background(selectedOption == element ? colors.customizable.onBackground.opacity(0.05) : colors.customizable.background)
                 }
             }
         }
     }
     
     func labelForItemOption(_ element: RichMessageButton) -> some View {
-        VStack(alignment: .leading, spacing: Self.spacingSheetOptionsDivider) {
-            HStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: Constants.Spacing.elementsSpacing) {
+            HStack(spacing: Constants.Spacing.elementsSpacing) {
                 if let url = element.iconUrl {
                     KFImage(url)
                         .placeholder {
@@ -129,47 +145,46 @@ private extension ListPickerSheetView {
                         }
                         .resizable()
                         .scaledToFit()
-                        .frame(width: Self.sizeOptionImage, height: Self.sizeOptionImage)
-                        .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadiusOptionImage))
-                        .padding(.trailing, Self.paddingTrailingSheetOptionImage)
+                        .frame(width: StyleGuide.Sizing.Attachment.smallDimension, height: StyleGuide.Sizing.Attachment.smallDimension)
+                        .clipShape(RoundedRectangle(cornerRadius: Constants.Sizing.optionImageCornerRadius))
+                        .padding(.trailing, Constants.Padding.optionImageTrailing)
                 }
                 
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: Constants.Spacing.elementsSpacing) {
                     Text(element.title)
-                        .foregroundStyle(colors.customizable.onBackground)
-                        .font(.headline)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(colors.content.primary)
+                        .lineLimit(Constants.LineLimit.optionTitle)
                     
                     if let description = element.description {
                         Text(description)
-                            .font(.subheadline)
-                            .foregroundStyle(colors.customizable.onBackground)
-                            .opacity(0.5)
+                            .font(.footnote)
+                            .foregroundStyle(colors.content.secondary)
+                            .lineLimit(Constants.LineLimit.optionDescription)
                     }
                 }
+                .frame(minHeight: StyleGuide.Sizing.Attachment.smallDimension)
                 .multilineTextAlignment(.leading)
                 
                 Spacer()
                 
                 Asset.check
-                    .foregroundColor(colors.customizable.accent)
-                    .font(.headline)
+                    .foregroundStyle(colors.brand.primary)
+                    .font(.title2)
                     .if(selectedOption != element) { view in
                         view.hidden()
                     }
             }
-            .padding(.top, Self.paddingTopOption)
-            .padding(.horizontal, Self.paddingHorizontalSheet)
-            
-            ColoredDivider(colors.customizable.onBackground.opacity(0.1))
-                .if(selectedOption == element) { view in
-                    view.hidden()
-                }
+            .padding(.vertical, Constants.Padding.optionTop)
+            .padding(.horizontal, Constants.Padding.contentHorizontal)
         }
     }
     
     var controlButtons: some View {
-        HStack {
+        HStack(spacing: Constants.Spacing.elementsSpacing) {
             Button(localization.commonCancel, action: dismiss.callAsFunction)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(colors.brand.primary)
             
             Spacer()
             
@@ -182,13 +197,13 @@ private extension ListPickerSheetView {
                 onFinished(selectedOption)
             }
             .disabled(selectedOption == nil)
-            .foregroundStyle(selectedOption == nil ? colors.foreground.disabled : colors.customizable.primary)
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(selectedOption == nil ? colors.content.tertiary : colors.brand.primary)
         }
-        .font(.callout)
-        .padding(.top, Self.paddingTopSheetControlButtons)
-        .padding(.bottom, Self.paddingBottomSheetControlButtons)
-        .padding(.horizontal, Self.paddingHorizontalSheet)
-        .background(colors.customizable.onBackground.opacity(0.05))
+        .padding(.top, Constants.Padding.controlButtonsTop)
+        .padding(.bottom, Constants.Padding.controlButtonsBottom)
+        .padding(.horizontal, Constants.Padding.contentHorizontal)
+        .background(colors.background.default)
     }
 }
 

@@ -17,6 +17,16 @@ import SwiftUI
 
 struct VideoThumbnailView: View, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Colors {
+            static let playButtonOverlay: Double = 0.8
+            static let playButtonBackgroundOverlay: Double = 0.7
+        }
+    }
+    
     // MARK: - Properties
 
     @EnvironmentObject var style: ChatStyle
@@ -24,14 +34,11 @@ struct VideoThumbnailView: View, Themed {
     @Environment(\.colorScheme) var scheme
     
     let url: URL?
-    let displayMode: VideoThumbnailDisplayMode
+    let displayMode: AttachmentThumbnailDisplayMode
     
     // MARK: - Init
     
-    init(
-        url: URL?,
-        displayMode: VideoThumbnailDisplayMode
-    ) {
+    init(url: URL?, displayMode: AttachmentThumbnailDisplayMode) {
         self.url = url
         self.displayMode = displayMode
     }
@@ -44,31 +51,31 @@ struct VideoThumbnailView: View, Themed {
                 thumbnail
                     .resizable()
                     .scaledToFill()
-                    .frame(width: displayMode.width, height: displayMode.height)
+                    .frame(width: displayMode.size.width, height: displayMode.size.height)
                     .clipped()
                     .overlay(
                         Asset.Attachment.playButtonSymbol
-                            .font(.system(size: displayMode.fontSize))
+                            .font(displayMode.font)
                             .foregroundStyle(
-                                colors.foreground.staticDark,
-                                colors.foreground.staticLight.opacity(0.8)
+                                Asset.Colors.Base.black.swiftUIColor.opacity(Constants.Colors.playButtonBackgroundOverlay),
+                                Asset.Colors.Base.white.swiftUIColor.opacity(Constants.Colors.playButtonOverlay)
                             )
                     )
-                    .cornerRadius(StyleGuide.Attachment.cornerRadius)
+                    .cornerRadius(StyleGuide.Sizing.Attachment.cornerRadius)
             } else {
-                RoundedRectangle(cornerRadius: StyleGuide.Attachment.cornerRadius)
+                RoundedRectangle(cornerRadius: StyleGuide.Sizing.Attachment.cornerRadius)
             }
         }
-        .frame(width: displayMode.width, height: displayMode.height)
+        .frame(width: displayMode.size.width, height: displayMode.size.height)
     }
 }
 
 // MARK: - Preview
 
-struct PreviewHelper: View {
+private struct PreviewHelper: View {
     
     let title: String
-    let displayMode: VideoThumbnailDisplayMode
+    let displayMode: AttachmentThumbnailDisplayMode
     
     var body: some View {
         VStack {
@@ -85,10 +92,8 @@ struct PreviewHelper: View {
 #Preview {
     List {
         PreviewHelper(title: "Above Input Field", displayMode: .small)
-        
-        PreviewHelper(title: "Multiple Attachment Container", displayMode: .multipleContainer)
 
-        PreviewHelper(title: "Tap on more that 4 attachments", displayMode: .attachmentsOverflow)
+        PreviewHelper(title: "Tap on more that 4 attachments", displayMode: .regular)
         
         PreviewHelper(title: "Standalone Video Attachment", displayMode: .large)
     }

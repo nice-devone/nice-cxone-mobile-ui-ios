@@ -23,9 +23,10 @@ public struct StyleColorsManager {
     
     // MARK: - Properties
     
-    let light: StyleColors
-    
-    let dark: StyleColors
+    /// The customizable color styles for light mode.
+    public let light: StyleColors
+    /// The customizable color styles for dark mode.
+    public let dark: StyleColors
     
     // MARK: - Init
     
@@ -34,21 +35,9 @@ public struct StyleColorsManager {
     /// - Parameters:
     ///   - light: The customizable color styles for light mode.
     ///   - dark: The customizable color styles for dark mode.
-    public init(light: CustomizableStyleColors, dark: CustomizableStyleColors) {
-        self.light = StyleColorsImpl(
-            customizable: light,
-            foreground: ForegroundStyleColorsImpl.defaultLight,
-            background: BackgroundStyleColorsImpl.defaultLight,
-            accent: AccentStyleColorsImpl.defaultLight,
-            border: BorderStyleColorsImpl.defaultLight
-        )
-        self.dark = StyleColorsImpl(
-            customizable: dark,
-            foreground: ForegroundStyleColorsImpl.defaultDark,
-            background: BackgroundStyleColorsImpl.defaultDark,
-            accent: AccentStyleColorsImpl.defaultDark,
-            border: BorderStyleColorsImpl.defaultDark
-        )
+    public init(light: StyleColors, dark: StyleColors) {
+        self.light = light
+        self.dark = dark
     }
     
     // MARK: - Methods
@@ -73,19 +62,19 @@ private struct TestViewPreview: View, Themed {
     var body: some View {
         HStack {
             Asset.check
-                .foregroundStyle(colors.background.contrast)
+                .foregroundStyle(colors.brand.onPrimary)
                 .padding(.vertical, 4)
                 .padding(.horizontal, 8)
                 .background(
                     Capsule()
-                        .fill(colors.foreground.accent)
+                        .fill(colors.brand.primary)
                 )
             
             Text("Message sent!")
-                .foregroundStyle(colors.foreground.onContrast)
+                .foregroundStyle(colors.content.primary)
         }
         .padding(24)
-        .background(colors.background.contrast)
+        .background(colors.background.surface.container)
     }
 }
 

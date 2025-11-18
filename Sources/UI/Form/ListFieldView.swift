@@ -17,6 +17,27 @@ import SwiftUI
 
 struct ListFieldView: View, Themed {
 
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Padding {
+            static let chevronHorizontal: CGFloat = 4
+            static let textFieldVertical: CGFloat = 4
+        }
+        
+        enum Sizing {
+            static let dividerHeight: CGFloat = 1
+            static let dividerFocusedHeight: CGFloat = 2
+        }
+        
+        enum Spacing {
+            static let bodyVertical: CGFloat = 6
+            static let textFieldDividerSpacing: CGFloat = 8
+            static let valueDisclosureHorizontal: CGFloat = 16
+        }
+    }
+    
     // MARK: - Properties
 
     @EnvironmentObject var style: ChatStyle
@@ -27,110 +48,98 @@ struct ListFieldView: View, Themed {
     @ObservedObject var entity: ListFieldEntity
 
     @State private var isActionSheetVisible = false
-    @State private var hStackWidth: CGFloat = 0
-    
-    static let paddingBottomTitle: CGFloat = 10
-    static let paddingLeadingChevron: CGFloat = 2
-    static let paddingBottomSelectionButton: CGFloat = 10
-    static let paddingTopRequiredText: CGFloat = 4
-    static let dividerHeight: CGFloat = 1
-    static let dividerFocusedHeight: CGFloat = 2
-    static let placeholderOpacity: CGFloat = 0.5
-    static let valueDisclosureSpacing: CGFloat = 16
 
     let onChange: () -> Void
     
     // MARK: - Content
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(entity.formattedTitle)
-                    .font(.callout)
-                    .bold()
-                    .foregroundStyle(colors.customizable.onBackground)
-                    .padding(.bottom, Self.paddingBottomTitle)
-                 
+        VStack(alignment: .leading, spacing: Constants.Spacing.bodyVertical) {
+            Text(entity.isRequired ? String(format: localization.prechatSurveyRequiredLabel, entity.label) : entity.label)
+                .font(.callout)
+                .bold()
+                .foregroundStyle(entity.isRequired && entity.value.isEmpty ? colors.status.error : colors.content.primary)
+            
+            VStack(spacing: Constants.Spacing.textFieldDividerSpacing) {
                 Button {
                     isActionSheetVisible.toggle()
                 } label: {
-                    HStack(spacing: Self.valueDisclosureSpacing) {
+                    HStack(spacing: Constants.Spacing.valueDisclosureHorizontal) {
                         Text(entity.value.isEmpty ? localization.commonNoSelection : entity.selectedOption)
-                            .foregroundStyle(colors.customizable.onBackground)
-                            .opacity(entity.value.isEmpty ? Self.placeholderOpacity : 1)
+                            .foregroundStyle(entity.isRequired && entity.value.isEmpty ? colors.status.error : colors.content.primary)
+                        
+                        Spacer()
                         
                         Asset.down
-                            .font(.footnote)
-                            .foregroundStyle(colors.customizable.primary)
-                            .padding(.leading, Self.paddingLeadingChevron)
+                            .font(.footnote.weight(.bold))
+                            .foregroundStyle(entity.isRequired && entity.value.isEmpty ? colors.status.error : colors.content.tertiary)
+                            .padding(.horizontal, Constants.Padding.chevronHorizontal)
                     }
                 }
-                .overlay(
-                    GeometryReader { geometry in
-                        Color.clear
-                            .preference(key: PreferenceKeys.ContentSizeThatFitsKey.self, value: geometry.size)
+                .foregroundStyle(colors.content.primary)
+                .padding(.vertical, Constants.Padding.textFieldVertical)
+                .confirmationDialog(entity.value, isPresented: $isActionSheetVisible) {
+                    ForEach(Array(entity.options.keys), id: \.self) { key in
+                        if let value = entity.options[key] {
+                            Button(value) {
+                                // Do not use actual value, it's necessary to use key which is unique identifier for the value
+                                entity.value = key
+                                
+                                onChange()
+                            }
+                        } else {
+                            EmptyView()
+                                .onAppear {
+                                    LogManager.error("Unable to get value for option \(key)")
+                                }
+                        }
                     }
-                )
-                .foregroundStyle(colors.customizable.onBackground)
-                .padding(.bottom, Self.paddingBottomSelectionButton)
+                    
+                    Button(localization.commonCancel, role: .cancel) {
+                        entity.value = ""
+                    }
+                }
                 
                 ColoredDivider(
-                    isActionSheetVisible ? colors.customizable.primary : colors.customizable.onBackground.opacity(0.1),
-                    width: hStackWidth,
-                    height: isActionSheetVisible ? Self.dividerFocusedHeight : Self.dividerHeight
+                    isActionSheetVisible || !entity.value.isEmpty ? colors.brand.primary : colors.border.default,
+                    height: isActionSheetVisible || !entity.value.isEmpty ? Constants.Sizing.dividerFocusedHeight : Constants.Sizing.dividerHeight
                 )
-                
-                if entity.isRequired {
-                    Text(localization.commonRequired)
-                        .font(.caption)
-                        .foregroundStyle(colors.background.errorContrast)
-                        .padding(.top, Self.paddingTopRequiredText)
-                }
             }
             
-            Spacer()
-        }
-        .onPreferenceChange(PreferenceKeys.ContentSizeThatFitsKey.self) { size in
-            self.hStackWidth = size.width
-        }
-        .confirmationDialog(entity.value, isPresented: $isActionSheetVisible) {
-            ForEach(Array(entity.options.keys), id: \.self) { key in
-                if let value = entity.options[key] {
-                    Button(value) {
-                        // Do not use actual value, it's necessary to use key which is unique identifier for the value
-                        entity.value = key
-                        onChange()
-                    }
-                } else {
-                    EmptyView()
-                        .onAppear {
-                            LogManager.error("Unable to get value for option \(key)")
-                        }
-                }
-                
-            }
-            
-            Button(localization.commonCancel, role: .cancel) {
-                entity.value = ""
+            if entity.isRequired, entity.value.isEmpty {
+                Text(localization.commonRequired)
+                    .font(.caption)
+                    .foregroundStyle(colors.status.error)
             }
         }
-        .animation(.default, value: isActionSheetVisible)
-        .animation(.default, value: hStackWidth)
+        .animation(.easeInOut(duration: StyleGuide.animationDuration), value: isActionSheetVisible)
     }
 }
 
 // MARK: - Previews
 
 #Preview {
-    let entity = ListFieldEntity(
-        label: "Color",
-        isRequired: true,
-        ident: "color",
-        options: ["blue": "Blue", "yellow": "Yellow", "experimental_green": "Experimental Green"],
-        value: "yellow"
-    )
-    
-    ListFieldView(entity: entity) { }
-        .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
+    VStack(spacing: 24) {
+        ListFieldView(
+            entity: ListFieldEntity(
+                label: "Color",
+                isRequired: false,
+                ident: "color",
+                options: ["blue": "Blue", "yellow": "Yellow", "experimental_green": "Experimental Green"],
+                value: "yellow"
+            )
+        ) { }
+        
+        ListFieldView(
+            entity: ListFieldEntity(
+                label: "Color",
+                isRequired: true,
+                ident: "color",
+                options: ["blue": "Blue", "yellow": "Yellow", "experimental_green": "Experimental Green"]
+            )
+        ) { }
+    }
+    .padding(.horizontal, 16)
+    .environmentObject(ChatStyle())
+    .environmentObject(ChatLocalization())
 }

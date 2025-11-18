@@ -17,6 +17,16 @@ import SwiftUI
 
 struct AnimatedDotsView: View, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        static let timerDelay: TimeInterval = 0.5
+        
+        enum Spacing {
+            static let elementsHorizontal: CGFloat = 0
+        }
+    }
+    
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
@@ -30,14 +40,14 @@ struct AnimatedDotsView: View, Themed {
     // MARK: - Builder
     
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: Constants.Spacing.elementsHorizontal) {
             Text(text)
                 .truncationMode(.tail)
             
             Text(String(repeating: ".", count: dotsCount))
         }
-        .foregroundColor(colors.customizable.onBackground.opacity(0.5))
-        .onReceive(Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()) { _ in
+        .foregroundStyle(colors.content.primary)
+        .onReceive(Timer.publish(every: Constants.timerDelay, on: .main, in: .common).autoconnect()) { _ in
             dotsCount = (dotsCount + 1) % 4
         }
     }

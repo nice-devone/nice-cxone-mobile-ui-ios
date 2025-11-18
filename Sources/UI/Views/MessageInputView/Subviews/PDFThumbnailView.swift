@@ -45,33 +45,27 @@ struct PDFThumbnailView: View {
     var body: some View {
         Group {
             if let thumbnail = viewModel.thumbnail {
-                Image(uiImage: thumbnail)
-                    .resizable()
-                    .scaledToFill()
-                    .clipped()
-                    .frame(width: width, height: height)
-                    .cornerRadius(StyleGuide.Attachment.cornerRadius, corners: .allCorners)
-                    .if(!inSelectionMode) { view in
-                        view.onTapGesture {
-                            viewModel.preparePDFForViewing()
-                            
-                            isPresentingPDFViewer = true
-                        }
-                    }
+                Button {
+                    viewModel.preparePDFForViewing()
+                    
+                    isPresentingPDFViewer = true
+                } label: {
+                    Image(uiImage: thumbnail)
+                        .resizable()
+                        .scaledToFill()
+                }
+                .frame(width: width, height: height)
+                .clipped()
+                .disabled(inSelectionMode)
             } else {
-                AttachmentLoadingView(title: localization.loadingDoc)
-                    .frame(
-                        width: width,
-                        height: height
-                    )
+                AttachmentLoadingView(title: localization.loadingDoc, width: width, height: height)
             }
         }
         .onAppear(perform: viewModel.loadThumbnail)
         .sheet(isPresented: $isPresentingPDFViewer) {
             if viewModel.isLoading {
-                AttachmentLoadingView(title: localization.loadingDoc)
+                AttachmentLoadingView(title: localization.loadingDoc, width: .infinity, height: .infinity)
                     .edgesIgnoringSafeArea(.all)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if viewModel.pdfDocument != nil {
                 PDFViewer(viewModel: viewModel)
             }
@@ -81,20 +75,35 @@ struct PDFThumbnailView: View {
 
 // MARK: - Previews
 
+#Preview("Small") {
+    PDFThumbnailView(
+        viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem),
+        inSelectionMode: .constant(false),
+        width: StyleGuide.Sizing.Attachment.smallDimension,
+        height: StyleGuide.Sizing.Attachment.smallDimension
+    )
+    .environmentObject(ChatStyle())
+    .environmentObject(ChatLocalization())
+}
+
 #Preview("Regular") {
-    PDFThumbnailView(viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem), inSelectionMode: .constant(false), width: 72, height: 72)
-        .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
+    PDFThumbnailView(
+        viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem),
+        inSelectionMode: .constant(false),
+        width: StyleGuide.Sizing.Attachment.regularDimension,
+        height: StyleGuide.Sizing.Attachment.regularDimension
+    )
+    .environmentObject(ChatStyle())
+    .environmentObject(ChatLocalization())
 }
 
 #Preview("Large") {
-    PDFThumbnailView(viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem), inSelectionMode: .constant(false), width: 112, height: 112)
-        .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
-}
-
-#Preview("Xtra Large") {
-    PDFThumbnailView(viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem), inSelectionMode: .constant(false), width: 242, height: 319)
-        .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
+    PDFThumbnailView(
+        viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem),
+        inSelectionMode: .constant(false),
+        width: StyleGuide.Sizing.Attachment.largeWidth,
+        height: StyleGuide.Sizing.Attachment.largeHeight
+    )
+    .environmentObject(ChatStyle())
+    .environmentObject(ChatLocalization())
 }

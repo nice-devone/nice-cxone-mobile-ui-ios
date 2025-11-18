@@ -37,8 +37,8 @@ struct DestructiveButtonStyle: ButtonStyle, Themed {
     func makeBody(configuration: Configuration) -> some View {
         CustomButton(
             configuration: configuration,
-            foregroundColor: colors.customizable.onAccent,
-            backgroundColor: colors.background.dangerSecondary
+            foregroundColor: colors.status.onError,
+            backgroundColor: colors.status.error
         )
     }
 }

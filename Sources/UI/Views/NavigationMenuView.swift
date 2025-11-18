@@ -17,17 +17,22 @@ import SwiftUI
 
 struct NavigationMenuView: View {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        static let maxElementsInline = 1
+        static let labelRotationEffect = Angle(degrees: 90)
+    }
+    
     // MARK: - Properties
 
     let items: [MenuBuilder.Item]
-
-    static let maxInline = 1
     
     // MARK: - Builder
     
     var body: some View {
         HStack {
-            if items.count > Self.maxInline {
+            if items.count > Constants.maxElementsInline {
                 Menu {
                     ForEach(items, id: \.name) { item in
                         Button(action: item.action) {
@@ -39,7 +44,7 @@ struct NavigationMenuView: View {
                         }
                     }
                 } label: {
-                    Asset.menu.rotationEffect(.degrees(90))
+                    Asset.menu.rotationEffect(Constants.labelRotationEffect)
                 }
             } else {
                 ForEach(items, id: \.name) { item in
@@ -58,7 +63,7 @@ extension MenuBuilder {
 
     func build(colors: StyleColors) -> some View {
         NavigationMenuView(items: items)
-            .foregroundStyle(colors.customizable.primary)
+            .foregroundStyle(colors.brand.primary)
     }
 }
 

@@ -20,6 +20,32 @@ import UniformTypeIdentifiers
 
 struct MessageInputView: View, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Sizing {
+            static let textFieldLineLimit: Int = 6
+            static let textFieldAudioStateLineLimit: Int = 1
+            static let inputBarCornerRadius: CGFloat = StyleGuide.Sizing.buttonRegularDimension / 2
+        }
+        
+        enum Spacing {
+            static let inputBarElementsHorizontal: CGFloat = 8
+            static let inputBarHorizontal: CGFloat = 0
+        }
+        
+        enum Padding {
+            static let inputBarTextFieldLeading: CGFloat = 4
+            static let voiceIndicatorLeading: CGFloat = 8
+            static let animatedDotsHorizontal: CGFloat = 4
+            static let animatedDotsVertical: CGFloat = 10
+            static let inputBarHorizontal: CGFloat = 12
+            static let inputBarVertical: CGFloat = 4
+            static let timeLapsedTextTrailing: CGFloat = 8
+        }
+    }
+    
     // MARK: - Properties
 
     @EnvironmentObject var style: ChatStyle
@@ -33,22 +59,13 @@ struct MessageInputView: View, Themed {
     @Binding private var alertType: ChatAlertType?
     
     @State private var message = ""
+    @State private var attachmentsLoadingProgress: Progress?
     @State private var attachments = [AttachmentItem]()
-    @State private var attachmentsPickerSheet: (visible: Bool, type: UIImagePickerController.SourceType) = (false, .camera)
     @State private var contentSizeThatFits: CGSize = .zero
     @State private var showAttachmentsSheet = false
     @State private var showDocumentPickerSheet = false
-    
-    private static let textFieldLineLimit: Int = 6
-    private static let textFieldAudioStateLineLimit: Int = 1
-    private static let inputBarPaddingHorizontal: CGFloat = 12
-    private static let inputBarPaddingVertical: CGFloat = 4
-    private static let inputBarElementsSpacing: CGFloat = 8
-    private static let inputBarTextFieldPaddingLeading: CGFloat = 4
-    private static let voiceIndicatorLeadingPadding: CGFloat = 8
-    private static let animatedDotsHorizontalPadding: CGFloat = 4
-    private static let animatedDotsVerticalPadding: CGFloat = 10
-    private static let paddingTrailingTimeLapsedText: CGFloat = 8
+    @State private var showMediaPickerSheet = false
+    @State private var showMediaCaptureSheet = false
     
     private let localization: ChatLocalization
     private let attachmentRestrictions: AttachmentRestrictions
@@ -73,7 +90,7 @@ struct MessageInputView: View, Themed {
                     string: self.message,
                     attributes: [
                         NSAttributedString.Key.font: UIFont.preferredFont(forTextStyle: .body),
-                        NSAttributedString.Key.foregroundColor: UIColor(colors.customizable.onBackground)
+                        NSAttributedString.Key.foregroundColor: UIColor(colors.content.primary)
                     ]
                 )
             },
@@ -117,10 +134,10 @@ struct MessageInputView: View, Themed {
     var body: some View {
         VStack(spacing: 0) {
             if !attachments.isEmpty {
-                MessageInputAttachmentListView(attachments: $attachments, alertType: $alertType)
+                MessageInputAttachmentListView(attachments: $attachments, loadingProgress: $attachmentsLoadingProgress, alertType: $alertType)
             }
             
-            HStack(alignment: .bottom, spacing: Self.inputBarElementsSpacing) {
+            HStack(alignment: .bottom, spacing: Constants.Spacing.inputBarElementsHorizontal) {
                 if audioRecorder.state == .idle, attachmentRestrictions.areAttachmentsEnabled {
                     attachmentsButton
                 } else if audioRecorder.state != .idle {
@@ -130,10 +147,10 @@ struct MessageInputView: View, Themed {
                 }
                 
                 inputBar
-                    .padding(.leading, Self.inputBarTextFieldPaddingLeading)
+                    .padding(.leading, Constants.Padding.inputBarTextFieldLeading)
             }
-            .padding(.horizontal, Self.inputBarPaddingHorizontal)
-            .padding(.vertical, Self.inputBarPaddingVertical)
+            .padding(.horizontal, Constants.Padding.inputBarHorizontal)
+            .padding(.vertical, Constants.Padding.inputBarVertical)
         }
         .animation(.spring(duration: 0.5), value: audioRecorder.state)
     }
@@ -151,8 +168,8 @@ private extension MessageInputView {
         }
         .font(.title2)
         .disabled(!isInputEnabled)
-        .foregroundColor(isInputEnabled ? colors.customizable.primary : colors.foreground.disabled)
-        .frame(width: StyleGuide.buttonDimension, height: StyleGuide.buttonDimension)
+        .foregroundColor(isInputEnabled ? colors.brand.primary : colors.content.tertiary)
+        .frame(width: StyleGuide.Sizing.buttonRegularDimension, height: StyleGuide.Sizing.buttonRegularDimension)
         .confirmationDialog(localization.chatMessageInputAttachmentsOptionTitle, isPresented: $showAttachmentsSheet) {
             Button(localization.chatMessageInputAttachmentsOptionFiles) {
                 showDocumentPickerSheet = true
@@ -160,7 +177,7 @@ private extension MessageInputView {
             
             if isAnyMimeTypeAllowed([UTType.imagePreffix, UTType.videoPreffix]) {
                 Button(localization.chatMessageInputAttachmentsOptionPhotos) {
-                    attachmentsPickerSheet = (true, .photoLibrary)
+                    showMediaPickerSheet = true
                 }
             }
             // `.camera` does not allow to have only `video` MIME type, it requires also image
@@ -174,26 +191,36 @@ private extension MessageInputView {
                 showDocumentPickerSheet = false
             }
         }
-        .sheet(isPresented: $attachmentsPickerSheet.visible) {
-            MediaPickerView(attachmentRestrictions: attachmentRestrictions, sourceType: attachmentsPickerSheet.type) { attachment in
-                Task { @MainActor in
-                    if attachment.isSizeValid(allowedFileSize: attachmentRestrictions.allowedFileSize) {
-                        attachments.append(attachment)
-                    } else {
-                        alertType = .invalidAttachmentSize(localization: localization)
-                    }
-                }
+        .sheet(isPresented: $showMediaPickerSheet) {
+            MediaPickerView(
+                attachmentsLoadingProgress: $attachmentsLoadingProgress,
+                attachments: $attachments,
+                attachmentRestrictions: attachmentRestrictions,
+                localization: localization
+            ) { alert in
+                alertType = alert
             }
+            .edgesIgnoringSafeArea(.all)
+        }
+        .sheet(isPresented: $showMediaCaptureSheet) {
+            MediaCaptureView(
+                attachmentRestrictions: attachmentRestrictions,
+                localization: localization,
+                onSelected: { attachment in
+                    Task { @MainActor in
+                        await processSelectedAttachments([attachment])
+                    }
+                },
+                onAlert: { alertType in
+                    self.alertType = alertType
+                }
+            )
             .edgesIgnoringSafeArea(.all)
         }
         .sheet(isPresented: $showDocumentPickerSheet) {
             DocumentPickerView(attachmentRestrictions: attachmentRestrictions) { attachments in
                 Task { @MainActor in
-                    if attachments.contains(where: { !$0.isSizeValid(allowedFileSize: attachmentRestrictions.allowedFileSize) }) {
-                        alertType = .invalidAttachmentSize(localization: localization)
-                    } else {
-                        self.attachments.append(contentsOf: attachments)
-                    }
+                    await processSelectedAttachments(attachments)
                 }
             }
             .edgesIgnoringSafeArea(.all)
@@ -209,11 +236,11 @@ private extension MessageInputView {
             Asset.Attachment.recordVoice
         }
         .font(.largeTitle)
-        .foregroundStyle(colors.customizable.onPrimary, colors.customizable.primary)
+        .foregroundStyle(colors.brand.onPrimary, colors.brand.primary)
     }
     
     var inputBar: some View {
-        HStack(alignment: audioRecorder.state == .idle ? .bottom : .center, spacing: 0) {
+        HStack(alignment: audioRecorder.state == .idle ? .bottom : .center, spacing: Constants.Spacing.inputBarHorizontal) {
             if audioRecorder.state != .idle {
                 audioRecorderInputBar
             } else {
@@ -231,47 +258,42 @@ private extension MessageInputView {
                 sendButton
             }
         }
-        .lineLimit(audioRecorder.state == .idle ? Self.textFieldLineLimit : Self.textFieldAudioStateLineLimit)
+        .lineLimit(audioRecorder.state == .idle ? Constants.Sizing.textFieldLineLimit : Constants.Sizing.textFieldAudioStateLineLimit)
         .animation(.easeInOut, value: isVoiceRecordVisible)
         .background(
-            RoundedRectangle(cornerRadius: StyleGuide.buttonDimension / 2)
-                .stroke(colors.customizable.onBackground.opacity(0.1))
+            RoundedRectangle(cornerRadius: Constants.Sizing.inputBarCornerRadius)
+                .stroke(colors.border.default)
         )
     }
     
     var audioRecorderInputBar: some View {
         Group {
             Asset.Attachment.voiceIndicator
-                .foregroundColor(colors.customizable.primary)
-                .padding(.leading, Self.voiceIndicatorLeadingPadding)
+                .foregroundColor(colors.brand.primary)
+                .padding(.leading, Constants.Padding.voiceIndicatorLeading)
             
             if case .recording = audioRecorder.state {
                 AnimatedDotsView(text: localization.chatMessageInputAudioRecorderRecording)
-                    .padding(.leading, Self.animatedDotsHorizontalPadding)
-                    .padding(.vertical, Self.animatedDotsVerticalPadding)
+                    .padding(.leading, Constants.Padding.animatedDotsHorizontal)
+                    .padding(.vertical, Constants.Padding.animatedDotsVertical)
             } else if case .playing = audioRecorder.state {
                 AnimatedDotsView(text: localization.chatMessageInputAudioRecorderPlaying)
-                    .padding(.leading, Self.animatedDotsHorizontalPadding)
-                    .padding(.vertical, Self.animatedDotsVerticalPadding)
-            } else if case .recorded = audioRecorder.state {
+                    .padding(.leading, Constants.Padding.animatedDotsHorizontal)
+                    .padding(.vertical, Constants.Padding.animatedDotsVertical)
+            } else if [.recorded, .paused].contains(audioRecorder.state) {
                 Text(localization.chatMessageInputAudioRecorderRecorded)
                     .truncationMode(.tail)
-                    .foregroundColor(colors.customizable.onBackground.opacity(0.5))
-                    .padding(.leading, Self.animatedDotsHorizontalPadding)
-                    .padding(.vertical, Self.animatedDotsVerticalPadding)
+                    .foregroundColor(colors.content.primary)
+                    .padding(.leading, Constants.Padding.animatedDotsHorizontal)
+                    .padding(.vertical, Constants.Padding.animatedDotsVertical)
             }
             
             Spacer()
             
-            if audioRecorder.state == .recorded {
-                Text(audioRecorder.formattedLength)
-                    .foregroundColor(colors.customizable.onBackground)
-                    .padding(.trailing, Self.paddingTrailingTimeLapsedText)
-            } else {
-                Text(audioRecorder.formattedCurrentTime)
-                    .foregroundColor(colors.customizable.onBackground)
-                    .padding(.trailing, Self.paddingTrailingTimeLapsedText)
-            }
+            Text(audioRecorder.state == .recorded ? audioRecorder.formattedLength : audioRecorder.formattedCurrentTime)
+                .font(.footnote)
+                .foregroundColor(colors.content.tertiary)
+                .padding(.trailing, Constants.Padding.timeLapsedTextTrailing)
         }
     }
     
@@ -292,10 +314,7 @@ private extension MessageInputView {
         }
         .font(.largeTitle)
         .disabled(isSendButtonDisabled)
-        .foregroundStyle(
-            colors.customizable.onPrimary,
-            isSendButtonDisabled ? colors.background.disabled : colors.customizable.primary
-        )
+        .foregroundStyle(isSendButtonDisabled ? colors.content.tertiary : colors.brand.primary)
         .animation(.default, value: isSendButtonDisabled)
     }
     
@@ -304,8 +323,8 @@ private extension MessageInputView {
             Asset.Attachment.deleteVoice
         }
         .font(.title2)
-        .foregroundStyle(colors.foreground.error)
-        .frame(width: StyleGuide.buttonDimension, height: StyleGuide.buttonDimension)
+        .foregroundStyle(colors.status.error)
+        .frame(width: StyleGuide.Sizing.buttonRegularDimension, height: StyleGuide.Sizing.buttonRegularDimension)
     }
     
     var voiceMessageControlButton: some View {
@@ -326,20 +345,31 @@ private extension MessageInputView {
             switch audioRecorder.state {
             case .recording:
                 Asset.Attachment.stop
-            case .recorded:
+            case .recorded, .paused:
                 Asset.Attachment.play
             default:
                 Asset.Attachment.pause
             }
         }
         .font(.title)
-        .frame(width: StyleGuide.buttonDimension, height: StyleGuide.buttonDimension)
+        .frame(width: StyleGuide.Sizing.buttonRegularDimension, height: StyleGuide.Sizing.buttonRegularDimension)
     }
 }
 
 // MARK: - Helpers
 
 private extension MessageInputView {
+
+    @MainActor
+    func processSelectedAttachments(_ attachments: [AttachmentItem]) async {
+        if attachments.contains(where: { !$0.isSizeValid(allowedFileSize: attachmentRestrictions.allowedFileSize) }) {
+            alertType = .invalidAttachmentSize(localization: localization)
+        } else {
+            for attachment in attachments where self.attachments.contains(attachment) == false {
+                self.attachments.append(attachment)
+            }
+        }
+    }
 
     func isAnyMimeTypeAllowed(_ mimeTypes: [String]) -> Bool {
         let allowedMimeTypes = attachmentRestrictions.allowedTypes
@@ -357,7 +387,7 @@ private extension MessageInputView {
         switch status {
         case .authorized:
             // Permission already granted, show the camera
-            attachmentsPickerSheet = (true, .camera)
+            showMediaCaptureSheet = true
         case .notDetermined:
             // Permission not determined yet, request it
             // This will show the system permission dialog
@@ -365,7 +395,7 @@ private extension MessageInputView {
                 DispatchQueue.main.async {
                     if granted {
                         // User granted permission, show camera
-                        self.attachmentsPickerSheet = (true, .camera)
+                        showMediaCaptureSheet = true
                     } else {
                         // User denied permission in the system dialog
                         self.alertType = .cameraPermissionDenied(localization: self.localization) {
@@ -387,30 +417,6 @@ private extension MessageInputView {
     }
 }
 
-private extension AttachmentItem {
-    
-    static var megabyte: Int32 = 1024 * 1024
-    
-    func isSizeValid(allowedFileSize: Int32) -> Bool {
-        do {
-            return try url.accessSecurelyScopedResource { url in
-                let allowedFileSize = allowedFileSize * Self.megabyte
-                let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
-
-                guard let fileSize = attributes[.size] as? Int32 else {
-                    return false
-                }
-
-                return fileSize <= allowedFileSize
-            }
-        } catch {
-            error.logError()
-            
-            return false
-        }
-    }
-}
-
 // MARK: - Preview
 
 @available(iOS 17.0, *)
@@ -424,9 +430,9 @@ private extension AttachmentItem {
         Spacer()
         
         MessageInputView(
-            attachmentRestrictions: MockData.attachmentResrictions,
+            attachmentRestrictions: MockData.attachmentRestrictions,
             isEditing: $isEditing,
-            isInputEnabled: .constant(false),
+            isInputEnabled: .constant(true),
             alertType: $alertType,
             localization: localization
         ) { _, _ in }

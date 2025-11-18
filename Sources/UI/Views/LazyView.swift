@@ -16,9 +16,14 @@
 import SwiftUI
 
 struct LazyView<Content: View>: View {
+    
+    // MARK: - Properties
+    
     @ViewBuilder
     let content: () -> Content
 
+    // MARK: - Builder
+    
     var body: some View {
         content()
     }
