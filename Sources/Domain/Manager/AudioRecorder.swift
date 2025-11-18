@@ -74,46 +74,49 @@ class AudioRecorder: NSObject, ObservableObject {
     func record() {
         LogManager.trace("Recording voice message")
         
-        Task { @MainActor in
-            guard await isRecordPermissionGranted() else {
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+            guard self.isRecordPermissionGranted() else {
                 LogManager.error(.failed("Record permission not granted"))
                 return
             }
             
             do {
-                try setupRecorder()
+                try self.setupRecorder()
                 
                 guard state != .recording, let audioRecorder else {
                     LogManager.error(.failed("Unable to record - already recording"))
                     return
                 }
                 
-                try audioSession.setCategory(.playAndRecord, options: .defaultToSpeaker)
-                try audioSession.setActive(true)
+                try self.audioSession.setCategory(.playAndRecord, options: .defaultToSpeaker)
+                try self.audioSession.setActive(true)
                 
-                time = 0
+                self.time = 0
                 
                 Timer.publish(every: 1, on: .main, in: .common)
                     .autoconnect()
-                    .sink { [weak self] _ in self?.updateTimer() }
+                    .sink { _ in self.updateTimer() }
                     .store(in: &ticks)
                 
                 audioRecorder.record()
                 
-                state = .recording
+                self.state = .recording
             } catch {
                 error.logError()
                 
-                attachmentItem = nil
+                self.attachmentItem = nil
                 
                 do {
-                    try eraseAudioRecorder(deleteRecording: true)
+                    try self.eraseAudioRecorder(deleteRecording: true)
                 } catch {
                     error.logError()
                 }
                 
-                state = .idle
-                alertType = .genericError(localization: localization)
+                self.state = .idle
+                self.alertType = .genericError(localization: localization)
             }
         }
     }
@@ -270,8 +273,9 @@ extension AudioRecorder: AVAudioPlayerDelegate {
         
         ticks.cancel()
         
-        // Successful flag is handled in the button trigger place, e.g. "delete" or "stop"
-        if !flag {
+        if flag {
+            state = .recorded
+        } else {
             attachmentItem = nil
             eraseAudioPlayer()
             
@@ -305,15 +309,16 @@ private extension AudioRecorder {
         time = 0
         audioPlayer.stop()
     }
-/// Cleans up and stops the current audio recording session.
-/// 
-/// This method handles the cleanup of the audio recorder by stopping the recording, 
-/// optionally deleting the recorded file, and deactivating the audio session.
-///
-/// - Parameter deleteRecording: Whether to delete the recorded audio file from storage.
-///   - Set to `true` when permanently removing a recording (e.g., when deleting or canceling).
-///   - Set to `false` when transitioning states but keeping the recording (e.g., when stopping a recording to save it).
-/// - Throws: An error if deactivating the audio session fails.
+    
+    /// Cleans up and stops the current audio recording session.
+    ///
+    /// This method handles the cleanup of the audio recorder by stopping the recording,
+    /// optionally deleting the recorded file, and deactivating the audio session.
+    ///
+    /// - Parameter deleteRecording: Whether to delete the recorded audio file from storage.
+    ///   - Set to `true` when permanently removing a recording (e.g., when deleting or canceling).
+    ///   - Set to `false` when transitioning states but keeping the recording (e.g., when stopping a recording to save it).
+    /// - Throws: An error if deactivating the audio session fails.
     func eraseAudioRecorder(deleteRecording: Bool) throws {
         LogManager.trace("Erasing audio recorder")
         
@@ -332,8 +337,7 @@ private extension AudioRecorder {
         time += 1
     }
     
-    @MainActor
-    func isRecordPermissionGranted() async -> Bool {
+    func isRecordPermissionGranted() -> Bool {
         guard AVAudioSession.sharedInstance().recordPermission != .granted else {
             return true
         }
@@ -352,24 +356,24 @@ private extension AudioRecorder {
             
             return false
         } else {
-            return await withCheckedContinuation { continuation in
-                AVAudioSession.sharedInstance().requestRecordPermission { granted in
-                    continuation.resume(returning: granted)
-                }
+            AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                LogManager.trace("Record permission granted: \(granted)")
             }
+            
+            return false
         }
     }
     
     func setupRecorder() throws {
         LogManager.trace("Setting up recorder")
         
-        guard let documentDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            LogManager.error(.failed("Unable to get document directory"))
+        guard let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
+            LogManager.error(.failed("Unable to get caches directory"))
             return
         }
         
         let recordingName = "voice_message_\(Date().formatted(format: "HH:mm:ss_dd-MM-YY")).\(Self.currentAudioFile.extension)"
-        let bundle = documentDirectory.appendingPathComponent(recordingName)
+        let bundle = cachesDirectory.appendingPathComponent(recordingName)
         
         let settings = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),

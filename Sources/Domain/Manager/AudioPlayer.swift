@@ -69,19 +69,21 @@ class AudioPlayer: NSObject, ObservableObject {
     // MARK: - Methods
 
     func prepare() {
-        Task {
+        LogManager.trace("Preparing audio player")
+        
+        Task { [weak self] in
+            guard let self else {
+                return
+            }
+            
             do {
-                let fileUrl = try await downloadAndSaveAudioFile(url)
+                let fileUrl = try await self.downloadAndSaveAudioFile(url)
                 
                 avPlayer.replaceCurrentItem(with: AVPlayerItem(url: fileUrl))
                 try audioSession.setCategory(.playback, mode: .default)
                 try audioSession.setActive(true)
 
-                _ = await MainActor.run { [weak self] in
-                    guard let self else {
-                        return
-                    }
-                    
+                _ = await MainActor.run {
                     self.formattedProgress = self.formattedZeroDuration
                     self.formattedDuration = self.formatter.string(from: TimeInterval(self.avPlayer.totalDuration)) ?? self.formattedZeroDuration
                 }
@@ -128,6 +130,7 @@ class AudioPlayer: NSObject, ObservableObject {
         LogManager.trace("Adjusting audio footage of \(value)")
         
         guard let duration = avPlayer.currentItem?.duration.seconds else {
+            LogManager.error("Unable to get duration to be able to seek to a specific time")
             return
         }
         
@@ -164,13 +167,13 @@ private extension AudioPlayer {
     }
     
     func downloadAndSaveAudioFile(_ audioFileUrl: URL) async throws -> URL {
-        guard let docDirectoryUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            throw CommonError.failed("Unable to get Documents directory URL")
+        guard let cachesDirectoryUrl = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
+            throw CommonError.failed("Unable to get Caches directory URL")
         }
 
         // Sanitize the filename to avoid path issues
         let sanitizedFilename = sanitizeFilename(fileName)
-        let fileUrl = docDirectoryUrl.appendingPathComponent(sanitizedFilename)
+        let fileUrl = cachesDirectoryUrl.appendingPathComponent(sanitizedFilename)
 
         if FileManager().fileExists(atPath: fileUrl.path) {
             return fileUrl
@@ -181,7 +184,7 @@ private extension AudioPlayer {
                         continuation.resume(throwing: error)
                     }
                     
-                    guard let response = response as? HTTPURLResponse, (200 ... 299) ~= response.statusCode, let location = location else {
+                    guard let response = response as? HTTPURLResponse, (200 ... 299) ~= response.statusCode, let location else {
                         continuation.resume(throwing: CommonError.failed("Server error"))
                         return
                     }

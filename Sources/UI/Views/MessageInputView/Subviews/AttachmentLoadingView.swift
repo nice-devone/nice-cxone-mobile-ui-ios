@@ -17,57 +17,83 @@ import SwiftUI
 
 struct AttachmentLoadingView: View, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Sizing {
+            static let titleMinimumScaleFactor: CGFloat = 0.5
+            static let progressTextLineLimit = 2
+        }
+        
+        enum Padding {
+            static let progressVertical: CGFloat = 10
+        }
+    }
+    
     // MARK: - Properties
     
     let title: String
+    let width: CGFloat
+    let height: CGFloat
     
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
     
     @Environment(\.colorScheme) var scheme
-    
-    static private let minimumScaleFactor: CGFloat = 0.5
-    static private let verticalPadding: CGFloat = 10.0
     
     // MARK: Builder
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: StyleGuide.Attachment.cornerRadius)
-                .fill(colors.background.muted)
+        VStack {
+            ProgressView()
+                .progressViewStyle(CircularProgressViewStyle(tint: colors.content.primary))
             
-            ProgressView {
-                Text(title)
-            }
-            .progressViewStyle(CircularProgressViewStyle(tint: colors.foreground.base))
-            .foregroundColor(colors.foreground.base)
-            .minimumScaleFactor(Self.minimumScaleFactor)
-            .lineLimit(2)
-            .multilineTextAlignment(.center)
-            .padding(.vertical, Self.verticalPadding)
+            Text(title)
+                .font(.subheadline)
+        }
+        .foregroundStyle(colors.content.primary)
+        .lineLimit(Constants.Sizing.progressTextLineLimit)
+        .minimumScaleFactor(Constants.Sizing.titleMinimumScaleFactor)
+        .multilineTextAlignment(.center)
+        .padding(.vertical, Constants.Padding.progressVertical)
+        .padding(.horizontal, Constants.Padding.progressVertical)
+        .frame(width: width, height: height)
+        .background {
+            RoundedRectangle(cornerRadius: StyleGuide.Sizing.Attachment.cornerRadius)
+                .stroke(colors.border.default, lineWidth: StyleGuide.Sizing.Attachment.borderWidth)
+                .background(
+                    RoundedRectangle(cornerRadius: StyleGuide.Sizing.Attachment.cornerRadius)
+                        .fill(colors.background.default)
+                )
         }
     }
 }
 
 // MARK: - Previews
 
+#Preview("Small") {
+    AttachmentLoadingView(
+        title: "Loading document",
+        width: StyleGuide.Sizing.Attachment.smallDimension,
+        height: StyleGuide.Sizing.Attachment.smallDimension
+    )
+    .environmentObject(ChatStyle())
+}
+
 #Preview("Regular") {
-    AttachmentLoadingView(title: "Regular")
-        .environmentObject(ChatLocalization())
-        .environmentObject(ChatStyle())
-        .frame(width: StyleGuide.Attachment.regularDimension, height: StyleGuide.Attachment.regularDimension)
+    AttachmentLoadingView(
+        title: "Regular",
+        width: StyleGuide.Sizing.Attachment.regularDimension,
+        height: StyleGuide.Sizing.Attachment.regularDimension
+    )
+    .environmentObject(ChatStyle())
 }
 
 #Preview("Large") {
-    AttachmentLoadingView(title: "Large")
-        .environmentObject(ChatLocalization())
-        .environmentObject(ChatStyle())
-        .frame(width: StyleGuide.Attachment.largeDimension, height: StyleGuide.Attachment.largeDimension)
-}
-
-#Preview("Xtra Large") {
-    AttachmentLoadingView(title: "Xtra Large")
-        .environmentObject(ChatLocalization())
-        .environmentObject(ChatStyle())
-        .frame(width: StyleGuide.Attachment.xtraLargeWidth, height: StyleGuide.Attachment.xtraLargeHeight)
+    AttachmentLoadingView(
+        title: "Large",
+        width: StyleGuide.Sizing.Attachment.largeWidth,
+        height: StyleGuide.Sizing.Attachment.largeHeight
+    )
+    .environmentObject(ChatStyle())
 }

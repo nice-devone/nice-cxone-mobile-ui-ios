@@ -21,6 +21,7 @@ class FormViewModel: ObservableObject {
     // MARK: - Properties
     
     @Published var customFields: [FormCustomFieldType]
+    @Published var isFormValid = false
     
     let onAccept: ([String: String]) -> Void
     let onCancel: () -> Void
@@ -39,6 +40,9 @@ class FormViewModel: ObservableObject {
         self.onAccept = onAccept
         self.onCancel = onCancel
         self.title = title
+        
+        // Trigger the validation if some fields are pre-filled so it can show errors
+        validateForm()
     }
 }
 
@@ -46,8 +50,25 @@ class FormViewModel: ObservableObject {
 
 extension FormViewModel {
     
-    func isValid() -> Bool {
-        self.customFields.allSatisfy { type in
+    func onConfirm() {
+        LogManager.trace("Confirming form")
+        
+        // Retrigger the validation (just in case)
+        validateForm()
+        
+        if isFormValid {
+            LogManager.trace("The form is valid, accepting the form")
+            
+            onAccept(getCustomFields())
+        } else {
+            LogManager.error("The form is not valid")
+        }
+    }
+    
+    func validateForm() {
+        LogManager.trace("Validating form")
+        
+        isFormValid = self.customFields.allSatisfy { type in
             var isValid = true
             
             if let textfield = type as? TextFieldEntity, textfield.isEmail {
@@ -59,7 +80,13 @@ extension FormViewModel {
                 : isValid
         }
     }
+    
+}
 
+// MARK: - Private methods
+
+private extension FormViewModel {
+    
     func getCustomFields() -> [String: String] {
         var result = [String: String]()
 

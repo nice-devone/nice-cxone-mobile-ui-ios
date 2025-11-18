@@ -30,12 +30,11 @@ public class ChatStyle: ObservableObject {
     
     /// Initialization of the ChatStyle
     ///
-    /// - Parameters:
-    ///   - colors: ``StyleColorsManager`` object that contains the color settings for light and dark modes.
+    /// - Parameter colors: ``StyleColorsManager`` object that contains the color settings for light and dark modes.
     public init(
         colorsManager: StyleColorsManager = StyleColorsManager(
-            light: CustomizableStyleColorsImpl.defaultLight,
-            dark: CustomizableStyleColorsImpl.defaultDark
+            light: StyleColorsImpl.defaultLight,
+            dark: StyleColorsImpl.defaultDark
         )
     ) {
         self.colors = colorsManager

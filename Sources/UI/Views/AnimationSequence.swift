@@ -31,6 +31,19 @@ import SwiftUI
 ///     }
 ///
 struct AnimationSequence {
+    
+    // MARK: - Constants
+    
+    enum Constants {
+        /// Default animation style
+        static let defaultAnimation: Style = .easeInOut
+
+        /// Default animation duration
+        static let defaultDuration = 0.1
+    }
+    
+    // MARK: - Objects
+    
     /// Style of animation, correspond roughly to ``SwiftUI.Animation``
     enum Style {
         /// ``SwiftUI.Animation.linear``
@@ -76,11 +89,7 @@ struct AnimationSequence {
         }
     }
 
-    /// Default animation style
-    static let defaultAnimation: Style = .easeInOut
-
-    /// Default animation duration
-    static let defaultDuration = 0.1
+    // MARK: - Properties
 
     /// Delay to be applied to new animations.  If a nil delay
     /// is specified, the duration will be used as the delay.
@@ -119,9 +128,9 @@ struct AnimationSequence {
     ///     - delay: default delay to be applied to animations
     ///     - duration: default duration to be applied to animations
     init(
-        style: Style = Self.defaultAnimation,
+        style: Style = Constants.defaultAnimation,
         delay: TimeInterval? = nil,
-        duration: TimeInterval = Self.defaultDuration
+        duration: TimeInterval = Constants.defaultDuration
     ) {
         self.style = style
         self.delay = delay
@@ -219,12 +228,16 @@ struct AnimationSequence {
     }
 }
 
+// MARK: - Helpers
+
 private extension TimeInterval {
     
     var nanoseconds: UInt64 {
         UInt64(self * 1e9)
     }
 }
+
+// MARK: - Preview
 
 #Preview {
     TypingIndicator(agent: MockData.agent)

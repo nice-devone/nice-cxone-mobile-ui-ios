@@ -40,8 +40,8 @@ class ImageMessageCellViewModel: ObservableObject {
         self._alertType = alertType
         self.localization = localization
         
-        Task {
-            await loadImageFromURL()
+        Task { [weak self] in
+            await self?.loadImageFromURL()
         }
     }
     
@@ -64,6 +64,7 @@ private extension ImageMessageCellViewModel {
     
     func downloadImage(cacheKey: String) async {
         LogManager.trace("Downloading image from URL")
+        
         do {
             // Explicitly use Kingfisher.ImageResource to avoid SwiftUI's ImageResource
             let resource = Kingfisher.KF.ImageResource(downloadURL: item.url, cacheKey: cacheKey)
@@ -73,11 +74,13 @@ private extension ImageMessageCellViewModel {
                     .targetCache(kingfisherManager.cache)
                 ]
             )
+            
             await MainActor.run { [weak self] in
                 self?.image = result.image.fixOrientation()
             }
         } catch {
             error.logError()
+            
             await MainActor.run { [weak self] in
                 guard let self else {
                     return
@@ -90,8 +93,10 @@ private extension ImageMessageCellViewModel {
 
     func retrieveImage(cacheKey: String) async {
         LogManager.trace("Retrieving image from cache")
+        
         do {
             let result = try await kingfisherManager.cache.retrieveImage(forKey: cacheKey)
+            
             await MainActor.run { [weak self] in
                 guard let self else {
                     return
@@ -107,6 +112,7 @@ private extension ImageMessageCellViewModel {
             }
         } catch {
             error.logError()
+            
             await MainActor.run { [weak self] in
                 guard let self else {
                     return

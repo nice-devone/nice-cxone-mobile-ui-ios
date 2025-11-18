@@ -18,6 +18,15 @@ import SwiftUI
 
 struct ImageMessageCell: View, Themed {
 
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Spacing {
+            static let shareButtonMinLength: CGFloat = 0
+        }
+    }
+    
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
@@ -28,23 +37,24 @@ struct ImageMessageCell: View, Themed {
     @StateObject private var viewModel: ImageMessageCellViewModel
 
     @Binding var alertType: ChatAlertType?
+
+    @State private var isImagePresented = false
     
-    private let isMultiAttachment: Bool
     private let message: ChatMessage
-    private let position: MessageGroupPosition
+    private let position: MessageGroupPosition?
+    /// `nil` if the message is part of the `MultipleAttachmentContainer` view.
+    private let displayMode: AttachmentThumbnailDisplayMode = .regular
     
     // MARK: - Init
     
     init(
         message: ChatMessage,
         item: AttachmentItem,
-        isMultiAttachment: Bool,
-        position: MessageGroupPosition,
+        position: MessageGroupPosition? = nil,
         alertType: Binding<ChatAlertType?>,
         localization: ChatLocalization
     ) {
         self.message = message
-        self.isMultiAttachment = isMultiAttachment
         self.position = position
         self._alertType = alertType
         
@@ -58,38 +68,214 @@ struct ImageMessageCell: View, Themed {
     // MARK: - Builder
     
     var body: some View {
-        LoadingImageMessageCell(item: viewModel.item, isMultiAttachment: isMultiAttachment, alertType: $alertType, localization: localization)
-            .if(!isMultiAttachment) { view in
+        content
+            .ifNotNil(position) { view, position in
                 view
                     .messageChatStyle(message, position: position)
-                    .shareable(message, attachments: [viewModel.item], spacerLength: 0)
+                    .shareable(message, attachments: [viewModel.item], spacerLength: Constants.Spacing.shareButtonMinLength)
+            }.if(position == nil) { view in
+                view
+                    .cornerRadius(StyleGuide.Sizing.Attachment.cornerRadius, corners: .allCorners)
             }
+    }
+}
+
+// MARK: - Subviews
+
+private extension ImageMessageCell {
+
+    @ViewBuilder
+    var content: some View {
+        if let image = viewModel.image.map(Image.init) {
+            image
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(
+                    width: StyleGuide.Sizing.Attachment.regularDimension,
+                    height: StyleGuide.Sizing.Attachment.regularDimension
+                )
+                .clipped()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    isImagePresented = true
+                }
+                .sheet(isPresented: $isImagePresented) {
+                    ImageViewer(image: image, viewerShown: $isImagePresented)
+                }
+        } else {
+            AttachmentLoadingView(
+                title: localization.commonLoading,
+                width: StyleGuide.Sizing.Attachment.regularDimension,
+                height: StyleGuide.Sizing.Attachment.regularDimension
+            )
+        }
     }
 }
 
 // MARK: - Preview
 
-#Preview {
-    VStack(spacing: 4) {
-        ImageMessageCell(
-            message: MockData.imageMessageWithText(user: MockData.agent),
-            item: MockData.imageItem,
-            isMultiAttachment: true,
-            position: .single,
-            alertType: .constant(nil),
-            localization: ChatLocalization()
-        )
-        
-        ImageMessageCell(
-            message: MockData.imageMessage(user: MockData.customer),
-            item: MockData.imageItem,
-            isMultiAttachment: true,
-            position: .single,
-            alertType: .constant(nil),
-            localization: ChatLocalization()
-        )
+#Preview("Single") {
+    ScrollView {
+        VStack {
+            ImageMessageCell(
+                message: MockData.imageMessage(user: MockData.agent),
+                item: MockData.imageItem,
+                position: .single,
+                alertType: .constant(nil),
+                localization: ChatLocalization()
+            )
+            
+            ImageMessageCell(
+                message: MockData.imageMessage(user: MockData.customer),
+                item: MockData.imageItem,
+                position: .single,
+                alertType: .constant(nil),
+                localization: ChatLocalization()
+            )
+            
+            VStack(spacing: 4) {
+                ImageMessageCell(
+                    message: MockData.imageMessage(user: MockData.agent),
+                    item: MockData.imageItem,
+                    position: .first,
+                    alertType: .constant(nil),
+                    localization: ChatLocalization()
+                )
+                
+                ImageMessageCell(
+                    message: MockData.imageMessage(user: MockData.agent),
+                    item: MockData.imageItem,
+                    position: .inside,
+                    alertType: .constant(nil),
+                    localization: ChatLocalization()
+                )
+                
+                ImageMessageCell(
+                    message: MockData.imageMessage(user: MockData.agent),
+                    item: MockData.imageItem,
+                    position: .last,
+                    alertType: .constant(nil),
+                    localization: ChatLocalization()
+                )
+            }
+            
+            VStack(spacing: 4) {
+                ImageMessageCell(
+                    message: MockData.imageMessage(user: MockData.customer),
+                    item: MockData.imageItem,
+                    position: .first,
+                    alertType: .constant(nil),
+                    localization: ChatLocalization()
+                )
+                
+                ImageMessageCell(
+                    message: MockData.imageMessage(user: MockData.customer),
+                    item: MockData.imageItem,
+                    position: .inside,
+                    alertType: .constant(nil),
+                    localization: ChatLocalization()
+                )
+                
+                ImageMessageCell(
+                    message: MockData.imageMessage(user: MockData.customer),
+                    item: MockData.imageItem,
+                    position: .last,
+                    alertType: .constant(nil),
+                    localization: ChatLocalization()
+                )
+            }
+        }
     }
     .padding(.horizontal, 10)
     .environmentObject(ChatStyle())
     .environmentObject(ChatLocalization())
+}
+
+@available(iOS 17, *)
+#Preview("Multiple") {
+    @Previewable @Environment(\.colorScheme) var scheme
+    
+    let style = ChatStyle()
+    let localization = ChatLocalization()
+    VStack {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                ImageMessageCell(
+                    message: MockData.imageMessageWithText(user: MockData.agent),
+                    item: MockData.imageItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                ImageMessageCell(
+                    message: MockData.imageMessage(user: MockData.agent),
+                    item: MockData.imageItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+            
+            HStack(spacing: 12) {
+                ImageMessageCell(
+                    message: MockData.imageMessageWithText(user: MockData.agent),
+                    item: MockData.imageItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                ImageMessageCell(
+                    message: MockData.imageMessage(user: MockData.agent),
+                    item: MockData.imageItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(style.colors(for: scheme).background.surface.default)
+        )
+        
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                ImageMessageCell(
+                    message: MockData.imageMessageWithText(user: MockData.customer),
+                    item: MockData.imageItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                ImageMessageCell(
+                    message: MockData.imageMessage(user: MockData.customer),
+                    item: MockData.imageItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+            
+            HStack(spacing: 12) {
+                ImageMessageCell(
+                    message: MockData.imageMessageWithText(user: MockData.customer),
+                    item: MockData.imageItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                ImageMessageCell(
+                    message: MockData.imageMessage(user: MockData.customer),
+                    item: MockData.imageItem,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(style.colors(for: scheme).brand.primary)
+        )
+    }
+    .environmentObject(style)
+    .environmentObject(localization)
 }

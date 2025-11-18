@@ -17,6 +17,34 @@ import SwiftUI
 
 struct AttachmentsView: View, Themed {
 
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Sizing {
+            static let gridColumnCount: Int = 2
+            static let fileNameLineLimit = 2
+            static let bottomSectionTextLineLimit = 1
+        }
+        
+        enum Spacing {
+            static let headerElementsVertical: CGFloat = 0
+            static let headerElementsHorizontal: CGFloat = 0
+            static let gridItem: CGFloat = 20
+            static let gridItemNameVertical: CGFloat = 4
+            static let elementsVertical: CGFloat = 0
+            static let bottomButtonsHorizontal: CGFloat = 48
+            static let textAndShareHorizontal: CGFloat = 16
+        }
+        
+        enum Padding {
+            static let headerVertical: CGFloat = 12
+            static let headerHorizontal: CGFloat = 24
+            static let gridHorizontal: CGFloat = 20
+            static let bottomButtons: CGFloat = 4
+        }
+    }
+    
     // MARK: - Properties
 
     @Environment(\.colorScheme) var scheme
@@ -28,24 +56,18 @@ struct AttachmentsView: View, Themed {
 
     @Binding private var alertType: ChatAlertType?
     
-    @State private var shareModalIsPresented = false
+    @State private var iShareModalPresented = false
     
     private let config = Array(
         repeating: GridItem(
-            .adaptive(minimum: StyleGuide.Attachment.largeDimension),
-            spacing: Self.gridItemSpacing,
+            .adaptive(minimum: StyleGuide.Sizing.Attachment.largeWidth),
+            spacing: Constants.Spacing.gridItem,
             alignment: .top
         ),
-        count: 2
+        count: Constants.Sizing.gridColumnCount
     )
 
     private let message: ChatMessage
-
-    private static let gridItemSpacing: CGFloat = 20
-    private static let gridItemNameSpacing: CGFloat = 4
-    private static let paddingHorizontal: CGFloat = 20
-    private static let bottomSectionSpacing: CGFloat = 40
-    private static let bottomSectionPadding: CGFloat = 4
 
     // MARK: - Init
 
@@ -58,23 +80,18 @@ struct AttachmentsView: View, Themed {
     // MARK: - Builder
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                gridView
-                
-                ColoredDivider(colors.customizable.onBackground.opacity(0.1))
-                
-                bottomButtonsView
-            }
-            .navigationTitle(localization.commonAttachments)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(viewModel.inSelectionMode ? localization.commonCancel : localization.commonSelect) {
-                        viewModel.inSelectionMode.toggle()
-                    }
-                    .foregroundStyle(colors.customizable.primary)
-                }
-            }
+        VStack(spacing: Constants.Spacing.elementsVertical) {
+            headerView
+            
+            gridView
+            
+            ColoredDivider(colors.border.default)
+            
+            bottomButtonsView
+        }
+        .background(colors.background.default)
+        .sheet(isPresented: $iShareModalPresented) {
+            ShareSheet(activityItems: viewModel.inSelectionMode ? viewModel.selectedAttachments : viewModel.shareableAttachments)
         }
     }
 }
@@ -83,11 +100,44 @@ struct AttachmentsView: View, Themed {
 
 private extension AttachmentsView {
 
+    var headerView: some View {
+        VStack(spacing: Constants.Spacing.headerElementsVertical) {
+            HStack(spacing: Constants.Spacing.headerElementsHorizontal) {
+                Spacer()
+                    .frame(maxWidth: .infinity)
+                
+                Text(localization.commonAttachments)
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                
+                Spacer()
+                
+                HStack {
+                    Spacer()
+                    
+                    Button {
+                        viewModel.inSelectionMode.toggle()
+                    } label: {
+                        Text(viewModel.inSelectionMode ? localization.commonCancel : localization.commonSelect)
+                            .fontWeight(.medium)
+                    }
+                }
+                .font(.callout)
+                .foregroundStyle(colors.brand.primary)
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.vertical, Constants.Padding.headerVertical)
+            .padding(.horizontal, Constants.Padding.headerHorizontal)
+            
+            ColoredDivider(colors.border.default)
+        }
+    }
+    
     var gridView: some View {
         ScrollView(showsIndicators: false) {
             LazyVGrid(columns: config) {
                 ForEach($viewModel.attachments.wrappedValue, id: \.self) { selectableAttachment in
-                    VStack(spacing: Self.gridItemNameSpacing) {
+                    VStack(spacing: Constants.Spacing.gridItemNameVertical) {
                         switch selectableAttachment.messageType {
                         case .image(let entity):
                             SelectableImageMessageCell(
@@ -99,7 +149,7 @@ private extension AttachmentsView {
                             )
                             
                             Text(entity.fileName)
-                                .foregroundStyle(colors.customizable.onBackground)
+                                .foregroundStyle(colors.content.primary)
                         case .video(let entity):
                             SelectableVideoMessageCell(
                                 item: selectableAttachment,
@@ -110,10 +160,11 @@ private extension AttachmentsView {
                             )
                             
                             Text(entity.fileName)
-                                .foregroundStyle(colors.customizable.onBackground)
-                        case .audio(let entity):
-                            SelectableAudioMessageCell(
-                                item: selectableAttachment,
+                                .foregroundStyle(colors.content.primary)
+                        case .documentPreview(let entity):
+                            SelectableDocumentMessageCell(
+                                attachment: selectableAttachment,
+                                item: entity,
                                 attachmentsViewModel: viewModel,
                                 inSelectionMode: $viewModel.inSelectionMode,
                                 alertType: $alertType,
@@ -121,74 +172,77 @@ private extension AttachmentsView {
                             )
                             
                             Text(entity.fileName)
-                                .foregroundStyle(colors.customizable.onBackground)
-                        case .documentPreview(let entity):
-                            SelectableDocumentMessageCell(
-                                attachment: selectableAttachment,
-                                item: entity,
-                                attachmentsViewModel: viewModel,
-                                inSelectionMode: $viewModel.inSelectionMode
-                            )
-                            
-                            Text(entity.fileName)
-                                .foregroundStyle(colors.customizable.onBackground)
+                                .foregroundStyle(colors.content.primary)
                         default:
                             EmptyView()
+                                .onAppear {
+                                    LogManager.warning("Unsupported attachment type in attachments view: type = \(selectableAttachment.messageType)")
+                                }
                         }
                     }
                     .multilineTextAlignment(.center)
-                    .lineLimit(2)
+                    .lineLimit(Constants.Sizing.fileNameLineLimit)
                     .truncationMode(.middle)
                 }
             }
-            .padding(.horizontal, Self.paddingHorizontal)
+            .padding(.top, 24)
+            .padding(.horizontal, Constants.Padding.gridHorizontal)
         }
     }
     
     var bottomButtonsView: some View {
-        // Not using the `bottomSectionSpacing` because of the selection mode
-        HStack(spacing: 0) {
+        HStack(spacing: Constants.Spacing.bottomButtonsHorizontal) {
             if viewModel.inSelectionMode {
-                Button(action: viewModel.selectAll) {
-                    Text(localization.chatAttachmentsSelectionAll)
-                        .frame(minWidth: StyleGuide.buttonDimension, minHeight: StyleGuide.buttonDimension)
-                }
-                .disabled(!viewModel.isSelectAllEnabled)
-                .foregroundStyle(viewModel.isSelectAllEnabled ? colors.customizable.primary : colors.customizable.onBackground.opacity(0.5))
-                .padding(.trailing, Self.bottomSectionSpacing)
+                Button(localization.chatAttachmentsSelectionAll, action: viewModel.selectAll)
+                    .disabled(!viewModel.isSelectAllEnabled)
+                    .foregroundStyle(
+                        viewModel.isSelectAllEnabled
+                            ? colors.brand.primary
+                            : colors.content.tertiary
+                    )
+                    .adjustForA11y()
                 
                 Button(localization.chatAttachmentsDeselect, action: viewModel.selectNone)
                     .disabled(!viewModel.isSelectNoneEnabled)
-                    .foregroundStyle(viewModel.isSelectNoneEnabled ? colors.customizable.primary : colors.customizable.onBackground.opacity(0.5))
-                    .frame(minWidth: StyleGuide.buttonDimension, minHeight: StyleGuide.buttonDimension)
+                    .foregroundStyle(
+                        viewModel.isSelectNoneEnabled
+                            ? colors.brand.primary
+                            : colors.content.tertiary
+                    )
+                    .adjustForA11y()
+            } else {
+                Spacer()
+            }
+            
+            HStack(spacing: Constants.Spacing.textAndShareHorizontal) {
+                if viewModel.inSelectionMode {
+                    Text(
+                        viewModel.selectedAttachments.isEmpty
+                            ? localization.chatAttachmentsSelectionMode
+                            : String(format: localization.chatAttachmentsSelectedCount, viewModel.selectedAttachments.count)
+                    )
+                    .foregroundStyle(colors.content.primary)
+                    .lineLimit(Constants.Sizing.bottomSectionTextLineLimit)
+                    .truncationMode(.middle)
+                    .frame(maxWidth: .infinity)
+                }
                 
-                Spacer(minLength: Self.bottomSectionSpacing)
-                
-                Text(
-                    viewModel.selectedAttachments.isEmpty
-                        ? localization.chatAttachmentsSelectionMode
-                        : String(format: localization.chatAttachmentsSelectedCount, viewModel.selectedAttachments.count)
+                Button {
+                    iShareModalPresented.toggle()
+                } label: {
+                    Asset.share
+                }
+                .disabled(!viewModel.isShareEnabled)
+                .foregroundStyle(
+                    viewModel.isShareEnabled
+                        ? colors.brand.primary
+                        : colors.content.tertiary
                 )
-                .foregroundStyle(colors.customizable.onBackground)
+                .adjustForA11y()
             }
-            
-            Spacer()
-            
-            Button {
-                shareModalIsPresented.toggle()
-            } label: {
-                Asset.share
-                    .frame(minWidth: StyleGuide.buttonDimension, minHeight: StyleGuide.buttonDimension)
-            }
-            .disabled(!viewModel.isShareEnabled)
-            .foregroundStyle(viewModel.isShareEnabled ? colors.customizable.primary : colors.customizable.onBackground.opacity(0.5))
         }
-        .padding(Self.bottomSectionPadding)
-        .lineLimit(1)
-        .truncationMode(.middle)
-        .sheet(isPresented: $shareModalIsPresented) {
-            ShareSheet(activityItems: viewModel.inSelectionMode ? viewModel.selectedAttachments : viewModel.shareableAttachments)
-        }
+        .animation(.default, value: viewModel.inSelectionMode)
+        .padding(Constants.Padding.bottomButtons)
     }
 }
 
@@ -198,9 +252,8 @@ private extension AttachmentsView {
     let attachments: [ChatMessageType] = [
         .text(Lorem.sentence()),
         .image(MockData.imageItem),
-        .documentPreview(MockData.pdfPreviewItem),
-        .image(MockData.imageItem),
         .audio(MockData.audioItem),
+        .video(MockData.videoItem),
         .image(MockData.imageItem)
     ]
     

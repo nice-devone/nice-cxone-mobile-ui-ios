@@ -21,14 +21,10 @@ struct ThreadListView: View, Themed {
     // MARK: - Constants
 
     private enum Constants {
+        
         enum Padding {
             static let pickerHorizontal: CGFloat = 16
-            static let pickerBottom: CGFloat = 12
-            static let pickerTop: CGFloat = 14
-        }
-
-        enum Colors {
-            static let listRowBackground = Color.clear
+            static let pickerVertical: CGFloat = 12
         }
     }
 
@@ -41,6 +37,8 @@ struct ThreadListView: View, Themed {
     
     @ObservedObject private var viewModel: ThreadListViewModel
 
+    private let dateFormatter = AdaptiveDateFormatter()
+    
     // MARK: - Init
     
     init(viewModel: ThreadListViewModel) {
@@ -73,11 +71,23 @@ struct ThreadListView: View, Themed {
                 isActive: viewModel.showHiddenThread
             ) { EmptyView() }
         }
-        .navigationTitle(localization.chatListTitle)
-        .navigationBarItems(trailing: menu)
-        .background(colors.customizable.background)
         .onAppear(perform: viewModel.onAppear)
         .onDisappear(perform: viewModel.onDisappear)
+        .navigationTitle(localization.chatListTitle)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if viewModel.threadStatus == .current && viewModel.chatProvider.state.isChatAvailable {
+                    Button {
+                        Task { @MainActor in
+                            await viewModel.onCreateNewThread()
+                        }
+                    } label: {
+                        Asset.List.new
+                    }
+                }
+            }
+        }
+        .background(colors.background.default)
         .alert(localization.alertUpdateThreadNameTitle, isPresented: $viewModel.isEditingThreadName) {
             AlertTextFieldView(isPresented: $viewModel.isEditingThreadName) { name in
                 Task { @MainActor in
@@ -86,10 +96,6 @@ struct ThreadListView: View, Themed {
                 
             }
         }
-    }
-
-    var menu: some View {
-        viewModel.menu.build(colors: colors)
     }
 }
 
@@ -108,15 +114,14 @@ private extension ThreadListView {
             viewModel.updateThreadStatus(newValue)
         }
         .pickerStyle(SegmentedPickerStyle())
-        .padding(.bottom, Constants.Padding.pickerBottom)
+        .padding(.vertical, Constants.Padding.pickerVertical)
         .padding(.horizontal, Constants.Padding.pickerHorizontal)
-        .padding(.top, Constants.Padding.pickerTop)
         
         if viewModel.chatThreads.isEmpty {
             Spacer()
             
             Text(localization.chatListEmpty)
-                .foregroundColor(colors.customizable.onBackground.opacity(0.50))
+                .foregroundColor(colors.content.tertiary)
 
             Spacer()
         } else {
@@ -136,16 +141,16 @@ private extension ThreadListView {
                 let title = chatThread.name?.nilIfEmpty()
                     ?? chatThread.assignedAgent?.fullName
                     ?? localization.commonUnassignedAgent
-                let timestamp = chatThread.messages.last?.createdAt.formatted(dateStyle: .none)
-                    ?? Date().formatted(dateStyle: .none)
-                let message = chatThread.messages.last?.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: true)
+                let timestamp = chatThread.messages.last?.createdAt ?? Date.now
                 
                 ThreadListCell(
                     assignedAgent: ChatUserMapper.map(from: chatThread.assignedAgent),
                     title: title,
-                    message: message,
-                    timestamp: timestamp,
+                    message: chatThread.messages.last?.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: true),
+                    timestamp: dateFormatter.string(from: timestamp),
                     statusType: viewModel.threadStatus,
+                    // Read status is valid only for messages from an agent to a client
+                    isRead: chatThread.messages.last?.direction == .toClient ? chatThread.messages.last?.customerStatistics?.seenAt != nil : true,
                     onRename: {
                         viewModel.onEditThreadName(for: chatThread)
                     },
@@ -155,7 +160,7 @@ private extension ThreadListView {
                         }
                     }
                 )
-                .listRowBackground(Constants.Colors.listRowBackground)
+                .listRowBackground(colors.background.default)
                 .onTapGesture {
                     // Note that we *could* use a NavigationLink here instead, but then
                     // we would be duplicating much of the code for the NavigationLink
@@ -168,7 +173,7 @@ private extension ThreadListView {
             }
         }
         .listStyle(.plain)
-        .background(colors.customizable.background)
+        .background(colors.background.default)
     }
     
     var lazyStackContent: some View {
@@ -177,16 +182,16 @@ private extension ThreadListView {
                 let title = chatThread.name?.nilIfEmpty()
                     ?? chatThread.assignedAgent?.fullName
                     ?? localization.commonUnassignedAgent
-                let timestamp = chatThread.messages.last?.createdAt.formatted(dateStyle: .none)
-                    ?? Date().formatted(dateStyle: .none)
-                let message = chatThread.messages.last?.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: true)
+                let timestamp = chatThread.messages.last?.createdAt ?? Date.now
                 
                 ThreadListCell(
                     assignedAgent: ChatUserMapper.map(from: chatThread.assignedAgent),
                     title: title,
-                    message: message,
-                    timestamp: timestamp,
+                    message: chatThread.messages.last?.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: true),
+                    timestamp: dateFormatter.string(from: timestamp),
                     statusType: viewModel.threadStatus,
+                    // Read status is valid only for messages from an agent to a client
+                    isRead: chatThread.messages.last?.direction == .toClient ? chatThread.messages.last?.customerStatistics?.seenAt != nil : true,
                     onRename: {
                         viewModel.onEditThreadName(for: chatThread)
                     },
@@ -196,14 +201,14 @@ private extension ThreadListView {
                         }
                     }
                 )
-                .listRowBackground(Constants.Colors.listRowBackground)
+                .listRowBackground(colors.background.default)
                 .onTapGesture {
                     viewModel.show(thread: chatThread)
                 }
             }
         }
         .listStyle(.plain)
-        .background(colors.customizable.background)
+        .background(colors.background.default)
     }
 }
 

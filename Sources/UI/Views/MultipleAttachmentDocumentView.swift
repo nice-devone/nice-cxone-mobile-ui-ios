@@ -18,6 +18,27 @@ import UniformTypeIdentifiers
 
 struct MultipleAttachmentDocumentView: View, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        static let pdfFileExtension = "pdf"
+
+        enum Sizing {
+            static let fileExtensionContainerCornerRadius: CGFloat = 6
+            static let fileExtensionLineLimit = 1
+        }
+        
+        enum Padding {
+            static let fileExtensionVertical: CGFloat = 6
+            static let fileExtensionHorizontal: CGFloat = 8
+            static let fileExtensionContainerVertical: CGFloat = 34
+            static let fileExtensionContainerHorizontal: CGFloat = 16
+            static let blankFileHorizontal: CGFloat = 22
+            static let blankFileVertical: CGFloat = 12
+        }
+    }
+    
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
@@ -28,37 +49,24 @@ struct MultipleAttachmentDocumentView: View, Themed {
     
     @StateObject private var pdfViewModel: PDFViewModel
     
-    static private let labelCornerRadius: CGFloat = 6
-    static private let fileExtensionContainerLineWidth: CGFloat = 1
-    static private let minimumScaleFactor: CGFloat = 0.5
-    static private let lineLimit = 1
-    static private let fileExtensionVerticalPadding: CGFloat = 6
-    static private let fileExtensionHorizontalPadding: CGFloat = 6
-    static private let fileExtensionContainerVerticalPadding: CGFloat = 34
-    static private let fileExtensionContainerHorizontalPadding: CGFloat = 16
-    
     let fileExtension: String?
     let url: URL
     let isSenderAgent: Bool
-    let width: CGFloat
-    let height: CGFloat
     let localization: ChatLocalization
+    
+    private let displayMode: AttachmentThumbnailDisplayMode = .regular
     
     // MARK: - Init
     
     init(
         attachmentItem: AttachmentItem,
         isSenderAgent: Bool,
-        width: CGFloat,
-        height: CGFloat,
         alertType: Binding<ChatAlertType?>,
         localization: ChatLocalization
     ) {
         self.fileExtension = UTType(mimeType: attachmentItem.mimeType)?.preferredFilenameExtension
         self.url = attachmentItem.url
         self.isSenderAgent = isSenderAgent
-        self.width = width
-        self.height = height
         self.localization = localization
         
         self._documentStateViewModel = StateObject(wrappedValue: DocumentStateViewModel(alertType: alertType, localization: localization))
@@ -67,40 +75,31 @@ struct MultipleAttachmentDocumentView: View, Themed {
     // MARK: - Builder
     
     var body: some View {
-        content
-            .background(
-                RoundedRectangle(cornerRadius: StyleGuide.Attachment.cornerRadius)
-                    .stroke(
-                        colors.customizable.background,
-                        lineWidth: Self.fileExtensionContainerLineWidth
-                    )
-                    .background(
-                        RoundedRectangle(cornerRadius: StyleGuide.Attachment.cornerRadius)
-                            .fill(isSenderAgent ? colors.customizable.agentBackground : colors.customizable.customerBackground)
-                    )
-            )
-            .frame(width: width, height: height)
-            .onTapGesture {
-                if documentStateViewModel.localURL != nil {
-                    documentStateViewModel.isReadyToPresent = true
-                } else {
-                    Task {
-                        await documentStateViewModel.downloadAndSaveFile(url: url)
-                    }
+        Button {
+            if documentStateViewModel.localURL != nil {
+                documentStateViewModel.isReadyToPresent = true
+            } else {
+                Task {
+                    await documentStateViewModel.downloadAndSaveFile(url: url)
                 }
             }
-            .sheet(isPresented: $documentStateViewModel.isReadyToPresent) {
-                if let localURL = documentStateViewModel.localURL {
-                    QuickLookPreview(url: localURL, isPresented: $documentStateViewModel.isReadyToPresent)
-                }
-            }
-            .alert(isPresented: $documentStateViewModel.showError) {
-                Alert(
-                    title: Text(localization.commonError),
-                    message: Text(localization.downloadingDocumentFailed),
-                    dismissButton: .default(Text(localization.commonOk))
+        } label: {
+            content
+                .background(
+                    RoundedRectangle(cornerRadius: StyleGuide.Sizing.Attachment.cornerRadius)
+                        .stroke(colors.background.default, lineWidth: StyleGuide.Sizing.Attachment.borderWidth)
+                        .background(
+                            RoundedRectangle(cornerRadius: StyleGuide.Sizing.Attachment.cornerRadius)
+                                .fill(isSenderAgent ? colors.background.surface.default : colors.brand.primary)
+                        )
                 )
+        }
+        .frame(width: displayMode.size.width, height: displayMode.size.height)
+        .sheet(isPresented: $documentStateViewModel.isReadyToPresent) {
+            if let localURL = documentStateViewModel.localURL {
+                QuickLookPreview(url: localURL, isPresented: $documentStateViewModel.isReadyToPresent)
             }
+        }
     }
 }
 
@@ -111,41 +110,51 @@ private extension MultipleAttachmentDocumentView {
     @ViewBuilder
     var content: some View {
         switch fileExtension {
-        case "pdf":
-            PDFThumbnailView(viewModel: pdfViewModel, inSelectionMode: .constant(false), width: width, height: height)
+        case Constants.pdfFileExtension:
+            PDFThumbnailView(
+                viewModel: pdfViewModel,
+                inSelectionMode: .constant(false),
+                width: displayMode.size.width,
+                height: displayMode.size.height
+            )
         case let .some(fileExtension):
             fileWithExtensionLabelView(fileExtension)
         default:
-            AttachmentLoadingView(title: localization.loadingDoc)
-                .frame(width: width, height: height)
+            AttachmentLoadingView(
+                title: localization.loadingDoc,
+                width: displayMode.size.width,
+                height: displayMode.size.height
+            )
         }
     }
     
     func fileWithExtensionLabelView(_ fileExtension: String) -> some View {
         ZStack {
             if documentStateViewModel.isDownloading {
-                AttachmentLoadingView(title: localization.loadingDoc)
+                AttachmentLoadingView(
+                    title: localization.loadingDoc,
+                    width: displayMode.size.width,
+                    height: displayMode.size.height
+                )
             } else {
                 Asset.Images.blankFile.swiftUIImage
                     .resizable()
-                    .foregroundStyle(colors.foreground.staticLight)
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 12)
+                    .foregroundStyle(colors.background.default)
+                    .padding(.horizontal, Constants.Padding.blankFileHorizontal)
+                    .padding(.vertical, Constants.Padding.blankFileVertical)
                 
                 Text(fileExtension.uppercased())
                     .font(.caption2)
                     .bold()
-                    .foregroundStyle(colors.foreground.staticLight)
-                    .minimumScaleFactor(Self.minimumScaleFactor)
-                    .lineLimit(Self.lineLimit)
-                    .padding(.vertical, Self.fileExtensionVerticalPadding)
-                    .padding(.horizontal, Self.fileExtensionHorizontalPadding)
+                    .foregroundStyle(colors.brand.onPrimary)
+                    .truncationMode(.middle)
+                    .lineLimit(Constants.Sizing.fileExtensionLineLimit)
+                    .padding(.vertical, Constants.Padding.fileExtensionVertical)
+                    .padding(.horizontal, Constants.Padding.fileExtensionHorizontal)
                     .background {
-                        RoundedRectangle(cornerRadius: Self.labelCornerRadius)
-                            .fill(Color(.systemBlue))
+                        RoundedRectangle(cornerRadius: Constants.Sizing.fileExtensionContainerCornerRadius)
+                            .fill(colors.brand.primary)
                     }
-                    .padding(.vertical, Self.fileExtensionContainerVerticalPadding)
-                    .padding(.horizontal, Self.fileExtensionContainerHorizontalPadding)
             }
         }
     }
@@ -153,37 +162,90 @@ private extension MultipleAttachmentDocumentView {
 
 // MARK: - Preview
 
+@available(iOS 17, *)
 #Preview {
+    @Previewable @Environment(\.colorScheme) var scheme
+    
     let localization = ChatLocalization()
     let style = ChatStyle()
     
     VStack {
-        MultipleAttachmentDocumentView(
-            attachmentItem: MockData.docPreviewItem,
-            isSenderAgent: true,
-            width: StyleGuide.Attachment.largeDimension,
-            height: StyleGuide.Attachment.largeDimension,
-            alertType: .constant(nil),
-            localization: localization
-        )
+        VStack {
+            HStack {
+                MultipleAttachmentDocumentView(
+                    attachmentItem: MockData.docPreviewItem,
+                    isSenderAgent: true,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                MultipleAttachmentDocumentView(
+                    attachmentItem: MockData.xlsPreviewItem,
+                    isSenderAgent: true,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+            
+            HStack {
+                MultipleAttachmentDocumentView(
+                    attachmentItem: MockData.pptPreviewItem,
+                    isSenderAgent: true,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                MultipleAttachmentDocumentView(
+                    attachmentItem: MockData.pdfPreviewItem,
+                    isSenderAgent: true,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+        }
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(style.colors.light.customizable.agentBackground)
+                .fill(style.colors(for: scheme).background.surface.default)
         )
         
-        MultipleAttachmentDocumentView(
-            attachmentItem: MockData.docPreviewItem,
-            isSenderAgent: true,
-            width: StyleGuide.Attachment.largeDimension,
-            height: StyleGuide.Attachment.largeDimension,
-            alertType: .constant(nil),
-            localization: localization
-        )
+        VStack {
+            HStack {
+                MultipleAttachmentDocumentView(
+                    attachmentItem: MockData.docPreviewItem,
+                    isSenderAgent: false,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                MultipleAttachmentDocumentView(
+                    attachmentItem: MockData.xlsPreviewItem,
+                    isSenderAgent: false,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+            
+            HStack {
+                MultipleAttachmentDocumentView(
+                    attachmentItem: MockData.pptPreviewItem,
+                    isSenderAgent: false,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+                
+                MultipleAttachmentDocumentView(
+                    attachmentItem: MockData.pdfPreviewItem,
+                    isSenderAgent: false,
+                    alertType: .constant(nil),
+                    localization: localization
+                )
+            }
+        }
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(style.colors.light.customizable.customerBackground)
+                .fill(style.colors(for: scheme).brand.primary)
         )
     }
     .environmentObject(style)

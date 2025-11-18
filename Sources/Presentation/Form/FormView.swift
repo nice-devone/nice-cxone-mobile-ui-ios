@@ -18,6 +18,31 @@ import SwiftUI
 
 struct FormView: View, Themed {
 
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Spacing {
+            static let bodyVertical: CGFloat = 0
+            static let headerVertical: CGFloat = 4
+            static let contentVertical: CGFloat = 24
+            static let contentMinGap: CGFloat = 20
+            static let controlButtonsVertical: CGFloat = 12
+        }
+        
+        enum Padding {
+            static let headerBottom: CGFloat = 16
+            static let contentTop: CGFloat = 24
+            static let controlButtonsHorizontal: CGFloat = 16
+            static let controlButtonsBottom: CGFloat = 26
+            static let topScrollView: CGFloat = 24
+            static let contentHorizontal: CGFloat = 16
+            static let bodyTop: CGFloat = 48
+            static let edgeControlButtons: CGFloat = 16
+            
+        }
+    }
+    
     // MARK: - Properties
 
     @EnvironmentObject private var localization: ChatLocalization
@@ -26,106 +51,86 @@ struct FormView: View, Themed {
     @SwiftUI.Environment(\.colorScheme) var scheme
 
     @ObservedObject var viewModel: FormViewModel
-    
-    @State var isFormValid = false
-    
-    private static let paddingTopControlButtons: CGFloat = 12
-    private static let paddingBottomControlButtons: CGFloat = 40
-    private static let sectionSpacing: CGFloat = 24
-    private static let paddingTopScrollView: CGFloat = 24
-    private static let paddingHorizontalGroup: CGFloat = 16
-    private static let paddingTopContent: CGFloat = 48
-    private static let paddingEdgeControlButtons: CGFloat = 16
-    private static let paddingBottomSubtitle: CGFloat = 10
 
     // MARK: - Init
 
     init(viewModel: FormViewModel) {
         self.viewModel = viewModel
-        self.isFormValid = viewModel.isValid()
     }
 
     // MARK: - Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: Constants.Spacing.bodyVertical) {
             header
-                .padding(.horizontal, Self.paddingHorizontalGroup)
+                .padding(.horizontal, Constants.Padding.contentHorizontal)
             
-            ColoredDivider(colors.customizable.onBackground.opacity(0.1))
-                .padding(.horizontal, -Self.paddingHorizontalGroup)
+            ColoredDivider(colors.border.default)
             
             content
+                .padding(.top, Constants.Padding.contentTop)
+                .padding(.horizontal, Constants.Padding.contentHorizontal)
             
             controlButtons
         }
         .interactiveDismissDisabled()
         .onTapGesture(perform: hideKeyboard)
-        .padding(.top, Self.paddingTopContent)
-        .background(colors.customizable.background)
+        .padding(.top, Constants.Padding.bodyTop)
+        .background(colors.background.default)
     }
     
     private var content: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: Self.sectionSpacing) {
+            VStack(spacing: Constants.Spacing.contentVertical) {
                 ForEach(viewModel.customFields) { entity in
                     switch entity {
                     case let entity as TreeFieldEntity:
-                        TreeFieldView(entity: entity) {
-                            self.isFormValid = viewModel.isValid()
-                        }
+                        TreeFieldView(entity: entity, onChange: viewModel.validateForm)
                     case let entity as ListFieldEntity:
-                        ListFieldView(entity: entity) {
-                            self.isFormValid = viewModel.isValid()
-                        }
-                        .padding(.trailing, Self.paddingHorizontalGroup)
+                        ListFieldView(entity: entity, onChange: viewModel.validateForm)
                     default:
-                        TextFieldView(entity: entity) {
-                            self.isFormValid = viewModel.isValid()
-                        }
-                        .padding(.trailing, Self.paddingHorizontalGroup)
+                        TextFieldView(entity: entity, onChange: viewModel.validateForm)
                     }
                 }
+                
+                Spacer(minLength: Constants.Spacing.contentMinGap)
             }
         }
-        .padding(.top, Self.paddingTopScrollView)
-        .padding(.leading, Self.paddingHorizontalGroup)
     }
     
     @ViewBuilder
     private var header: some View {
-        Text(viewModel.title)
-            .font(.title3)
-            .fontWeight(.bold)
-            .foregroundStyle(colors.customizable.onBackground)
-        
-        Text(localization.prechatSurveySubtitle)
-            .font(.subheadline)
-            .foregroundStyle(colors.customizable.onBackground)
-            .opacity(0.50)
-            .padding(.bottom, Self.paddingBottomSubtitle)
+        VStack(alignment: .leading, spacing: Constants.Spacing.headerVertical) {
+            Text(viewModel.title)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundStyle(colors.content.primary)
+            
+            Text(localization.prechatSurveySubtitle)
+                .font(.subheadline)
+                .foregroundStyle(colors.content.secondary)
+                .padding(.bottom, Constants.Padding.headerBottom)
+        }
     }
     
     private var controlButtons: some View {
-        HStack {
-            Button(localization.commonCancel, action: viewModel.onCancel)
+        VStack(spacing: Constants.Spacing.controlButtonsVertical) {
+            ColoredDivider(colors.border.default)
             
-            Spacer()
+            HStack {
+                Button(localization.commonCancel, action: viewModel.onCancel)
 
-            Button(localization.commonConfirm) { [weak viewModel] in
-                guard let viewModel = viewModel, viewModel.isValid() == true else {
-                    return
-                }
-                
-                viewModel.onAccept(viewModel.getCustomFields())
+                Spacer()
+
+                Button(localization.commonConfirm, action: viewModel.onConfirm)
+                    .disabled(!viewModel.isFormValid)
             }
-            .disabled(!isFormValid)
+            .font(.body.weight(.medium))
+            .tint(colors.brand.primary)
+            .padding(.horizontal, Constants.Padding.controlButtonsHorizontal)
+            .padding(.bottom, Constants.Padding.controlButtonsBottom)
         }
-        .font(.body.weight(.medium))
-        .padding(.top, Self.paddingTopControlButtons)
-        .padding(.horizontal, Self.paddingEdgeControlButtons)
-        .padding(.bottom, Self.paddingBottomControlButtons)
-        .background(colors.customizable.onBackground.opacity(0.05))
+        .animation(.easeInOut(duration: StyleGuide.animationDuration), value: viewModel.isFormValid)
     }
 }
 

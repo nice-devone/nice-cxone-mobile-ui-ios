@@ -54,9 +54,3 @@ public class TreeFieldEntity: FormCustomFieldType {
         super.init(label: label, isRequired: isRequired, ident: ident, value: value ?? "")
     }
 }
-
-extension TreeFieldEntity {
-    var formattedTitle: String {
-        isRequired ? "\(label) *" : label
-    }
-}

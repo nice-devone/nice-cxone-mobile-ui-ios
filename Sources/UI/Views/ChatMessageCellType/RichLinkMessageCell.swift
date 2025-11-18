@@ -18,6 +18,23 @@ import SwiftUI
 
 struct RichLinkMessageCell: View, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Spacing {
+            static let gapMinLength: CGFloat = UIScreen.main.bounds.width / 3
+            static let linkHorizontal: CGFloat = 2
+            static let buttonContentVertical: CGFloat = 8
+            static let titleAndHostVertical: CGFloat = 6
+        }
+        
+        enum Padding {
+            static let buttonContentHorizontal: CGFloat = 12
+            static let buttonContentBottom: CGFloat = 12
+        }
+    }
+    
     // MARK: - Properties
     
     @EnvironmentObject private var localization: ChatLocalization
@@ -30,12 +47,6 @@ struct RichLinkMessageCell: View, Themed {
     let message: ChatMessage
     let item: RichLinkItem
     let openLink: (URL) -> Void
-    
-    private static let imageMaxHeight: CGFloat = UIScreen.main.bounds.width / 3
-    private static let linkSpacing: CGFloat = 2
-    private static let paddingTop: CGFloat = 8
-    private static let paddingHorizontal: CGFloat = 12
-    private static let paddingBottom: CGFloat = 10
     
     // MARK: - Init
     
@@ -54,13 +65,13 @@ struct RichLinkMessageCell: View, Themed {
             } label: {
                 buttonContent
             }
-            .background(colors.customizable.agentBackground)
-            .cornerRadius(StyleGuide.Message.cornerRadius, corners: .allCorners)
+            .background(colors.background.surface.default)
+            .cornerRadius(StyleGuide.Sizing.Message.cornerRadius, corners: .allCorners)
             .contextMenu {
                 contextMenuContent
             }
             
-            Spacer(minLength: UIScreen.main.bounds.size.width / 3)
+            Spacer(minLength: Constants.Spacing.gapMinLength)
         }
         .sheet(isPresented: $isShareSheetVisible) {
             ShareSheet(activityItems: [item.url])
@@ -73,7 +84,7 @@ struct RichLinkMessageCell: View, Themed {
 private extension RichLinkMessageCell {
 
     var buttonContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: Constants.Spacing.buttonContentVertical) {
             KFImage(item.imageUrl)
                 .placeholder {
                     ProgressView()
@@ -81,30 +92,29 @@ private extension RichLinkMessageCell {
                 }
                 .resizable()
                 .scaledToFill()
-                .frame(maxHeight: Self.imageMaxHeight)
+                .frame(maxHeight: StyleGuide.Sizing.Attachment.regularDimension)
                 .clipped()
             
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: Constants.Spacing.titleAndHostVertical) {
                 Text(item.title)
                     .font(.caption)
                     .bold()
-                    .foregroundStyle(colors.customizable.agentText)
+                    .foregroundStyle(colors.content.primary)
                 
                 if let host = item.url.host {
-                    HStack(spacing: Self.linkSpacing) {
+                    HStack(spacing: Constants.Spacing.linkHorizontal) {
                         Text(host)
                         
                         Asset.Message.RichContent.link
                     }
                     .font(.caption2)
-                    .foregroundStyle(colors.customizable.primary)
+                    .foregroundStyle(colors.brand.primary)
                 }
             }
             .multilineTextAlignment(.leading)
-            .padding(.horizontal, Self.paddingHorizontal)
-            .padding(.top, Self.paddingTop)
-            .padding(.bottom, Self.paddingBottom)
+            .padding(.horizontal, Constants.Padding.buttonContentHorizontal)
         }
+        .padding(.bottom, Constants.Padding.buttonContentBottom)
     }
     
     @ViewBuilder
@@ -130,18 +140,8 @@ private extension RichLinkMessageCell {
 
 // MARK: - Preview
 
-struct RichLinkMessageCell_Previews: PreviewProvider {
-    
-    static var previews: some View {
-        Group {
-            RichLinkMessageCell(message: MockData.richLinkMessage(), item: MockData.richLinkItem) { _ in }
-                .previewDisplayName("Light Mode")
-            
-            RichLinkMessageCell(message: MockData.richLinkMessage(), item: MockData.richLinkItem) { _ in }
-                .previewDisplayName("Dark Mode")
-                .preferredColorScheme(.dark)
-        }
+#Preview {
+    RichLinkMessageCell(message: MockData.richLinkMessage(), item: MockData.richLinkItem) { _ in }
         .environmentObject(ChatStyle())
         .environmentObject(ChatLocalization())
-    }
 }

@@ -17,6 +17,34 @@ import SwiftUI
 
 struct AudioMessageCell: View, Themed {
 
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        static let seekValue = 10
+        
+        enum Sizing {
+            static let progressBarHeight: CGFloat = 6
+        }
+        
+        enum Spacing {
+            static let elementsVertical: CGFloat = 0
+            static let controlButtonsHorizontal: CGFloat = 20
+            static let progressBarElementsHorizontal: CGFloat = 6
+            static let shareButtonMinLength: CGFloat = 0
+        }
+        
+        enum Padding {
+            static let elementsTop: CGFloat = 14
+            static let elementsHorizontal: CGFloat = 14
+            static let elementsBottom: CGFloat = 8
+        }
+        
+        enum Colors {
+            static let progressBarOpacity: Double = 0.5
+        }
+    }
+    
     // MARK: - Properties
 
     @EnvironmentObject var style: ChatStyle
@@ -28,13 +56,6 @@ struct AudioMessageCell: View, Themed {
     private let message: ChatMessage
     private let item: AttachmentItem
     private let position: MessageGroupPosition
-    
-    static let progressBarHeight: CGFloat = 6
-    static let controlButtonsSpacing: CGFloat = 20
-    static let paddingTop: CGFloat = 14
-    static let paddingHorizontal: CGFloat = 14
-    static let paddingBottom: CGFloat = 8
-    static let progressBarElementsSpacing: CGFloat = 6
     
     // MARK: - Init
 
@@ -51,16 +72,16 @@ struct AudioMessageCell: View, Themed {
 
     var body: some View {
         ZStack(alignment: message.isUserAgent ? .bottomLeading : .bottomTrailing) {
-            VStack(spacing: 0) {
+            VStack(spacing: Constants.Spacing.elementsVertical) {
                 progressBar
 
                 controlButtons
             }
-            .padding(.top, Self.paddingTop)
-            .padding(.horizontal, Self.paddingHorizontal)
-            .padding(.bottom, Self.paddingBottom)
+            .padding(.top, Constants.Padding.elementsTop)
+            .padding(.horizontal, Constants.Padding.elementsHorizontal)
+            .padding(.bottom, Constants.Padding.elementsBottom)
             .messageChatStyle(message, position: position)
-            .shareable(message, attachments: [item], spacerLength: 0)
+            .shareable(message, attachments: [item], spacerLength: Constants.Spacing.shareButtonMinLength)
         }
     }
 }
@@ -70,13 +91,13 @@ struct AudioMessageCell: View, Themed {
 private extension AudioMessageCell {
 
     var progressBar: some View {
-        HStack(spacing: Self.progressBarElementsSpacing) {
+        HStack(spacing: Constants.Spacing.progressBarElementsHorizontal) {
             Text(audioPlayer.formattedProgress)
                 .font(.caption)
-                .foregroundColor(
+                .foregroundStyle(
                     message.isUserAgent
-                    ? colors.customizable.agentText
-                    : colors.customizable.customerText
+                        ? colors.content.primary
+                        : colors.brand.onPrimary
                 )
             
             GeometryReader { proxy in
@@ -84,50 +105,47 @@ private extension AudioMessageCell {
                     Capsule()
                         .fill(
                             message.isUserAgent
-                            ? colors.customizable.agentText
-                            : colors.customizable.customerText
+                                ? colors.content.primary
+                                : colors.brand.onPrimary
                         )
-                        .opacity(0.5)
+                        .opacity(Constants.Colors.progressBarOpacity)
                     
                     if !audioPlayer.progress.isNaN {
                         Capsule()
-                            .fill(message.isUserAgent ? colors.customizable.agentText : colors.customizable.customerText)
+                            .fill(message.isUserAgent ? colors.content.primary : colors.brand.onPrimary)
                             .frame(
                                 width: proxy.size.width * CGFloat(audioPlayer.progress),
-                                height: Self.progressBarHeight
+                                height: Constants.Sizing.progressBarHeight
                             )
                     }
                 }
             }
-            .frame(height: Self.progressBarHeight)
+            .frame(height: Constants.Sizing.progressBarHeight)
             
             Text(audioPlayer.formattedDuration)
                 .font(.caption)
-                .foregroundColor(
+                .foregroundStyle(
                     message.isUserAgent
-                    ? colors.customizable.agentText
-                    : colors.customizable.customerText
+                        ? colors.content.primary
+                        : colors.brand.onPrimary
                 )
         }
     }
 
     var controlButtons: some View {
-        HStack(alignment: .center, spacing: Self.controlButtonsSpacing) {
+        HStack(alignment: .center, spacing: Constants.Spacing.controlButtonsHorizontal) {
             Button {
-                audioPlayer.seek(-10)
+                audioPlayer.seek(-Constants.seekValue)
             } label: {
                 Asset.Attachment.rewind
                     .font(.title)
             }
-            .foregroundColor(
+            .foregroundStyle(
                 message.isUserAgent
-                    ? colors.customizable.agentText
-                    : colors.customizable.customerText
+                    ? colors.content.primary
+                    : colors.brand.onPrimary
             )
-            .frame(
-                width: StyleGuide.buttonDimension,
-                height: StyleGuide.buttonDimension
-            )
+            .adjustForA11y()
 
             Button {
                 if audioPlayer.isPlaying {
@@ -139,31 +157,25 @@ private extension AudioMessageCell {
                 (audioPlayer.isPlaying ? Asset.Attachment.pause : Asset.Attachment.play)
                     .font(.title)
             }
-            .foregroundColor(
+            .foregroundStyle(
                 message.isUserAgent
-                    ? colors.customizable.agentText
-                    : colors.customizable.customerText
+                    ? colors.content.primary
+                    : colors.brand.onPrimary
             )
-            .frame(
-                width: StyleGuide.buttonDimension,
-                height: StyleGuide.buttonDimension
-            )
+            .adjustForA11y()
 
             Button {
-                audioPlayer.seek(10)
+                audioPlayer.seek(Constants.seekValue)
             } label: {
                 Asset.Attachment.advance
                     .font(.title)
             }
-            .foregroundColor(
+            .foregroundStyle(
                 message.isUserAgent
-                    ? colors.customizable.agentText
-                    : colors.customizable.customerText
+                    ? colors.content.primary
+                    : colors.brand.onPrimary
             )
-            .frame(
-                width: StyleGuide.buttonDimension,
-                height: StyleGuide.buttonDimension
-            )
+            .adjustForA11y()
         }
     }
 }

@@ -39,6 +39,9 @@ public struct AttachmentItem: Hashable, Equatable {
     /// Indicates whether this attachment requires security-scoped resource access
     public let requiresSecurityScope: Bool
     
+    /// The local identifier of the selected asset.
+    public let assetIdentifier: String?
+    
     // MARK: - Init
     
     /// Initialization of the AttachmentItem
@@ -48,11 +51,39 @@ public struct AttachmentItem: Hashable, Equatable {
     ///   - friendlyName: A user-friendly name or label for the attachment.
     ///   - mimeType: The MIME type of the attachment, specifying its content type.
     ///   - fileName: The file name of the attachment.
-    public init(url: URL, friendlyName: String, mimeType: String, fileName: String, requiresSecurityScope: Bool = false) {
+    ///   - assetIdentifier: The local identifier of the selected asset.
+    public init(url: URL, friendlyName: String, mimeType: String, fileName: String, requiresSecurityScope: Bool = false, assetIdentifier: String? = nil) {
         self.url = url
         self.friendlyName = friendlyName
         self.mimeType = mimeType
         self.fileName = fileName
         self.requiresSecurityScope = requiresSecurityScope
+        self.assetIdentifier = assetIdentifier
+    }
+}
+
+// MARK: - Methods
+
+extension AttachmentItem {
+    
+    private static var megabyte: Int32 = 1024 * 1024
+    
+    func isSizeValid(allowedFileSize: Int32) -> Bool {
+        do {
+            return try url.accessSecurelyScopedResource { url in
+                let allowedFileSize = allowedFileSize * Self.megabyte
+                let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+
+                guard let fileSize = attributes[.size] as? Int32 else {
+                    return false
+                }
+
+                return fileSize <= allowedFileSize
+            }
+        } catch {
+            error.logError()
+            
+            return false
+        }
     }
 }

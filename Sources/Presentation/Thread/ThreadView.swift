@@ -43,7 +43,6 @@ struct ThreadView: View, Themed {
             isUserTyping: $viewModel.isUserTyping,
             isInputEnabled: $viewModel.isInputEnabled,
             isThreadClosed: $viewModel.isThreadClosed,
-            isProcessDialogVisible: $viewModel.isProcessDialogVisible,
             alertType: $viewModel.alertType,
             attachmentRestrictions: viewModel.attachmentRestrictions,
             queuePosition: viewModel.positionInQueue,
@@ -53,7 +52,7 @@ struct ThreadView: View, Themed {
             loadMoreMessages: viewModel.loadMoreMessages,
             onRichMessageElementSelected: viewModel.onRichMessageElementSelected
         )
-        .background(colors.customizable.background)
+        .background(colors.background.default)
         .onAppear(perform: viewModel.onAppear)
         .onDisappear(perform: viewModel.onDisappear)
         .navigationTitle(viewModel.chatTitle)
@@ -74,15 +73,6 @@ struct ThreadView: View, Themed {
                     Task {
                         await viewModel.setThread(name: viewModel.threadName)
                     }
-                }
-            }
-        }
-        .onChange(of: viewModel.isProcessDialogVisible) { isVisible in
-            Task { @MainActor in
-                if isVisible {
-                    await viewModel.containerViewModel?.showLoading(message: localization.chatAttachmentsUpload)
-                } else {
-                    await viewModel.containerViewModel?.hideOverlay()
                 }
             }
         }

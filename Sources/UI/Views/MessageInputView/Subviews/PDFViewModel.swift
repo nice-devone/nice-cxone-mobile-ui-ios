@@ -52,16 +52,22 @@ class PDFViewModel: ObservableObject {
         
         let stableIdentifier = extractStableIdentifier(from: url)
         let cacheKey = stableIdentifier + ":thumbnail"
-        if let cachedData = AttachmentCache.shared.data(for: cacheKey),
-           let cachedImage = UIImage(data: cachedData) {
+        
+        if let cachedData = AttachmentCache.shared.data(for: cacheKey), let cachedImage = UIImage(data: cachedData) {
             self.thumbnail = cachedImage
             return
         }
         
-        Task {
-            let thumbnail = await createThumbnail(url: url)
-            await MainActor.run { [weak self] in
-                self?.thumbnail = thumbnail
+        Task { [weak self] in
+            guard let self else {
+                return
+            }
+            
+            let thumbnail = await self.createThumbnail(url: self.url)
+            
+            await MainActor.run {
+                self.thumbnail = thumbnail
+                
                 if let thumbnail, let data = thumbnail.pngData() {
                     AttachmentCache.shared.set(data, for: cacheKey)
                 }
@@ -78,29 +84,32 @@ class PDFViewModel: ObservableObject {
         let documentCacheKey = stableIdentifier + ":document"
         
         // Check document cache first
-        if let cachedData = AttachmentCache.shared.data(for: documentCacheKey),
-           let document = PDFDocument(data: cachedData) {
+        if let cachedData = AttachmentCache.shared.data(for: documentCacheKey), let document = PDFDocument(data: cachedData) {
             pdfDocument = document
             return
         }
         
         isLoading = true
         
-        Task {
-            if let data = loader.data, let document = PDFDocument(data: data) {
+        Task { [weak self] in
+            guard let self else {
+                return
+            }
+            
+            if let data = self.loader.data, let document = PDFDocument(data: data) {
                 // Also cache the document data for future use
                 if let dataRep = document.dataRepresentation() {
                     AttachmentCache.shared.set(dataRep, for: documentCacheKey)
                 }
                 
-                await MainActor.run { [weak self] in
-                    self?.pdfDocument = document
-                    self?.isLoading = false
+                await MainActor.run {
+                    self.pdfDocument = document
+                    self.isLoading = false
                 }
-            } else if let document = await loadPDF(from: url) {
-                await MainActor.run { [weak self] in
-                    self?.pdfDocument = document
-                    self?.isLoading = false
+            } else if let document = await self.loadPDF(from: self.url) {
+                await MainActor.run {
+                    self.pdfDocument = document
+                    self.isLoading = false
                 }
             }
         }
@@ -119,6 +128,7 @@ private extension PDFViewModel {
             // Cache it with the stable identifier
             let stableIdentifier = extractStableIdentifier(from: url)
             let documentCacheKey = stableIdentifier + ":document"
+            
             if let dataRep = document.dataRepresentation() {
                 AttachmentCache.shared.set(dataRep, for: documentCacheKey)
             }
@@ -126,8 +136,8 @@ private extension PDFViewModel {
             // Try loading from cache
             let stableIdentifier = extractStableIdentifier(from: url)
             let documentCacheKey = stableIdentifier + ":document"
-            if let cachedData = AttachmentCache.shared.data(for: documentCacheKey),
-               let document = PDFDocument(data: cachedData) {
+            
+            if let cachedData = AttachmentCache.shared.data(for: documentCacheKey), let document = PDFDocument(data: cachedData) {
                 self.pdfDocument = document
             }
         }
@@ -139,8 +149,7 @@ private extension PDFViewModel {
         
         // Extract attachment ID pattern - looking for IDs like 7d2a3ec4-37c4-4e97-b842-97ca6d141b64
         if let attachmentIDRange = urlString.range(of: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", options: .regularExpression) {
-            let attachmentID = String(urlString[attachmentIDRange])
-            return attachmentID
+            return String(urlString[attachmentIDRange])
         }
         
         // Fallback to just stripping the token query parameter
@@ -156,14 +165,12 @@ private extension PDFViewModel {
         let stableIdentifier = extractStableIdentifier(from: url)
         let cacheKey = stableIdentifier + ":thumbnail"
         // 1. Check cache first (on main thread, since NSCache is thread-safe)
-        if let cachedData = AttachmentCache.shared.data(for: cacheKey),
-           let cachedImage = UIImage(data: cachedData) {
+        if let cachedData = AttachmentCache.shared.data(for: cacheKey), let cachedImage = UIImage(data: cachedData) {
             return cachedImage
         }
         
         // 2. Check if we already have the data in loader
-        if let data = loader.data, let document = PDFDocument(data: data),
-           let page = document.page(at: .zero) {
+        if let data = loader.data, let document = PDFDocument(data: data), let page = document.page(at: .zero) {
             let thumbnail = page.thumbnail(
                 of: CGSize(width: Self.thumbnailDimension, height: Self.thumbnailDimension),
                 for: .artBox
@@ -172,17 +179,17 @@ private extension PDFViewModel {
             if let data = thumbnail.pngData() {
                 AttachmentCache.shared.set(data, for: cacheKey)
             }
+            
             return thumbnail
         }
 
         // 3. Generate thumbnail in background
-        return await Task.detached(priority: .userInitiated) {
-            self.withSecurityScopedURLIfNeeded(url) { url in
-                guard let document = PDFDocument(url: url),
-                      let page = document.page(at: .zero)
-                else {
+        return await Task.detached(priority: .userInitiated) { [weak self] in
+            self?.withSecurityScopedURLIfNeeded(url) { url in
+                guard let document = PDFDocument(url: url), let page = document.page(at: .zero) else {
                     return nil
                 }
+                
                 let thumbnail = page.thumbnail(
                     of: CGSize(width: Self.thumbnailDimension, height: Self.thumbnailDimension),
                     for: .artBox
@@ -195,6 +202,7 @@ private extension PDFViewModel {
                 if let data = document.dataRepresentation() {
                     AttachmentCache.shared.set(data, for: stableIdentifier + ":document")
                 }
+                
                 return thumbnail
             }
         }.value
@@ -214,14 +222,13 @@ private extension PDFViewModel {
         }
         
         // Try to load from cache
-        if let cachedData = AttachmentCache.shared.data(for: documentCacheKey),
-           let document = PDFDocument(data: cachedData) {
+        if let cachedData = AttachmentCache.shared.data(for: documentCacheKey), let document = PDFDocument(data: cachedData) {
             return document
         }
         
         // Otherwise load from URL and cache
-        return await Task.detached(priority: .userInitiated) {
-            self.withSecurityScopedURLIfNeeded(url) { url in
+        return await Task.detached(priority: .userInitiated) { [weak self] in
+            self?.withSecurityScopedURLIfNeeded(url) { url in
                 guard let document = PDFDocument(url: url) else {
                     return nil
                 }

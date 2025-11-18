@@ -20,24 +20,24 @@ struct ThreadListCell: View, Themed {
     
     // MARK: - Constants
     
-    enum Constants {
-        enum Size {
+    private enum Constants {
+        
+        enum Sizing {
             static let circle: CGFloat = 40
+            static let titleTimestampSpacerMinLength: CGFloat = 8
+            static let messageLineLimit = 2
         }
-        
+        enum Spacing {
+            static let bodyVertical: CGFloat = 0
+            static let contentHorizontal: CGFloat = 12
+            static let messageContentVertical: CGFloat = 6
+            static let messageContentHorizontal: CGFloat = 2
+            static let timestampChevronHorizontal: CGFloat = 6
+            static let legacyButtonsHorizontal: CGFloat = 0
+        }
         enum Padding {
-            static let spacerTop: CGFloat = 12
-            static let spacerBottom: CGFloat = 13
-            static let message: CGFloat = 6
-            static let navigationArrowTop: CGFloat = 6
-            static let navigationArrowLeading: CGFloat = 10
-            static let navigationArrowTrailing: CGFloat = 16
-            static let avatarTrailing: CGFloat = 12
-            static let avatarLeading: CGFloat = 16
-        }
-        
-        enum SwipeAction {
-            static let iconSize: CGFloat = 32
+            static let contentVertical: CGFloat = 12
+            static let contentHorizontal: CGFloat = 16
         }
     }
     
@@ -56,6 +56,7 @@ struct ThreadListCell: View, Themed {
     let message: String?
     let timestamp: String
     let statusType: ThreadStatusType
+    let isRead: Bool
     let onRename: () -> Void
     let onArchive: () -> Void
     
@@ -67,6 +68,7 @@ struct ThreadListCell: View, Themed {
         message: String?,
         timestamp: String,
         statusType: ThreadStatusType,
+        isRead: Bool,
         onRename: @escaping () -> Void,
         onArchive: @escaping () -> Void
     ) {
@@ -75,6 +77,7 @@ struct ThreadListCell: View, Themed {
         self.message = message
         self.timestamp = timestamp
         self.statusType = statusType
+        self.isRead = isRead
         self.onRename = onRename
         self.onArchive = onArchive
     }
@@ -82,7 +85,7 @@ struct ThreadListCell: View, Themed {
     // MARK: - Content
     
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: Constants.Spacing.bodyVertical) {
             ZStack {
                 if !isIOS16OrNewer, statusType == .current {
                     legacyButtons
@@ -91,7 +94,7 @@ struct ThreadListCell: View, Themed {
                 content
             }
             
-            ColoredDivider(colors.customizable.onBackground.opacity(0.1))
+            ColoredDivider(colors.border.default)
         }
         .readSize { size in
             self.cellHeight = size.height
@@ -132,26 +135,18 @@ struct ThreadListCell: View, Themed {
 private extension ThreadListCell {
     
     var content: some View {
-        VStack {
-            Spacer()
-                .frame(height: Constants.Padding.spacerTop)
-            
-            HStack(alignment: .top, spacing: 0) {
-                avatarView
+        HStack(alignment: .top, spacing: Constants.Spacing.contentHorizontal) {
+            AvatarView(imageUrl: assignedAgent?.avatarURL, initials: assignedAgent?.initials)
+                .frame(width: ThreadListCell.Constants.Sizing.circle, height: ThreadListCell.Constants.Sizing.circle)
                 
-                messageContentView
-
-                timeStampView
-                
-                navigationArrowView
-            }
-            
-            Spacer()
-                .frame(height: Constants.Padding.spacerBottom)
+            messageContentView
         }
-        .background(colors.customizable.background)
+        .padding(.vertical, Constants.Padding.contentVertical)
+        .padding(.horizontal, Constants.Padding.contentHorizontal)
+        .background(colors.background.default)
         .offset(x: self.offset)
         .animation(.easeInOut, value: offset)
+        .animation(.easeInOut, value: isRead)
         .conditionalGesture(apply: statusType == .current && !isIOS16OrNewer, gesture: dragGesture)
         .if(statusType == .archived) { view in
             view.highPriorityGesture(
@@ -170,106 +165,101 @@ private extension ThreadListCell {
     }
     
     var messageContentView: some View {
-        VStack(alignment: .leading, spacing: ThreadListCell.Constants.Padding.message) {
-            Text(title)
-                .foregroundColor(colors.customizable.onBackground)
-                .bold()
-                .font(.subheadline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .offset(y: dynamicYOffset(for: .subheadline))
+        VStack(alignment: .leading, spacing: Constants.Spacing.messageContentVertical) {
+            HStack(alignment: .firstTextBaseline, spacing: Constants.Spacing.messageContentHorizontal) {
+                if !isRead, statusType == .current {
+                    Asset.List.unreadIndicator
+                        .font(.footnote)
+                        .foregroundStyle(colors.brand.primary)
+                        .accessibilityIdentifier("thread_unread_indicator")
+                }
+                
+                Text(title)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(colors.content.primary)
+                
+                Spacer(minLength: Constants.Sizing.titleTimestampSpacerMinLength)
+                
+                timestampChevronView
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             if let message {
                 Text(message)
                     .font(.subheadline)
-                    .foregroundColor(colors.customizable.onBackground).opacity(0.5)
-                    .lineLimit(2)
+                    .if(!isRead && statusType == .current) { view in
+                        view.bold()
+                    }
+                    .foregroundStyle(colors.content.secondary)
+                    .lineLimit(Constants.Sizing.messageLineLimit)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
     
-    var avatarView: some View {
-        AvatarView(imageUrl: assignedAgent?.avatarURL, initials: assignedAgent?.initials)
-            .frame(width: ThreadListCell.Constants.Size.circle, height: ThreadListCell.Constants.Size.circle)
-            .padding(.trailing, ThreadListCell.Constants.Padding.avatarTrailing)
-            .padding(.leading, ThreadListCell.Constants.Padding.avatarLeading)
-    }
-    
-    var timeStampView: some View {
-        VStack {
+    var timestampChevronView: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Constants.Spacing.timestampChevronHorizontal) {
             Text(timestamp)
                 .font(.subheadline)
-                .foregroundColor(colors.customizable.onBackground).opacity(0.5)
-                .offset(y: dynamicYOffset(for: .subheadline))
+                .if(!isRead && statusType == .current) { view in
+                    view.bold()
+                }
+                .foregroundStyle(colors.content.secondary)
             
-            Spacer()
-        }
-    }
-    
-    var navigationArrowView: some View {
-        VStack {
             Asset.right
-                .foregroundStyle(colors.customizable.primary)
-                .offset(y: dynamicYOffset(for: .title1))
-            
-            Spacer()
+                .font(.body.weight(.medium))
+                .foregroundStyle(colors.brand.primary)
         }
-        .padding(.top, ThreadListCell.Constants.Padding.navigationArrowTop)
-        .padding(.leading, ThreadListCell.Constants.Padding.navigationArrowLeading)
-        .padding(.trailing, ThreadListCell.Constants.Padding.navigationArrowTrailing)
     }
     
     var legacyButtons: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: Constants.Spacing.legacyButtonsHorizontal) {
             Spacer()
             
             legacyButton(Asset.List.rename, action: onRename)
-                .foregroundStyle(colors.customizable.onAccent)
-                .background(colors.customizable.accent)
+                .foregroundStyle(colors.status.onSuccess)
+                .background(colors.status.success)
             
             legacyButton(Asset.List.archive, action: onArchive)
-                .foregroundStyle(colors.customizable.onPrimary)
-                .background(colors.customizable.primary)
+                .foregroundStyle(colors.status.onWarning)
+                .background(colors.status.warning)
         }
     }
     
     func legacyButton(_ image: Image, action: @escaping () -> Void) -> some View {
-        Button(
-            action: {
-                action()
+        Button {
+            action()
                 
-                withAnimation {
-                    offset = .zero
-                }
-            },
-            label: {
-                image
-                    .font(.title3)
-                    .frame(width: cellHeight, height: cellHeight)
+            withAnimation {
+                offset = .zero
             }
-        )
+        } label: {
+            image
+                .font(.title3)
+                .frame(width: cellHeight, height: cellHeight)
+        }
     }
     
     var archiveButton: some View {
         Button(role: .destructive, action: onArchive) {
             ResizedSymbol(
                 image: Asset.List.archive,
-                targetSize: Constants.SwipeAction.iconSize
+                targetSize: StyleGuide.Sizing.buttonSmallDimension
             )
         }
-        .foregroundStyle(colors.customizable.onAccent)
-        .tint(colors.customizable.accent)
+        .foregroundStyle(colors.status.onWarning)
+        .tint(colors.status.warning)
     }
 
     var renameButton: some View {
         Button(action: onRename) {
             ResizedSymbol(
                 image: Asset.List.rename,
-                targetSize: Constants.SwipeAction.iconSize
+                targetSize: StyleGuide.Sizing.buttonSmallDimension
             )
         }
-        .foregroundStyle(colors.customizable.onPrimary)
-        .tint(colors.customizable.primary)
+        .foregroundStyle(colors.status.onSuccess)
+        .tint(colors.status.success)
     }
     
     @ViewBuilder
@@ -328,19 +318,14 @@ private extension ThreadListCell {
                 }
             }
     }
-    
-    func dynamicYOffset(for textStyle: UIFont.TextStyle) -> CGFloat {
-        let font = UIFont.systemFont(ofSize: UIFont.preferredFont(forTextStyle: textStyle).pointSize)
-        let capHeight = font.capHeight
-        let lineHeight = font.lineHeight
-        return -(lineHeight - capHeight) / 2
-    }
 }
 
 // MARK: - Helpers
 
 private extension View {
-    @ViewBuilder func conditionalGesture<G: Gesture>(apply condition: Bool, gesture: G) -> some View {
+    
+    @ViewBuilder
+    func conditionalGesture<G: Gesture>(apply condition: Bool, gesture: G) -> some View {
         if condition {
             self.gesture(gesture)
         } else {
@@ -352,23 +337,27 @@ private extension View {
 // MARK: - Preview
 
 #Preview {
+    let dateFormatter = AdaptiveDateFormatter()
+    
     List {
         ThreadListCell(
             assignedAgent: nil,
-            title: "Customer Support",
-            message: Lorem.sentence(),
-            timestamp: Date().formatted(dateStyle: .none),
+            title: "Alessandro Giovanni Matteo Jiménez",
+            message: Lorem.sentences(nbSentences: Int.random(in: 1...3)).joined(separator: " "),
+            timestamp: dateFormatter.string(from: Date().adding(.year, value: -2)),
             statusType: .current,
+            isRead: true,
             onRename: { },
             onArchive: { }
         )
         
         ThreadListCell(
             assignedAgent: ChatUser(id: "1", userName: nil, avatarURL: nil, isAgent: true),
-            title: "Customer Support",
-            message: Lorem.sentence(),
-            timestamp: Date().formatted(dateStyle: .none),
+            title: "Peter Parker",
+            message: Lorem.sentences(nbSentences: Int.random(in: 1...3)).joined(separator: " "),
+            timestamp: dateFormatter.string(from: Date().adding(.day, value: -10)),
             statusType: .current,
+            isRead: true,
             onRename: { },
             onArchive: { }
         )
@@ -376,9 +365,21 @@ private extension View {
         ThreadListCell(
             assignedAgent: ChatUser(id: "1", userName: "Peter Parker", avatarURL: nil, isAgent: true),
             title: "Customer Support",
-            message: Lorem.sentence(),
-            timestamp: Date().formatted(dateStyle: .none),
+            message: Lorem.sentences(nbSentences: Int.random(in: 1...3)).joined(separator: " "),
+            timestamp: dateFormatter.string(from: Date().adding(.day, value: -3)),
             statusType: .current,
+            isRead: true,
+            onRename: { },
+            onArchive: { }
+        )
+        
+        ThreadListCell(
+            assignedAgent: ChatUser(id: "1", userName: "Peter Parker", avatarURL: nil, isAgent: true),
+            title: "Customer Support",
+            message: Lorem.sentences(nbSentences: Int.random(in: 1...3)).joined(separator: " "),
+            timestamp: dateFormatter.string(from: Date().adding(.day, value: -1)),
+            statusType: .current,
+            isRead: true,
             onRename: { },
             onArchive: { }
         )
@@ -386,9 +387,10 @@ private extension View {
         ThreadListCell(
             assignedAgent: ChatUser(id: "1", userName: "Peter Parker", avatarURL: MockData.imageUrl, isAgent: true),
             title: "Customer Support",
-            message: Lorem.sentence(),
-            timestamp: Date().formatted(dateStyle: .none),
+            message: Lorem.sentences(nbSentences: Int.random(in: 1...3)).joined(separator: " "),
+            timestamp: dateFormatter.string(from: Date()),
             statusType: .current,
+            isRead: false,
             onRename: { },
             onArchive: { }
         )

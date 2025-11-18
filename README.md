@@ -1,4 +1,4 @@
-![](https://img.shields.io/badge/min_iOS-15.0%2B-orange?style=flat) ![](https://img.shields.io/badge/Swift-5.7%2B-orange?style=flat) ![](https://img.shields.io/badge/Framework-SwiftUI-orange?style=flat) ![](https://img.shields.io/badge/Licence-MIT-orange?style=flat)
+![](https://img.shields.io/badge/min_iOS-15.0%2B-orange?style=flat) ![](https://img.shields.io/badge/Swift-5.7%2B-orange?style=flat) ![](https://img.shields.io/badge/Framework-SwiftUI-orange?style=flat) ![](https://img.shields.io/badge/Licence-NICE-orange?style=flat)
 
 # CXoneChatUI
 
@@ -18,7 +18,7 @@ The CXoneChatUI module provides a default implementation of a Chat User Interfac
 - The CXoneChatUI does not support phone landscape orientation
 - Color customization is currently disabled to ensure accessibility standards and optimal user experience. This feature will be available in future releases.
 
-## Modules
+## Modules
 
 - [Utility](https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios)
 - [Core](https://github.com/nice-devone/nice-cxone-mobile-sdk-ios)

@@ -17,12 +17,17 @@ import Foundation
 
 extension String {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        static let maxEmojiCountForLargeTitle = 3
+        static let emailRegEx = #"^(?:|([A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,64}))$"#
+    }
+    
     // MARK: - Properties
     
-    private static let maxEmojiCountForLargeTitle = 3
-    
     var isLargeEmoji: Bool {
-        self.containsOnlyEmoji && self.count <= Self.maxEmojiCountForLargeTitle
+        self.containsOnlyEmoji && self.count <= Constants.maxEmojiCountForLargeTitle
     }
     
     var containsOnlyEmoji: Bool {
@@ -30,8 +35,7 @@ extension String {
     }
     
     var isValidEmail: Bool {
-        let emailRegEx = #"^(?:|([A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,64}))$"#
-        let isValidFormat = self.range(of: emailRegEx, options: [.regularExpression]) != nil
+        let isValidFormat = self.range(of: Constants.emailRegEx, options: [.regularExpression]) != nil
         
         return isValidFormat
     }

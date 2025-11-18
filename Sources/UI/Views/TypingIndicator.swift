@@ -17,49 +17,97 @@ import SwiftUI
 
 struct TypingIndicator: View, Themed {
     
+    // MARK: - Position
+    
+    enum AnimationStep {
+        case first, second, third
+    }
+    
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        static let animationTime = 0.125
+        static let ballCount = 3
+        static let repeatDelay = 0.5
+        
+        enum Sizing {
+            static let ballSize: CGFloat = 8
+            static let avatarDimension: CGFloat = 24
+        }
+        
+        enum Spacing {
+            static let containerHorizontal: CGFloat = 4
+            static let ballOffset: CGFloat = 6.0
+            static let avatarOffset: CGFloat = 12
+        }
+        
+        enum Padding {
+            static let containerHorizontal: CGFloat = 12
+            static let containerVertical: CGFloat = 16
+        }
+        
+        enum Colors {
+            static let firstStateBallOpacity: Double = 0.6
+            static let secondStateBallOpacity: Double = 0.4
+            static let thirdStateBallOpacity: Double = 0.2
+        }
+    }
+    
     // MARK: - Properties
 
     @Environment(\.colorScheme) var scheme
 
     @EnvironmentObject var style: ChatStyle
 
-    @State private var ballState = [CGFloat](repeating: 0.0, count: Self.ballCount)
-
-    private static let animationTime = 0.125
-    private static let ballCount = 3
-    private static let ballSize: CGFloat = 8
-    private static let containerSpacing: CGFloat = 4
-    private static let horizontalPadding: CGFloat = 12
-    private static let verticalPadding: CGFloat = 16
-    private static let offset: CGFloat = 6.0
-    private static let repeatDelay = 0.5
-    private static let ballOpacity = 0.5
+    @State private var ballState = [(AnimationStep)](repeating: .first, count: Constants.ballCount)
     
     let agent: ChatUser?
-    
-    private static let avatarDimension: CGFloat = 24
-    private static let avatarXOffset: CGFloat = 12
-    private static let avatarYOffset: CGFloat = 16
     
     // MARK: - Builder
     
     var body: some View {
-        ZStack(alignment: .leading) {
+        ZStack(alignment: .bottomLeading) {
             content
             
             if let agent {
-                agentAvatar(agent)
+                AvatarView(imageUrl: agent.avatarURL, initials: agent.initials)
+                    .frame(width: Constants.Sizing.avatarDimension, height: Constants.Sizing.avatarDimension)
+                    .offset(x: -Constants.Spacing.avatarOffset, y: Constants.Spacing.avatarOffset)
             }
         }
         .task {
-            await AnimationSequence(style: .easeInOut, duration: Self.animationTime)
-                .append { ballState[0] = Self.offset }
-                .append { ballState[1] = Self.offset }
-                .append { ballState[2] = Self.offset }
-                .append { ballState[0] = 0 }
-                .append { ballState[1] = 0 }
-                .append { ballState[2] = 0 }
-                .repeat(delay: Self.repeatDelay)
+            await AnimationSequence(style: .easeInOut, duration: Constants.animationTime)
+                .append {
+                    ballState[0] = .first
+                }
+                .append {
+                    ballState[0] = .second
+                    ballState[1] = .first
+                }
+                .append {
+                    ballState[0] = .third
+                    ballState[1] = .second
+                    ballState[2] = .first
+                }
+                .append {
+                    ballState[0] = .second
+                    ballState[1] = .third
+                    ballState[2] = .second
+                }
+                .append {
+                    ballState[0] = .first
+                    ballState[1] = .second
+                    ballState[2] = .third
+                }
+                .append {
+                    ballState[1] = .first
+                    ballState[2] = .second
+                }
+                .append {
+                    ballState[2] = .first
+                }
+                .repeat(delay: Constants.repeatDelay)
         }
     }
 }
@@ -69,49 +117,46 @@ struct TypingIndicator: View, Themed {
 private extension TypingIndicator {
 
     var content: some View {
-        HStack(spacing: Self.containerSpacing) {
+        HStack(spacing: Constants.Spacing.containerHorizontal) {
             ForEach(ballState.indices, id: \.self) { index in
-                ball(offset: ballState[index])
+                Circle()
+                    .frame(width: Constants.Sizing.ballSize, height: Constants.Sizing.ballSize)
+                    .foregroundStyle(colors.background.inverse.opacity(ballOpacity(for: ballState[index])))
+                    .offset(y: -ballOffset(for: ballState[index]))
             }
         }
-        .padding(.horizontal, Self.horizontalPadding)
-        .padding(.vertical, Self.verticalPadding)
-        .background(colors.customizable.agentBackground)
-        .cornerRadius(StyleGuide.Message.cornerRadius, corners: .allCorners)
+        .padding(.horizontal, Constants.Padding.containerHorizontal)
+        .padding(.vertical, Constants.Padding.containerVertical)
+        .background(colors.background.surface.default)
+        .cornerRadius(StyleGuide.Sizing.Message.cornerRadius, corners: .allCorners)
     }
     
-    func agentAvatar(_ agent: ChatUser) -> some View {
-        AvatarView(imageUrl: agent.avatarURL, initials: agent.initials)
-            .frame(width: Self.avatarDimension, height: Self.avatarDimension)
-            .offset(x: -Self.avatarXOffset, y: Self.avatarYOffset)
+    func ballOpacity(for step: AnimationStep) -> Double {
+        switch step {
+        case .first:
+            return Constants.Colors.thirdStateBallOpacity
+        case .second:
+            return Constants.Colors.secondStateBallOpacity
+        case .third:
+            return Constants.Colors.firstStateBallOpacity
+        }
     }
-}
-
-// MARK: - Private Methods
-
-private extension TypingIndicator {
     
-    func ball(offset: CGFloat) -> some View {
-        Circle()
-            .frame(width: Self.ballSize, height: Self.ballSize)
-            .foregroundColor(colors.customizable.agentText.opacity(Self.ballOpacity))
-            .offset(y: -offset)
+    func ballOffset(for step: AnimationStep) -> Double {
+        switch step {
+        case .first:
+            return .zero
+        case .second:
+            return Constants.Spacing.ballOffset / 2
+        case .third:
+            return Constants.Spacing.ballOffset
+        }
     }
 }
 
 // MARK: - Preview
 
-struct TypingIndicator_Previews: PreviewProvider {
-    
-    static var previews: some View {
-        Group {
-            TypingIndicator(agent: MockData.agent)
-                .previewDisplayName("Light Mode")
-            
-            TypingIndicator(agent: MockData.agent)
-                .preferredColorScheme(.dark)
-                .previewDisplayName("Dark Mode")
-        }
+#Preview {
+    TypingIndicator(agent: MockData.agent)
         .environmentObject(ChatStyle())
-    }
 }

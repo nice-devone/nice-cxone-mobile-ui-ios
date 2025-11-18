@@ -21,15 +21,16 @@ struct MessageInputImageThumbnailView: View, Themed {
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
+    @EnvironmentObject var localization: ChatLocalization
     
     @Environment(\.colorScheme) var scheme
     
     @State private var loadedImage: UIImage?
     
     let url: URL
-    let width: CGFloat
-    let height: CGFloat
 
+    private let displayMode: AttachmentThumbnailDisplayMode = .small
+    
     // MARK: - Builder
     
     var body: some View {
@@ -37,24 +38,27 @@ struct MessageInputImageThumbnailView: View, Themed {
             if let image = loadedImage {
                 Image(uiImage: image)
                     .resizable()
+                    .scaledToFill()
             } else {
                 KFImage(url)
                     .onSuccess { result in
                         loadedImage = result.image.fixOrientation()
                     }
                     .placeholder {
-                        Asset.Attachment.file
-                            .resizable()
-                            .frame(width: width, height: height)
+                        AttachmentLoadingView(
+                            title: localization.commonLoading,
+                            width: displayMode.size.width,
+                            height: displayMode.size.width
+                        )
                     }
                     .resizable()
             }
         }
-        .frame(width: width, height: height)
-        .clipShape(.rect(cornerRadius: StyleGuide.Attachment.cornerRadius))
+        .frame(width: displayMode.size.width, height: displayMode.size.height)
+        .clipShape(.rect(cornerRadius: StyleGuide.Sizing.Attachment.cornerRadius))
         .background(
-            RoundedRectangle(cornerRadius: StyleGuide.Attachment.cornerRadius)
-                .fill(colors.foreground.subtle)
+            RoundedRectangle(cornerRadius: StyleGuide.Sizing.Attachment.cornerRadius)
+                .fill(colors.background.default)
         )
     }
 }
@@ -62,10 +66,7 @@ struct MessageInputImageThumbnailView: View, Themed {
 // MARK: - Preview
 
 #Preview {
-    MessageInputImageThumbnailView(
-        url: MockData.imageUrl,
-        width: StyleGuide.Attachment.regularDimension,
-        height: StyleGuide.Attachment.regularDimension
-    )
-    .environmentObject(ChatStyle())
+    MessageInputImageThumbnailView(url: MockData.imageUrl)
+        .environmentObject(ChatStyle())
+        .environmentObject(ChatLocalization())
 }

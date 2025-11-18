@@ -17,15 +17,28 @@ import SwiftUI
 
 struct CustomButton: View {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Sizing {
+            static let backgroundCornerRadius: CGFloat = 8
+        }
+        
+        enum Padding {
+            static let horizontal: CGFloat = 16
+        }
+        
+        enum Colors {
+            static let pressedOpacity: Double = 0.8
+        }
+    }
+    
     // MARK: - Properties
     
     private let configuration: ButtonStyleConfiguration
     private let foregroundColor: Color
     private let backgroundColor: Color
-    
-    private static let horizontalPadding: CGFloat = 16
-    private static let backgroundCornerRadius: CGFloat = 8
-    private static let pressedOpacity: Double = 0.8
     
     // MARK: - Init
     
@@ -41,13 +54,13 @@ struct CustomButton: View {
         configuration.label
             .font(.body.weight(.bold))
             .adjustForA11y()
-            .padding(.horizontal, Self.horizontalPadding)
+            .padding(.horizontal, Constants.Padding.horizontal)
             .foregroundColor(foregroundColor)
             .background(
-                RoundedRectangle(cornerRadius: Self.backgroundCornerRadius)
+                RoundedRectangle(cornerRadius: Constants.Sizing.backgroundCornerRadius)
                     .fill(
                         configuration.isPressed
-                            ? backgroundColor.opacity(Self.pressedOpacity)
+                            ? backgroundColor.opacity(Constants.Colors.pressedOpacity)
                             : backgroundColor
                     )
             )

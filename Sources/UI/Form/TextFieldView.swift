@@ -26,20 +26,21 @@ struct TextFieldView: View {
     private var isEmail: Bool {
         (entity as? TextFieldEntity)?.isEmail ?? false
     }
-
+    
     let onChange: () -> Void
     
     // MARK: - Content
     
     var body: some View {
         ValidatedTextField(
-            entity.label,
+            entity.isRequired
+                ? String(format: localization.prechatSurveyRequiredLabel, entity.label)
+                : entity.label,
             text: $entity.value,
             validator: allOf(
                 entity.isRequired ? required(localization) : any,
                 isEmail ? email(localization) : any
-            ),
-            label: entity.label
+            )
         )
         .if(isEmail) { view in
             view
@@ -61,7 +62,7 @@ struct TextFieldView: View {
     @Previewable @State var emailEntity = TextFieldEntity(label: "E-mail", isRequired: false, ident: "email", isEmail: true)
     @Previewable @State var isValid = false
     
-    VStack {
+    VStack(spacing: 24) {
         TextFieldView(entity: firstNameEntity) {
             isValid = firstNameEntity.value.isEmpty == false
         }
@@ -87,7 +88,7 @@ struct TextFieldView: View {
         }
         .foregroundStyle(isValid ? .green : .red)
     }
-    .padding()
+    .padding(.horizontal, 16)
     .environmentObject(ChatStyle())
     .environmentObject(ChatLocalization())
 }

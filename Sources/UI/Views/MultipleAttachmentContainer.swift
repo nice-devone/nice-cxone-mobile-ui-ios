@@ -17,6 +17,34 @@ import SwiftUI
 
 struct MultipleAttachmentContainer: View, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        static let displayMode: AttachmentThumbnailDisplayMode = .regular
+        static let gridMaxCount = 4
+        static let gridConfig = [
+            GridItem(.fixed(displayMode.size.width), spacing: Spacing.itemSpacing),
+            GridItem(.fixed(displayMode.size.width), spacing: Spacing.itemSpacing)
+        ]
+        
+        enum Spacing {
+            static let itemSpacing: CGFloat = 12
+            static let shareButtonMinLength: CGFloat = 0
+        }
+        
+        enum Padding {
+            static let container: CGFloat = 12
+            static let moreAttachmentsOverlayTextCircle: CGFloat = 10
+        }
+        
+        enum Colors {
+            static let moreAttachmentsOverlayBlur: CGFloat = 4
+            static let moreAttachmentsOverlayContainerOpacity: CGFloat = 0.50
+            static let moreAttachmentsOverlayTextCircleOpacity: CGFloat = 0.70
+        }
+    }
+    
     // MARK: - Properties
 
     @EnvironmentObject var style: ChatStyle
@@ -31,27 +59,12 @@ struct MultipleAttachmentContainer: View, Themed {
     private let message: ChatMessage
     private let position: MessageGroupPosition
     private let filteredTypes: [ChatMessageType]
-    private let displayMode: VideoThumbnailDisplayMode = .multipleContainer
-
+    
     private var textMessage: String?
-    private var audioAttachment: AttachmentItem?
-    
-    private static let moreAttachmentsOverlayBlur: CGFloat = 4
-    private static let moreAttachmentsOverlayContainerOpacity: CGFloat = 0.50
-    private static let moreAttachmentsOverlayTextCircleOpacity: CGFloat = 0.75
-    private static let moreAttachmentsOverlayTextCirclePadding: CGFloat = 10
-    private static let itemSpacing: CGFloat = 12
-    private static let containerPadding: CGFloat = 12
-    
-    private var config: [GridItem] {
-        [
-            GridItem(.fixed(displayMode.width), spacing: Self.itemSpacing),
-            GridItem(.fixed(displayMode.width), spacing: Self.itemSpacing)
-        ]
-    }
+    private var audioAttachments = [AttachmentItem]()
     
     private var attachmentsGroupPosition: MessageGroupPosition {
-        let hasAudio = audioAttachment != nil
+        let hasAudio = !audioAttachments.isEmpty
         let hasText = textMessage != nil
         
         if hasAudio || hasText {
@@ -85,7 +98,7 @@ struct MultipleAttachmentContainer: View, Themed {
     
     var textMessageGroupPosition: MessageGroupPosition {
         let hasAttachments = !filteredTypes.isEmpty
-        let hasAudio = audioAttachment != nil
+        let hasAudio = !audioAttachments.isEmpty
         
         if hasAttachments || hasAudio {
             return .last
@@ -107,7 +120,7 @@ struct MultipleAttachmentContainer: View, Themed {
             case .text(let text):
                 self.textMessage = text
             case .audio(let audioItem):
-                self.audioAttachment = audioItem
+                audioAttachments.append(audioItem)
             default:
                 break
             }
@@ -117,20 +130,20 @@ struct MultipleAttachmentContainer: View, Themed {
     // MARK: - Builder
     
     var body: some View {
-        VStack(spacing: StyleGuide.Message.groupCellSpacing) {
-            LazyVGrid(columns: self.config, spacing: Self.itemSpacing) {
+        VStack(spacing: StyleGuide.Spacing.Message.groupCellSpacing) {
+            LazyVGrid(columns: Constants.gridConfig, spacing: Constants.Spacing.itemSpacing) {
                 contentView
             }
-            .padding(Self.containerPadding)
+            .padding(Constants.Padding.container)
             .background(
                 message.isUserAgent
-                    ? colors.customizable.agentBackground
-                    : colors.customizable.customerBackground
+                    ? colors.background.surface.default
+                    : colors.brand.primary
             )
             .messageChatStyle(message, position: attachmentsGroupPosition)
-            .shareable(message, attachments: AttachmentItemMapper.map(message.types), spacerLength: 0)
+            .shareable(message, attachments: AttachmentItemMapper.map(message.types), spacerLength: Constants.Spacing.shareButtonMinLength)
             
-            if let audioAttachment {
+            ForEach(audioAttachments, id: \.self) { audioAttachment in
                 AudioMessageCell(
                     message: message,
                     item: audioAttachment,
@@ -152,16 +165,16 @@ struct MultipleAttachmentContainer: View, Themed {
 private extension MultipleAttachmentContainer {
     
     var contentView: some View {
-        ForEach(Array(filteredTypes.enumerated().prefix(4)), id: \.element) { index, messageType in
-            cellContent(for: messageType)
-                .frame(width: displayMode.width, height: displayMode.height)
-                .if(index == 3 && filteredTypes.count > 4) { view in
+        ForEach(0..<(filteredTypes.count <= Constants.gridMaxCount ? filteredTypes.count : Constants.gridMaxCount), id: \.self) { index in
+            cellContent(for: filteredTypes[index])
+                .frame(width: Constants.displayMode.size.width, height: Constants.displayMode.size.height)
+                .if(index == 3 && filteredTypes.count > Constants.gridMaxCount) { view in
                     view
-                        .blur(radius: Self.moreAttachmentsOverlayBlur)
+                        .blur(radius: Constants.Colors.moreAttachmentsOverlayBlur)
                         .overlay(
-                            colors.foreground.staticDark
-                                .frame(width: displayMode.width, height: displayMode.height)
-                                .opacity(Self.moreAttachmentsOverlayContainerOpacity)
+                            colors.content.primary
+                                .frame(width: Constants.displayMode.size.width, height: Constants.displayMode.size.height)
+                                .opacity(Constants.Colors.moreAttachmentsOverlayContainerOpacity)
                                 .overlay(
                                     moreAttachmentsIndicatorView
                                 )
@@ -170,7 +183,6 @@ private extension MultipleAttachmentContainer {
                                 }
                         )
                 }
-                .cornerRadius(StyleGuide.Attachment.cornerRadius, corners: .allCorners)
         }
         .sheet(isPresented: $showAttachmentsView) {
             AttachmentsView(message: message, messageTypes: filteredTypes, alertType: $alertType)
@@ -184,31 +196,25 @@ private extension MultipleAttachmentContainer {
             ImageMessageCell(
                 message: message,
                 item: item,
-                isMultiAttachment: true,
-                position: position,
                 alertType: $alertType,
                 localization: localization
             )
-                .frame(width: displayMode.width, height: displayMode.height)
+            .frame(width: Constants.displayMode.size.width, height: Constants.displayMode.size.height)
         case .video(let item):
             VideoMessageCell(
                 message: message,
                 item: item,
-                displayMode: .multipleContainer,
-                position: position,
                 alertType: $alertType,
                 localization: localization
             )
-            .frame(width: displayMode.width, height: displayMode.height)
+            .frame(width: Constants.displayMode.size.width, height: Constants.displayMode.size.height)
         case .documentPreview(let item):
-            MultipleAttachmentDocumentView(
-                attachmentItem: item,
-                isSenderAgent: message.isUserAgent,
-                width: displayMode.width,
-                height: displayMode.height,
-                alertType: $alertType,
-                localization: localization
+            DocumentMessageCell(
+                message: message,
+                item: item,
+                alertType: $alertType
             )
+            .frame(width: Constants.displayMode.size.width, height: Constants.displayMode.size.height)
         default:
             EmptyView()
         }
@@ -218,12 +224,12 @@ private extension MultipleAttachmentContainer {
         Text("+\(filteredTypes.count - 3)")
             .font(.callout)
             .fontWeight(.bold)
-            .foregroundColor(colors.foreground.staticDark)
-            .padding(Self.moreAttachmentsOverlayTextCirclePadding)
+            .foregroundStyle(colors.content.primary)
+            .padding(Constants.Padding.moreAttachmentsOverlayTextCircle)
             .background(
                 Circle()
-                    .fill(colors.foreground.staticLight)
-                    .opacity(Self.moreAttachmentsOverlayTextCircleOpacity)
+                    .fill(colors.brand.onPrimary)
+                    .opacity(Constants.Colors.moreAttachmentsOverlayTextCircleOpacity)
             )
     }
 }

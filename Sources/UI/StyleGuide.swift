@@ -16,24 +16,56 @@
 import SwiftUI
 
 enum StyleGuide {
-    static let buttonSmallerDimension: CGFloat = 32
-    static let buttonDimension: CGFloat = 44
     
-    // nav bar is typically 44 points + 20 points for sheet inset + 32 points for positioning
-    static let containerVerticalOffset: CGFloat = 96
-
-    enum Attachment {
-        static let regularDimension: CGFloat = 72
-        static let largeDimension: CGFloat = 112
-        static let xtraLargeHeight: CGFloat = 319
-        static let xtraLargeWidth: CGFloat = 242
-        static let cornerRadius: CGFloat = 10
+    static let animationDuration: Double = 0.18
+    
+    // MARK: - Sizing
+    
+    enum Sizing {
+        
+        static let buttonTinyDimension: CGFloat = 20
+        static let buttonSmallDimension: CGFloat = 32
+        static let buttonRegularDimension: CGFloat = 44
+        
+        enum Attachment {
+            static let smallDimension: CGFloat = UIScreen.main.bounds.width / 5
+            static let regularDimension: CGFloat = UIScreen.main.bounds.width / 3
+            static let largeHeight: CGFloat = UIScreen.main.bounds.height / 4
+            static let largeWidth: CGFloat = UIScreen.main.bounds.width / 2.5
+            static let cornerRadius: CGFloat = 10
+            static let borderWidth: CGFloat = 1
+        }
+        
+        enum Message {
+            static let cornerRadius: CGFloat = 20
+            static let messageCellWidth = (UIScreen.main.bounds.width / 2) * (UIDevice.isLandscape ? 0.4 : 0.9)
+        }
     }
     
-    enum Message {
-        static let cornerRadius: CGFloat = 20
-        static let paddingVertical: CGFloat = 14
-        static let paddingHorizontal: CGFloat = 12
-        static let groupCellSpacing: CGFloat = 2
+    // MARK: - Spacing
+    
+    enum Spacing {
+        
+        enum Message {
+            static let groupCellSpacing: CGFloat = 2
+        }
+    }
+    
+    // MARK: - Padding
+    
+    enum Padding {
+        // nav bar is typically 44 points + 20 points for sheet inset + 32 points for positioning
+        static let overlayTop: CGFloat = 96
+        
+        enum Message {
+            static let contentVertical: CGFloat = 12
+            static let contentHorizontal: CGFloat = 12
+        }
+    }
+    
+    // MARK: - Colors
+    
+    enum Colors {
+        static let dividerOpacity = 0.1
     }
 }

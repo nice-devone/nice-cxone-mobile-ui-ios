@@ -17,9 +17,30 @@ import SwiftUI
 
 struct ListPickerMessageCell: View, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Spacing {
+            static let elementsHorizontal: CGFloat = 0
+            static let cellContent: CGFloat = 8
+            static let gapMinLength: CGFloat = UIScreen.main.bounds.size.width / 10
+            static let cellContentTitleAndMessage: CGFloat = 2
+            static let sfSymbolToText: CGFloat = 4
+        }
+        
+        enum Padding {
+            static let cellContentVertical: CGFloat = 12
+            static let cellContentHorizontal: CGFloat = 12
+            static let cellContentActionPromptTop: CGFloat = 8
+        }
+        
+    }
+    
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
+    @EnvironmentObject var localization: ChatLocalization
     
     @Environment(\.colorScheme) var scheme
     
@@ -28,12 +49,6 @@ struct ListPickerMessageCell: View, Themed {
     
     let item: ListPickerItem
     let elementSelected: (RichMessageButton) -> Void
-    
-    private static let spacingCell: CGFloat = 8
-    private static let spacingTextAndImage: CGFloat = 10
-    private static let paddingVertical: CGFloat = 10
-    private static let paddingLeading: CGFloat = 18
-    private static let paddingTrailing: CGFloat = 8
     
     // MARK: - Init
     
@@ -45,12 +60,12 @@ struct ListPickerMessageCell: View, Themed {
     // MARK: - Builder
     
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: Self.spacingCell) {
+        HStack(spacing: Constants.Spacing.elementsHorizontal) {
+            VStack(alignment: .leading, spacing: Constants.Spacing.cellContent) {
                 cellContent
             }
             
-            Spacer(minLength: UIScreen.main.bounds.size.width / 10)
+            Spacer(minLength: Constants.Spacing.gapMinLength)
         }
         .sheet(isPresented: $isSheetVisible) {
             ListPickerSheetView(item: item) { element in
@@ -73,92 +88,89 @@ private extension ListPickerMessageCell {
         Button {
             isSheetVisible = true
         } label: {
-            HStack(alignment: .top, spacing: Self.spacingTextAndImage) {
-                VStack(alignment: .leading) {
-                    Text(item.title)
-                        .bold()
-                        .font(.subheadline)
-                        .foregroundStyle(colors.customizable.agentText)
-                    
-                    if let message = item.message {
-                        Text(message)
-                            .font(.footnote)
-                            .foregroundStyle(colors.customizable.agentText.opacity(0.5))
-                    }
+            VStack(alignment: .leading, spacing: Constants.Spacing.cellContentTitleAndMessage) {
+                Text(item.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(colors.content.primary)
+                
+                if let message = item.message {
+                    Text(message)
+                        .font(.footnote)
+                        .foregroundStyle(colors.content.secondary)
                 }
                 
-                Asset.Images.listPickerIcon
-                    .swiftUIImage
+                if isOptionSelectedVisible {
+                    HStack(spacing: Constants.Spacing.sfSymbolToText) {
+                        Asset.Message.RichContent.optionSelected
+                            .foregroundColor(colors.brand.primary)
+                        
+                        Text(localization.chatMessageRichContentOptionSelected)
+                            .font(.caption)
+                            .foregroundColor(colors.brand.primary)
+                    }
+                    .padding(.top, Constants.Padding.cellContentActionPromptTop)
+                } else {
+                    HStack(spacing: Constants.Spacing.sfSymbolToText) {
+                        Asset.handTap
+                            .foregroundColor(colors.brand.primary)
+                        
+                        Text(localization.chatMessageListPickerPressToOpen)
+                            .font(.caption)
+                            .foregroundColor(colors.brand.primary)
+                    }
+                    .padding(.top, Constants.Padding.cellContentActionPromptTop)
+                }
             }
             .multilineTextAlignment(.leading)
         }
-        .padding(.vertical, Self.paddingVertical)
-        .padding(.leading, Self.paddingLeading)
-        .padding(.trailing, Self.paddingTrailing)
-        .background(colors.customizable.agentBackground)
-        .cornerRadius(StyleGuide.Message.cornerRadius, corners: .allCorners)
-        
-        if isOptionSelectedVisible {
-            RichContentOptionSelected()
-        }
+        .padding(.vertical, Constants.Padding.cellContentVertical)
+        .padding(.horizontal, Constants.Padding.cellContentHorizontal)
+        .background(colors.background.surface.default)
+        .cornerRadius(StyleGuide.Sizing.Message.cornerRadius, corners: .allCorners)
     }
 }
 
 // MARK: - Previews
 
+@available(iOS 17, *)
 #Preview {
-    TestViewPreview()
-        .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
-}
-
-private struct TestViewPreview: View, Themed {
+    @Previewable @SwiftUI.Environment(\.colorScheme) var scheme
+    @Previewable @State var selectedOption: RichMessageButton?
     
-    // MARK: - Properties
+    let style = ChatStyle()
     
-    @SwiftUI.Environment(\.colorScheme) var scheme
-    
-    @EnvironmentObject var style: ChatStyle
-    
-    @State private var selectedOption: RichMessageButton?
-    
-    private static let avatarDimension: CGFloat = 24
-    private static let avatarOffset: CGFloat = 12
-    
-    // MARK: - Builder
-    
-    var body: some View {
-        VStack {
-            ZStack(alignment: .bottomLeading) {
-                ListPickerMessageCell(item: MockData.listPickerItem) { option in
-                    selectedOption = option
-                }
-                
-                AvatarView(imageUrl: MockData.agent.avatarURL, initials: MockData.agent.initials)
-                    .frame(width: Self.avatarDimension, height: Self.avatarDimension)
-                    .offset(x: -Self.avatarOffset, y: Self.avatarOffset)
+    VStack {
+        ZStack(alignment: .bottomLeading) {
+            ListPickerMessageCell(item: MockData.listPickerItem) { option in
+                selectedOption = option
             }
             
-            if let selectedOption {
-                HStack {
-                    Spacer(minLength: UIScreen.main.bounds.size.width / 10)
-                    
-                    Text(selectedOption.title)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(colors.foreground.onContrast)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(colors.accent.accent)
-                    )
-                }
-            }
-            
-            Spacer()
+            AvatarView(imageUrl: MockData.agent.avatarURL, initials: MockData.agent.initials)
+                .frame(width: 24, height: 24)
+                .offset(x: -12, y: 12)
         }
-        .listStyle(.inset)
-        .padding(.leading, 16)
-        .padding(.trailing, 4)
+        
+        if let selectedOption {
+            HStack {
+                Spacer(minLength: UIScreen.main.bounds.size.width / 10)
+                
+                Text(selectedOption.title)
+                    .foregroundStyle(style.colors(for: scheme).brand
+                        .onPrimary)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(style.colors(for: scheme).brand
+                            .primary)
+                )
+            }
+        }
+        
+        Spacer()
     }
+    .padding(.leading, 16)
+    .padding(.trailing, 4)
+    .environmentObject(style)
+    .environmentObject(ChatLocalization())
 }

@@ -61,7 +61,9 @@ public class ChatLocalization: ObservableObject {
     public lazy var commonError = lookup(key: "chatui_common_error")
     /// "Settings"
     public lazy var commonSettings = lookup(key: "chatui_common_settings")
-
+    /// "Close chat"
+    public lazy var commonCloseChat = lookup(key: "chatui_common_closeChat")
+    
     // MARK: - Alert
     
     /// "Disconnect"
@@ -93,8 +95,6 @@ public class ChatLocalization: ObservableObject {
     
     /// "The operation is taking longer than expected."
     public lazy var overlayLoadingDelayTitle = lookup(key: "chatui_overlay_loading_delay_title")
-    /// "Close chat"
-    public lazy var overlayLoadingDelayButtonTitle = lookup(key: "chatui_overlay_loading_delay_button_title")
     
     // MARK: - ChatListView
     
@@ -125,6 +125,11 @@ public class ChatLocalization: ObservableObject {
     public lazy var chatFallbackMessageTORMListPicker = lookup(key: "chatui_chat_fallbackMessage_torm_listPicker")
     /// "Unknown message"
     public lazy var chatFallbackMessageUnknown = lookup(key: "chatui_chat_fallbackMessage_unknown")
+    /// "Why do I see this"
+    public lazy var chatFallbackMessageUnknownTooltipText = lookup(key: "chatui_chat_fallbackMessage_unknown_tooltip_text")
+    /// "This message could not be displayed in the chat as it uses a format that is currently unsupported."
+    public lazy var chatFallbackMessageUnknownTooltipContent = lookup(key: "chatui_chat_fallbackMessage_unknown_tooltip_content")
+    
     /// "No name"
     public lazy var chatFallbackMessageNoName = lookup(key: "chatui_chat_fallbackMessage_noName")
 
@@ -183,10 +188,17 @@ public class ChatLocalization: ObservableObject {
     
     /// "Option selected"
     public lazy var chatMessageRichContentOptionSelected = lookup(key: "chatui_chat_message_richContent_optionSelected")
-    /// "Tap to select an option"
-    public lazy var chatMessageListPickerSheetOptionsTitle = lookup(key: "chatui_chat_message_listPicker_sheet_optionsTitle")
+    /// "Already answered or no longer available"
+    public lazy var chatMessageRichContentOptionsDisabled = lookup(key: "chatui_chat_message_richContent_optionsDisabled")
+    /// "These options are no longer visible because you've already responded or the message is no longer the most recent."
+    public lazy var chatMessageRichContentOptionsDisabledTooltip = lookup(key: "chatui_chat_message_richContent_optionsDisabled_tooltip")
+    // swiftlint:disable:previous identifier_name
     /// "Done"
     public lazy var chatMessageListPickerSheetConfirm = lookup(key: "chatui_chat_message_listPicker_sheet_confirm")
+    /// "Press to open"
+    public lazy var chatMessageListPickerPressToOpen = lookup(key: "chatui_chat_message_listPicker_pressToOpen")
+    /// "Select one option below"
+    public lazy var chatMessageQuickRepliesSelectOneOption = lookup(key: "chatui_chat_message_quickReplies_selectOneOption")
     
     // MARK: - LiveChat - Offline
     
@@ -210,16 +222,22 @@ public class ChatLocalization: ObservableObject {
     public lazy var liveChatEndConversationNew = lookup(key: "chatui_liveChat_endConverastion_new")
     /// "Back to conversation"
     public lazy var liveChatEndConversationBack = lookup(key: "chatui_liveChat_endConverastion_back")
-    /// "Close chat"
-    public lazy var liveChatEndConversationClose = lookup(key: "chatui_liveChat_endConverastion_close")
     /// "This conversation was closed"
     public lazy var liveChatEndConversationDefaultTitle = lookup(key: "chatui_liveChat_endConversation_default_title")
+    
+    // MARK: - LiveChat - Inactivity Popup
+    
+    /// "Time is up"
+    public lazy var liveChatInactivityTimeoutTitle = lookup(key: "chatui_liveChat_inactivityPopup_sessionTimeout_title")
+    /// "This conversation will now end due to inactivity"
+    public lazy var liveChatInactivityTimeoutText = lookup(key: "chatui_liveChat_inactivityPopup_sessionTimeout_text")
     
     // MARK: - PreContactSurvey
     
     /// "Please fill out all fields and submit the form."
     public lazy var prechatSurveySubtitle = lookup(key: "chatui_preChatSurvey_subtitle")
-    
+    /// "%@ *"
+    public lazy var prechatSurveyRequiredLabel = lookup(key: "chatui_preChatSurvey_requiredLabel")
 	// MARK: - Init
 
     public init(bundle: Bundle = .main, tablename: String = "CXOneChatUI") {

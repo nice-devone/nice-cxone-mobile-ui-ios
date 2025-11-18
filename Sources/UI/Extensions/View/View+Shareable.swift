@@ -26,6 +26,24 @@ extension View {
 
 private struct ShareableModifier: ViewModifier, Themed {
 
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Sizing {
+            static let shareButtonStrokeWidth: CGFloat = 1
+        }
+        
+        enum Spacing {
+            static let contentHorizontal: CGFloat = 16
+            static let shareButtonOffset: CGFloat = -1
+        }
+        
+        enum Padding {
+            static let icon: CGFloat = 8
+        }
+    }
+    
     // MARK: - Properties
 
     @State private var showShareSheet = false
@@ -38,13 +56,10 @@ private struct ShareableModifier: ViewModifier, Themed {
     let attachments: [AttachmentItem]
     let spacerLength: CGFloat
     
-    private static let shareableHorizontalSpacing: CGFloat = 12
-    private static let iconPadding: CGFloat = 10
-    
     // MARK: - Builder
     
     func body(content: Content) -> some View {
-        HStack(spacing: Self.shareableHorizontalSpacing) {
+        HStack(spacing: Constants.Spacing.contentHorizontal) {
             if !message.isUserAgent {
                 Spacer(minLength: spacerLength)
                 
@@ -75,20 +90,17 @@ private extension ShareableModifier {
         } label: {
             Asset.share
                 .font(.subheadline.bold())
-                .foregroundStyle(colors.customizable.primary)
-                .offset(y: -1)
+                .foregroundStyle(colors.brand.primary)
+                .offset(y: Constants.Spacing.shareButtonOffset)
         }
-        .padding(Self.iconPadding)
+        .padding(Constants.Padding.icon)
         .background(
-            ZStack {
-                Circle()
-                    .stroke(colors.customizable.onBackground)
-                    .opacity(0.10)
-                
-                Circle()
-                    .fill(colors.customizable.onBackground)
-                    .opacity(0.05)
-            }
+            Circle()
+                .strokeBorder(colors.border.default, lineWidth: Constants.Sizing.shareButtonStrokeWidth)
+                .background(
+                    Circle()
+                        .fill(colors.background.surface.default)
+                )
         )
     }
 }
@@ -100,7 +112,6 @@ private extension ShareableModifier {
         ImageMessageCell(
             message: MockData.imageMessage(user: MockData.agent),
             item: MockData.imageItem,
-            isMultiAttachment: false,
             position: .single,
             alertType: .constant(nil),
             localization: ChatLocalization()
@@ -109,7 +120,6 @@ private extension ShareableModifier {
         ImageMessageCell(
             message: MockData.imageMessage(user: MockData.customer),
             item: MockData.imageItem,
-            isMultiAttachment: false,
             position: .single,
             alertType: .constant(nil),
             localization: ChatLocalization()

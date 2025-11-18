@@ -18,6 +18,21 @@ import SwiftUI
 @available(iOS 16.0, *)
 struct MultilineTextField: View, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        static let editingTimerInternalDelay: TimeInterval = 1.0
+        static let typingTimeoutThreshold = 3
+        
+        enum Sizing {
+            static let lineLimit = 6
+        }
+        
+        enum Padding {
+            static let content: CGFloat = 8
+        }
+    }
+    
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
@@ -31,39 +46,34 @@ struct MultilineTextField: View, Themed {
     @State private var timer: Timer?
     @State private var textInputWaitTime = 0
     
-    private static let contentPadding: CGFloat = 8
-    private static let editingTimerInternalDelay: TimeInterval = 1.0
-    private static let lineLimit = 6
-    private static let typingTimeoutThreshold = 3
-    
     // MARK: - Builder
     
     var body: some View {
         TextField(text: $text, axis: .vertical) {
             Text(localization.chatMessageInputPlaceholder)
                 .font(.body)
-                .foregroundStyle(colors.customizable.onBackground.opacity(0.5))
+                .foregroundStyle(colors.content.tertiary)
         }
-        .foregroundStyle(colors.customizable.onBackground)
-        .lineLimit(Self.lineLimit)
-        .padding(Self.contentPadding)
+        .foregroundStyle(colors.content.primary)
+        .lineLimit(Constants.Sizing.lineLimit)
+        .padding(Constants.Padding.content)
         .onChange(of: text) { _ in
             if timer != nil {
-                if textInputWaitTime > 0 {
-                    textInputWaitTime = 0
+                if textInputWaitTime > .zero {
+                    textInputWaitTime = .zero
                 }
             } else {
                 isEditing = true
                 
-                self.timer = Timer.scheduledTimer(withTimeInterval: Self.editingTimerInternalDelay, repeats: true) { _ in
+                self.timer = Timer.scheduledTimer(withTimeInterval: Constants.editingTimerInternalDelay, repeats: true) { _ in
                     textInputWaitTime += 1
                     
-                    if self.textInputWaitTime >= Self.typingTimeoutThreshold {
+                    if self.textInputWaitTime >= Constants.typingTimeoutThreshold {
                         self.timer?.invalidate()
                         self.timer = nil
                         
                         self.isEditing = false
-                        self.textInputWaitTime = 0
+                        self.textInputWaitTime = .zero
                     }
                 }
             }

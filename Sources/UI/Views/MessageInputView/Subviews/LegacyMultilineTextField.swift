@@ -17,6 +17,19 @@ import SwiftUI
 
 struct LegacyMultilineTextField: View, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        static let timerInterval: TimeInterval = 1.0
+        static let timerLimit: Int = 3
+        
+        enum Padding {
+            static let placeholder: CGFloat = 10
+            static let typingIndicatorLeading: CGFloat = 6
+        }
+    }
+    
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
@@ -31,10 +44,6 @@ struct LegacyMultilineTextField: View, Themed {
     @State private var contentSizeThatFits: CGSize = .zero
     @State private var timer: Timer?
     @State private var textInputWaitTime = 0
-    
-    private static let placeholderPaddingVertical: CGFloat = 8
-    private static let placeholderPaddingHorizontal: CGFloat = 10
-    private static let typingIndicatorPaddingLeading: CGFloat = 6
     
     // MARK: - Init
     
@@ -59,20 +68,20 @@ struct LegacyMultilineTextField: View, Themed {
         )
         .onChange(of: attributedText) { _ in
             if timer != nil {
-                if textInputWaitTime > 0 {
-                    textInputWaitTime = 0
+                if textInputWaitTime > .zero {
+                    textInputWaitTime = .zero
                 }
             } else {
                 isEditing = true
                 
-                self.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+                self.timer = Timer.scheduledTimer(withTimeInterval: Constants.timerInterval, repeats: true) { timer in
                     textInputWaitTime += 1
                     
-                    if textInputWaitTime >= 3 {
+                    if textInputWaitTime >= Constants.timerLimit {
                         timer.invalidate()
                         
                         isEditing = false
-                        textInputWaitTime = 0
+                        textInputWaitTime = .zero
                         self.timer = nil
                     }
                 }
@@ -81,18 +90,18 @@ struct LegacyMultilineTextField: View, Themed {
         .onPreferenceChange(PreferenceKeys.ContentSizeThatFitsKey.self) { size in
             self.contentSizeThatFits = size
         }
-        .frame(height: attributedText.length == 0 ? StyleGuide.buttonDimension : contentSizeThatFits.height)
-        .padding(.leading, Self.typingIndicatorPaddingLeading)
+        .frame(height: attributedText.length == .zero ? StyleGuide.Sizing.buttonRegularDimension : contentSizeThatFits.height)
+        .padding(.leading, Constants.Padding.typingIndicatorLeading)
         .background(placeholderView, alignment: .topLeading)
     }
     
-    @ViewBuilder private var placeholderView: some View {
-        if attributedText.length == 0 {
+    @ViewBuilder
+    private var placeholderView: some View {
+        if attributedText.length == .zero {
             Text(localization.chatMessageInputPlaceholder)
                 .font(.body)
-                .foregroundColor(colors.customizable.onBackground.opacity(0.5))
-                .padding(.vertical, Self.placeholderPaddingVertical)
-                .padding(.horizontal, Self.placeholderPaddingHorizontal)
+                .foregroundStyle(colors.content.tertiary)
+                .padding(Constants.Padding.placeholder)
         }
     }
 }
@@ -182,7 +191,7 @@ private struct UITextViewWrapper: UIViewRepresentable, Themed {
         view.isEditable = isInputEnabled
         view.isSelectable = isInputEnabled
         view.font = UIFont.preferredFont(forTextStyle: .body)
-        view.textColor = UIColor(colors.customizable.onBackground)
+        view.textColor = UIColor(colors.content.primary)
         view.backgroundColor = .clear
         
         view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
@@ -193,7 +202,7 @@ private struct UITextViewWrapper: UIViewRepresentable, Themed {
     @MainActor
     func updateUIView(_ uiView: UITextView, context: Context) {
         uiView.attributedText = attributedText
-        uiView.textColor = UIColor(colors.customizable.onBackground)
+        uiView.textColor = UIColor(colors.content.primary)
         uiView.isEditable = isInputEnabled
         uiView.isSelectable = isInputEnabled
         

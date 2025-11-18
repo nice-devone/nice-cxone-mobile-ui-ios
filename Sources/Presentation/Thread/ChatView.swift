@@ -18,6 +18,31 @@ import SwiftUI
 
 struct ChatView: View, Themed {
 
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        static let bottomID = "bottom"
+        
+        enum Spacing {
+            static let bodyVertical: CGFloat = 0
+            static let messageGroupsMinLength: CGFloat = 16
+            static let archivedChatMessage: CGFloat = 10
+            static let archivedChatElementsVertical: CGFloat = 2
+        }
+        
+        enum Padding {
+            static let positionInQueueTop: CGFloat = 32
+            static let positionInQueueHorizontal: CGFloat = 16
+            static let positionInQueueBottom: CGFloat = 24
+            static let typingIndicatorLeading: CGFloat = 16
+            static let archivedChatMessageDividerHorizontal: CGFloat = 24
+            static var archivedChatMessageBottom: CGFloat {
+                UIDevice.hasHomeButton ? 10 : 0
+            }
+        }
+    }
+    
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
@@ -31,7 +56,6 @@ struct ChatView: View, Themed {
     @Binding private var isUserTyping: Bool
     @Binding private var isInputEnabled: Bool
     @Binding private var isThreadClosed: Bool
-    @Binding private var isProcessDialogVisible: Bool
     @Binding private var alertType: ChatAlertType?
     @Binding private var messageGroups: [MessageGroup]
 
@@ -43,10 +67,6 @@ struct ChatView: View, Themed {
     
     static let packageIdentifier = "CXoneChatUI"
     
-    private static let bottomID = "bottom"
-    private static let messageGroupsVerticalSpace: CGFloat = 16
-    private static let typingIndicatorLeadingPadding: CGFloat = 16
-    
     // MARK: - Init
 
     init(
@@ -56,7 +76,6 @@ struct ChatView: View, Themed {
         isUserTyping: Binding<Bool>,
         isInputEnabled: Binding<Bool>,
         isThreadClosed: Binding<Bool>,
-        isProcessDialogVisible: Binding<Bool>,
         alertType: Binding<ChatAlertType?>,
         attachmentRestrictions: AttachmentRestrictions,
         queuePosition: Int? = nil,
@@ -70,7 +89,6 @@ struct ChatView: View, Themed {
         self._isUserTyping = isUserTyping
         self._isInputEnabled = isInputEnabled
         self._isThreadClosed = isThreadClosed
-        self._isProcessDialogVisible = isProcessDialogVisible
         self._alertType = alertType
         self.attachmentRestrictions = attachmentRestrictions
         self.queuePosition = queuePosition
@@ -82,23 +100,23 @@ struct ChatView: View, Themed {
     // MARK: - Builder
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: Constants.Spacing.bodyVertical) {
             if let queuePosition {
                 LivechatPositionInQueueView(position: queuePosition)
-                    .padding(.top, 32)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 24)
+                    .padding(.top, Constants.Padding.positionInQueueTop)
+                    .padding(.horizontal, Constants.Padding.positionInQueueHorizontal)
+                    .padding(.bottom, Constants.Padding.positionInQueueBottom)
             }
             
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
                     LazyVStack {
-                        Spacer(minLength: Self.messageGroupsVerticalSpace)
+                        Spacer(minLength: Constants.Spacing.messageGroupsMinLength)
                         
                         ForEach(messageGroups) { group in
                             MessageGroupView(
                                 group: group,
-                                isProcessDialogVisible: $isProcessDialogVisible,
+                                isLast: messageGroups.last?.id == group.id,
                                 alertType: $alertType,
                                 onRichMessageElementSelected: onRichMessageElementSelected
                             )
@@ -106,21 +124,25 @@ struct ChatView: View, Themed {
                         }
                     }
                     .onChange(of: messageGroups) { _ in
-                        withAnimation {
-                            proxy.scrollTo(Self.bottomID, anchor: .bottom)
+                        DispatchQueue.main.async {
+                            withAnimation {
+                                proxy.scrollTo(Constants.bottomID, anchor: .bottom)
+                            }
                         }
                     }
                     .onAppear {
-                        proxy.scrollTo(messageGroups.last?.id, anchor: .bottom)
+                        DispatchQueue.main.async {
+                            proxy.scrollTo(messageGroups.last?.id, anchor: .bottom)
+                        }
                     }
 
                     if let typingAgent {
                         typingIndicator(agent: typingAgent, proxy: proxy)
-                            .padding(.leading, Self.typingIndicatorLeadingPadding)
+                            .padding(.leading, Constants.Padding.typingIndicatorLeading)
                     }
                     
-                    Spacer(minLength: Self.messageGroupsVerticalSpace)
-                        .id(Self.bottomID)
+                    Spacer(minLength: Constants.Spacing.messageGroupsMinLength)
+                        .id(Constants.bottomID)
                 }
                 .if(hasMoreMessagesToLoad) { view in
                     view.refreshable {
@@ -131,7 +153,7 @@ struct ChatView: View, Themed {
 
             if isThreadClosed {
                 archivedChatMessage
-                    .padding(.bottom, UIDevice.hasHomeButton ? 10 : 0)
+                    .padding(.bottom, Constants.Padding.archivedChatMessageBottom)
             } else {
                 MessageInputView(
                     attachmentRestrictions: attachmentRestrictions,
@@ -143,7 +165,7 @@ struct ChatView: View, Themed {
                 )
             }
         }
-        .background(colors.customizable.background)
+        .background(colors.background.default)
     }
 }
 
@@ -156,7 +178,7 @@ private extension ChatView {
             TypingIndicator(agent: agent)
                 .onAppear {
                     withAnimation {
-                        proxy.scrollTo(Self.bottomID)
+                        proxy.scrollTo(Constants.bottomID)
                     }
                 }
 
@@ -165,11 +187,11 @@ private extension ChatView {
     }
     
     var archivedChatMessage: some View {
-        VStack(spacing: 10) {
-            ColoredDivider(colors.customizable.background.opacity(0.5))
-                .padding(.horizontal, 24)
+        VStack(spacing: Constants.Spacing.archivedChatMessage) {
+            ColoredDivider(colors.border.default)
+                .padding(.horizontal, Constants.Padding.archivedChatMessageDividerHorizontal)
             
-            HStack {
+            HStack(spacing: Constants.Spacing.archivedChatElementsVertical) {
                 Asset.Message.archiveFill
                 
                 Text(
@@ -178,8 +200,7 @@ private extension ChatView {
                         : localization.chatMessageInputArchived
                 )
             }
-            .foregroundColor(colors.customizable.onBackground)
-            .opacity(0.5)
+            .foregroundStyle(colors.content.tertiary)
         }
     }
 }
@@ -201,9 +222,8 @@ private extension ChatView {
         isUserTyping: .constant(false),
         isInputEnabled: .constant(true),
         isThreadClosed: .constant(false),
-        isProcessDialogVisible: .constant(false),
         alertType: .constant(alertType),
-        attachmentRestrictions: MockData.attachmentResrictions,
+        attachmentRestrictions: MockData.attachmentRestrictions,
         queuePosition: 3,
         onNewMessage: { _, _ in },
         loadMoreMessages: { },

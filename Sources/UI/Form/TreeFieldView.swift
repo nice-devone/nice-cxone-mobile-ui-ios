@@ -17,6 +17,25 @@ import SwiftUI
 
 struct TreeFieldView: View, Themed {
 
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Spacing {
+            static let bodyVertical: CGFloat = 6
+            static let cellVertical: CGFloat = 0
+            static let nodeVertical: CGFloat = 16
+            static let childrenListVertical: CGFloat = 0
+        }
+        
+        enum Padding {
+            static let indentationLeading: CGFloat = 16
+            static let nodeInitialLeading: CGFloat = 0
+            static let nodeVertical: CGFloat = 16
+            static let checkHorizontal: CGFloat = 4
+        }
+    }
+    
     // MARK: - Properties
 
     @EnvironmentObject var style: ChatStyle
@@ -25,11 +44,6 @@ struct TreeFieldView: View, Themed {
     @Environment(\.colorScheme) var scheme
     
     @ObservedObject var entity: TreeFieldEntity
-
-    static let disclosureIndicatorTrailingPadding: CGFloat = 13
-    static let paddingBottomTitle: CGFloat = 20
-    static let paddingLeadingIndentation: CGFloat = 22
-    static let paddingVerticalCell: CGFloat = 10
     
     let onChange: () -> Void
     
@@ -43,12 +57,21 @@ struct TreeFieldView: View, Themed {
     // MARK: - Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: .zero) {
-            titleView
+        VStack(alignment: .leading, spacing: Constants.Spacing.bodyVertical) {
+            Text(entity.isRequired ? String(format: localization.prechatSurveyRequiredLabel, entity.label) : entity.label)
+                .font(.callout)
+                .bold()
+                .foregroundStyle(entity.isRequired && entity.value.isEmpty ? colors.status.error : colors.content.primary)
             
-            nodeListView
+            ForEach(entity.children, id: \.id) { node in
+                cell(node: node, leadingPadding: Constants.Padding.nodeInitialLeading)
+            }
 
-            requiredFieldView
+            if entity.isRequired, entity.value.isEmpty {
+                Text(localization.commonRequired)
+                    .font(.caption)
+                    .foregroundStyle(colors.status.error)
+            }
         }
     }
 }
@@ -58,7 +81,7 @@ struct TreeFieldView: View, Themed {
 private extension TreeFieldView {
     
     func cell(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
-        VStack(spacing: 0) {
+        VStack(spacing: Constants.Spacing.cellVertical) {
             if let children = node.children, !children.isEmpty {
                 parentNodeView(node: node, leadingPadding: leadingPadding)
             } else {
@@ -71,115 +94,72 @@ private extension TreeFieldView {
         DisclosureGroupView(isExpanded: !entity.value.isEmpty) {
             childrenListView(children: node.children ?? [], leadingPadding: leadingPadding)
         } label: {
-            nodeLabelView(node: node, leadingPadding: leadingPadding)
+            parentNoteLabelView(node: node, leadingPadding: leadingPadding)
         }
     }
     
     func leafNodeView(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text(node.label)
-                    .padding(.leading, leadingPadding)
-                    .foregroundStyle(colors.customizable.onBackground)
-                
-                Spacer()
-                
-                if entity.value == node.value {
-                    Asset.check
-                        .foregroundStyle(colors.customizable.primary)
-                        .padding(.trailing, Self.disclosureIndicatorTrailingPadding)
-                }
-            }
-            .contentShape(Rectangle())
-            
-            ColoredDivider(colors.customizable.onBackground.opacity(0.1))
-                .padding(.vertical, Self.paddingVerticalCell)
-        }
-        .onTapGesture {
+        Button {
             node.isSelected.toggle()
         
-            if entity.value == node.value {
-                entity.value = ""
-            } else {
-                entity.value = node.value
-            }
+            entity.value = entity.value == node.value ? "" : node.value
             
             onChange()
+        } label: {
+            VStack(spacing: Constants.Spacing.nodeVertical) {
+                HStack {
+                    Text(node.label)
+                        .padding(.leading, leadingPadding)
+                        .foregroundStyle(colors.content.primary)
+                    
+                    Spacer()
+                    
+                    if entity.value == node.value {
+                        Asset.check
+                            .font(.footnote.weight(.bold))
+                            .foregroundStyle(colors.brand.primary)
+                            .padding(.horizontal, Constants.Padding.checkHorizontal)
+                    }
+                }
+                .contentShape(Rectangle())
+                
+                ColoredDivider(colors.border.default)
+            }
         }
+        .padding(.top, Constants.Padding.nodeVertical)
+        .background(entity.value == node.value ? colors.background.surface.emphasis : colors.background.default)
     }
 
-    func nodeLabelView(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(node.label)
-                    .foregroundStyle(colors.customizable.onBackground)
-                    .padding(.leading, leadingPadding)
-                
-                Spacer()
-            }
+    func parentNoteLabelView(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: Constants.Spacing.nodeVertical) {
+            Text(node.label)
+                .foregroundStyle(colors.content.primary)
+                .padding(.leading, leadingPadding)
             
-            conditionalDividerView
+            if #unavailable(iOS 16) {
+                ColoredDivider(colors.border.default)
+            }
         }
-        .background(colors.customizable.background)
+        .background(colors.background.default)
+        .padding(.vertical, Constants.Padding.nodeVertical)
     }
 
     func childrenListView(children: [TreeNodeFieldEntity], leadingPadding: CGFloat) -> some View {
-        VStack(spacing: 0) {
+        VStack(spacing: Constants.Spacing.childrenListVertical) {
             ForEach(children.indices, id: \.self) { index in
-                let child = children[index]
-                AnyView(
-                    cell(node: child, leadingPadding: leadingPadding + Self.paddingLeadingIndentation)
-                )
+                AnyView(cell(node: children[index], leadingPadding: leadingPadding + Constants.Padding.indentationLeading))
             }
-        }
-    }
-
-    @ViewBuilder
-    var conditionalDividerView: some View {
-        if #unavailable(iOS 16) {
-            ColoredDivider(colors.customizable.onBackground.opacity(0.1))
-                .padding(.vertical, Self.paddingVerticalCell)
-        }
-    }
-    
-    var titleView: some View {
-        Text(entity.formattedTitle)
-            .font(.callout)
-            .bold()
-            .foregroundStyle(colors.customizable.onBackground)
-            .padding(.bottom, Self.paddingBottomTitle)
-    }
-    
-    var nodeListView: some View {
-        ForEach(entity.children, id: \.id) { node in
-            cell(node: node, leadingPadding: 0)
-        }
-    }
-    
-    @ViewBuilder
-    var requiredFieldView: some View {
-        if entity.isRequired {
-            Text(localization.commonRequired)
-                .font(.caption)
-                .foregroundStyle(colors.background.errorContrast)
-        } else {
-            EmptyView()
         }
     }
 }
 
 // MARK: - Previews
 
-struct TreeFieldView_Previews: PreviewProvider {
-    
-    static var previews: some View {
-        Group {
-            ScrollView {
-                TreeFieldView(entity: MockData.treeFieldEntity()) { }
-            }
-            .previewDisplayName("Light Mode")
-        }
-        .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
+#Preview {
+    ScrollView {
+        TreeFieldView(entity: MockData.treeFieldEntity()) { }
     }
+    .padding(.horizontal, 12)
+    .environmentObject(ChatStyle())
+    .environmentObject(ChatLocalization())
 }

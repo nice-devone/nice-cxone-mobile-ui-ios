@@ -1,4 +1,4 @@
-// Common
+// MARK: - Common
 "chatui_common_ok" = "Ok";
 "chatui_common_cancel" = "Cancel";
 "chatui_common_confirm" = "Confirm";
@@ -17,8 +17,9 @@
 "chatui_common_try_again" = "Try again";
 "chatui_common_error" = "Error";
 "chatui_common_settings" = "Settings";
+"chatui_common_closeChat" = "Close chat";
 
-// Alert
+// MARK: - Alert
 "chatui_alert_disconnect_confirm" = "Disconnect";
 "chatui_alert_updateThreadName_title" = "Update conversation name";
 "chatui_alert_updateThreadName_placeholder" = "Conversation name";
@@ -32,11 +33,10 @@
 "chatui_alert_invalidFileType_message" = "Unable to upload attachment(s) due to invalid file type.";
 "chatui_alert_invalidFileSize_message" = "Unable to upload attachment(s). Attachment(s) size greater than %1$d MB";
 
-// Overlay
+// MARK: - Overlay
 "chatui_overlay_loading_delay_title" = "The operation is taking longer than expected.";
-"chatui_overlay_loading_delay_button_title" = "Close chat";
 
-// ChatList
+// MARK: - ChatList
 "chatui_chatList_title" = "Conversations";
 "chatui_chatList_empty" = "No conversations";
 "chatui_chatList_threadStatus_archived" = "Archived";
@@ -45,15 +45,17 @@
 "chatui_chatThread_contextMenu_rename" = "Rename";
 "chatui_chatThread_contextMenu_archive" = "Archive";
 
-// Chat - Fallback Message
+// MARK: - Chat - Fallback Message
 "chatui_chat_fallbackMessage_attachments" = "%1$d attachment(s)";
 "chatui_chat_fallbackMessage_torm_richLink" = "Rich link message";
 "chatui_chat_fallbackMessage_torm_quickReplies" = "Quick replies message";
 "chatui_chat_fallbackMessage_torm_listPicker" = "List picker message";
 "chatui_chat_fallbackMessage_unknown" = "Unknown message";
 "chatui_chat_fallbackMessage_noName" = "No name";
+"chatui_chat_fallbackMessage_unknown_tooltip_text" = "Why do I see this";
+"chatui_chat_fallbackMessage_unknown_tooltip_content" = "This message could not be displayed in the chat as it uses a format that is currently unsupported.";
 
-// Chat - Message Input Bar
+// MARK: - Chat - Message Input Bar
 "chatui_chat_messageInput_archived" = "This conversation was archived.";
 "chatui_chat_messageInput_closed" = "This conversation was closed.";
 "chatui_chat_messageInput_placeholder" = "Aa";
@@ -65,7 +67,7 @@
 "chatui_chat_messageInput_audioRecorder_recording" = "Recording";
 "chatui_chat_messageInput_audioRecorder_playing" = "Playing";
 
-// Chat - Attachments
+// MARK: - Chat - Attachments
 "chatui_chat_attachments_selection_all" = "All";
 "chatui_chat_attachments_deselect" = "None";
 "chatui_chat_attachments_selectionMode" = "Select items";
@@ -76,29 +78,36 @@
 "chatui_chat_attachments_loading_document_error" = "Loading document failed";
 "chatui_chat_attachments_download_document_error" = "Error downloading file";
 
-// Chat - Menu Actions
+// MARK: - Chat - Menu Actions
 "chatui_chat_menuOption_updateName" = "Update conversation name";
 "chatui_chat_menuOption_endConversation" = "End conversation";
 
-// Chat - Message: TORM
+// MARK: - Chat - Message: TORM
 "chatui_chat_message_richContent_optionSelected" = "Option selected";
-"chatui_chat_message_listPicker_sheet_optionsTitle" = "Tap to select an option";
+"chatui_chat_message_richContent_optionsDisabled" = "Options unavailable";
+"chatui_chat_message_richContent_optionsDisabled_tooltip" = "These options are no longer visible because you've already responded or the message is no longer the most recent.";
 "chatui_chat_message_listPicker_sheet_confirm" = "Done";
+"chatui_chat_message_listPicker_pressToOpen" = "Press to open";
+"chatui_chat_message_quickReplies_selectOneOption" = "Select one option below";
 
-// LiveChat - Offline
+// MARK: - LiveChat - Offline
 "chatui_liveChat_offline_title" = "We are currently offline";
 "chatui_liveChat_offline_message" = "Please check back soon.";
 
-// LiveChat - Queue
+// MARK: - LiveChat - Queue
 "chatui_liveChat_queue_title" = "You are number %1$d in line";
-"chatui_liveChat_queue_subtitle" = "Please hold, we'll be with you shortly.\n Your patience is appreciated!";
+"chatui_liveChat_queue_subtitle" = "Please hold, we'll be with you shortly. Your patience is appreciated!";
 
-// LiveChat - End Conversation
+// MARK: - LiveChat - End Conversation
 "chatui_liveChat_endConverastion_assignedAgent" = "You chatted with";
 "chatui_liveChat_endConverastion_new" = "Start a new chat";
 "chatui_liveChat_endConverastion_back" = "Back to conversation";
-"chatui_liveChat_endConverastion_close" = "Close chat";
 "chatui_liveChat_endConversation_default_title" = "This conversation was closed";
 
-// Formfield - PreChatSurvey
+// MARK: - Live chat - Inactivity Popup
+"chatui_liveChat_inactivityPopup_sessionTimeout_title" = "Time is up";
+"chatui_liveChat_inactivityPopup_sessionTimeout_text" = "This conversation will now end due to inactivity";
+
+// MARK: - Formfield - PreChatSurvey
 "chatui_preChatSurvey_subtitle" = "Please fill out all fields and submit the form.";
+"chatui_preChatSurvey_requiredLabel" = "%@ *";

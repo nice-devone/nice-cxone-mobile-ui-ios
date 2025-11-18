@@ -25,6 +25,40 @@ internal typealias AssetImageTypeAlias = ImageAsset.Image
 // swiftlint:disable identifier_name line_length nesting type_body_length type_name
 internal enum Asset {
   internal enum Colors {
+    internal enum Base {
+      internal static let black = ColorAsset(name: "base/black")
+      internal static let white = ColorAsset(name: "base/white")
+    }
+    internal enum Brand {
+      internal enum Primary {
+        internal static let _100 = ColorAsset(name: "brand/primary/100")
+        internal static let _200 = ColorAsset(name: "brand/primary/200")
+        internal static let _300 = ColorAsset(name: "brand/primary/300")
+        internal static let _400 = ColorAsset(name: "brand/primary/400")
+        internal static let _50 = ColorAsset(name: "brand/primary/50")
+        internal static let _500 = ColorAsset(name: "brand/primary/500")
+        internal static let _600 = ColorAsset(name: "brand/primary/600")
+        internal static let _700 = ColorAsset(name: "brand/primary/700")
+        internal static let _800 = ColorAsset(name: "brand/primary/800")
+        internal static let _900 = ColorAsset(name: "brand/primary/900")
+        internal static let _950 = ColorAsset(name: "brand/primary/950")
+        internal static let base = ColorAsset(name: "brand/primary/base")
+      }
+      internal enum Secondary {
+        internal static let _100 = ColorAsset(name: "brand/secondary/100")
+        internal static let _200 = ColorAsset(name: "brand/secondary/200")
+        internal static let _300 = ColorAsset(name: "brand/secondary/300")
+        internal static let _400 = ColorAsset(name: "brand/secondary/400")
+        internal static let _50 = ColorAsset(name: "brand/secondary/50")
+        internal static let _500 = ColorAsset(name: "brand/secondary/500")
+        internal static let _600 = ColorAsset(name: "brand/secondary/600")
+        internal static let _700 = ColorAsset(name: "brand/secondary/700")
+        internal static let _800 = ColorAsset(name: "brand/secondary/800")
+        internal static let _900 = ColorAsset(name: "brand/secondary/900")
+        internal static let _950 = ColorAsset(name: "brand/secondary/950")
+        internal static let base = ColorAsset(name: "brand/secondary/base")
+      }
+    }
     internal static let accentPop = ColorAsset(name: "accentPop")
     internal static let blue10 = ColorAsset(name: "blue10")
     internal static let blue100 = ColorAsset(name: "blue100")
@@ -87,10 +121,85 @@ internal enum Asset {
     internal static let yellow70 = ColorAsset(name: "yellow70")
     internal static let yellow80 = ColorAsset(name: "yellow80")
     internal static let yellow90 = ColorAsset(name: "yellow90")
+    internal enum Info {
+      internal static let _100 = ColorAsset(name: "info/100")
+      internal static let _200 = ColorAsset(name: "info/200")
+      internal static let _300 = ColorAsset(name: "info/300")
+      internal static let _400 = ColorAsset(name: "info/400")
+      internal static let _50 = ColorAsset(name: "info/50")
+      internal static let _500 = ColorAsset(name: "info/500")
+      internal static let _600 = ColorAsset(name: "info/600")
+      internal static let _700 = ColorAsset(name: "info/700")
+      internal static let _800 = ColorAsset(name: "info/800")
+      internal static let _900 = ColorAsset(name: "info/900")
+      internal static let _950 = ColorAsset(name: "info/950")
+      internal static let base = ColorAsset(name: "info/base")
+    }
+    internal enum Negative {
+      internal static let _100 = ColorAsset(name: "negative/100")
+      internal static let _200 = ColorAsset(name: "negative/200")
+      internal static let _300 = ColorAsset(name: "negative/300")
+      internal static let _400 = ColorAsset(name: "negative/400")
+      internal static let _50 = ColorAsset(name: "negative/50")
+      internal static let _500 = ColorAsset(name: "negative/500")
+      internal static let _600 = ColorAsset(name: "negative/600")
+      internal static let _700 = ColorAsset(name: "negative/700")
+      internal static let _800 = ColorAsset(name: "negative/800")
+      internal static let _900 = ColorAsset(name: "negative/900")
+      internal static let _950 = ColorAsset(name: "negative/950")
+      internal static let base = ColorAsset(name: "negative/base")
+    }
+    internal enum Neutral {
+      internal static let _100 = ColorAsset(name: "neutral/100")
+      internal static let _200 = ColorAsset(name: "neutral/200")
+      internal static let _300 = ColorAsset(name: "neutral/300")
+      internal static let _400 = ColorAsset(name: "neutral/400")
+      internal static let _50 = ColorAsset(name: "neutral/50")
+      internal static let _500 = ColorAsset(name: "neutral/500")
+      internal static let _600 = ColorAsset(name: "neutral/600")
+      internal static let _700 = ColorAsset(name: "neutral/700")
+      internal static let _800 = ColorAsset(name: "neutral/800")
+      internal static let _900 = ColorAsset(name: "neutral/900")
+      internal static let _950 = ColorAsset(name: "neutral/950")
+      internal static let base = ColorAsset(name: "neutral/base")
+    }
+    internal enum Positive {
+      internal static let _100 = ColorAsset(name: "positive/100")
+      internal static let _200 = ColorAsset(name: "positive/200")
+      internal static let _300 = ColorAsset(name: "positive/300")
+      internal static let _400 = ColorAsset(name: "positive/400")
+      internal static let _50 = ColorAsset(name: "positive/50")
+      internal static let _500 = ColorAsset(name: "positive/500")
+      internal static let _600 = ColorAsset(name: "positive/600")
+      internal static let _700 = ColorAsset(name: "positive/700")
+      internal static let _800 = ColorAsset(name: "positive/800")
+      internal static let _900 = ColorAsset(name: "positive/900")
+      internal static let _950 = ColorAsset(name: "positive/950")
+      internal static let base = ColorAsset(name: "positive/base")
+    }
+    internal enum Warning {
+      internal static let _100 = ColorAsset(name: "warning/100")
+      internal static let _200 = ColorAsset(name: "warning/200")
+      internal static let _300 = ColorAsset(name: "warning/300")
+      internal static let _400 = ColorAsset(name: "warning/400")
+      internal static let _50 = ColorAsset(name: "warning/50")
+      internal static let _500 = ColorAsset(name: "warning/500")
+      internal static let _600 = ColorAsset(name: "warning/600")
+      internal static let _700 = ColorAsset(name: "warning/700")
+      internal static let _800 = ColorAsset(name: "warning/800")
+      internal static let _900 = ColorAsset(name: "warning/900")
+      internal static let _950 = ColorAsset(name: "warning/950")
+      internal static let base = ColorAsset(name: "warning/base")
+    }
   }
   internal enum Images {
     internal static let blankFile = ImageAsset(name: "blankFile")
+    internal static let clockBadgeZzz = ImageAsset(name: "clockBadgeZzz")
+    internal static let closedConversation = ImageAsset(name: "closedConversation")
+    internal static let inactivityIcon = ImageAsset(name: "inactivityIcon")
     internal static let listPickerIcon = ImageAsset(name: "listPickerIcon")
+    internal static let lottieHourglass = DataAsset(name: "lottie_hourglass")
+    internal static let offline = ImageAsset(name: "offline")
   }
 }
 // swiftlint:enable identifier_name line_length nesting type_body_length type_name
@@ -160,6 +269,30 @@ internal extension SwiftUI.Color {
   }
 }
 #endif
+
+internal struct DataAsset {
+  internal fileprivate(set) var name: String
+
+  @available(iOS 9.0, tvOS 9.0, watchOS 6.0, macOS 10.11, *)
+  internal var data: NSDataAsset {
+    guard let data = NSDataAsset(asset: self) else {
+      fatalError("Unable to load data asset named \(name).")
+    }
+    return data
+  }
+}
+
+@available(iOS 9.0, tvOS 9.0, watchOS 6.0, macOS 10.11, *)
+internal extension NSDataAsset {
+  convenience init?(asset: DataAsset) {
+    let bundle = BundleToken.bundle
+    #if os(iOS) || os(tvOS) || os(watchOS)
+    self.init(name: asset.name, bundle: bundle)
+    #elseif os(macOS)
+    self.init(name: NSDataAsset.Name(asset.name), bundle: bundle)
+    #endif
+  }
+}
 
 internal struct ImageAsset {
   internal fileprivate(set) var name: String

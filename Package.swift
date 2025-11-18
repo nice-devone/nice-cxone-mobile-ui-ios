@@ -28,8 +28,9 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "3.0.1"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios.git", from: "3.0.1")
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "3.1.0"),
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios.git", from: "3.1.0"),
+        .package(url: "https://github.com/airbnb/lottie-spm.git", from: "4.5.2"),
     ],
     targets: [
         .target(
@@ -37,12 +38,13 @@ let package = Package(
             dependencies: [
                 .byName(name: "Kingfisher"),
                 .product(name: "CXoneChatSDK", package: "nice-cxone-mobile-sdk-ios"),
-                .product(name: "CXoneGuideUtility", package: "nice-cxone-mobile-guide-utility-ios")
+                .product(name: "CXoneGuideUtility", package: "nice-cxone-mobile-guide-utility-ios"),
+                .product(name: "Lottie", package: "lottie-spm"),
             ],
             path: "Sources",
             resources: [
                 .copy("../PrivacyInfo.xcprivacy"),
-                .copy("Resources/images.xcassets")
+                .copy("Resources/images.xcassets"),
             ],
             plugins: []
         )

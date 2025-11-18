@@ -88,7 +88,7 @@ final class ChatAlertType: Identifiable {
         )
     }
     
-    static func invalidAttachmentSize(localization: ChatLocalization) -> ChatAlertType? {
+    static func invalidAttachmentSize(localization: ChatLocalization) -> ChatAlertType {
         ChatAlertType(
             title: localization.alertFileValidationTitle,
             message: String(

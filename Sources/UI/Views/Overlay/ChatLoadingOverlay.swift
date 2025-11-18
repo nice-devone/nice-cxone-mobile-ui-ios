@@ -16,7 +16,23 @@
 import SwiftUI
 
 struct ChatLoadingOverlay: View, Themed {
-
+    
+    // MARK: - Constants
+    
+    private enum Constants {
+        // Websocket event response timeout is set to 10 seconds so 20 seconds should be fine
+        static let cancelDelay: TimeInterval = 20
+        
+        enum Sizing {
+            static let progressScaleEffect: CGFloat = 1.2
+        }
+        
+        enum Spacing {
+            static let contentVertical: CGFloat = 16
+            static let progressTextVertical: CGFloat = 8
+        }
+    }
+    
     // MARK: - Properties
 
     @EnvironmentObject var style: ChatStyle
@@ -29,33 +45,30 @@ struct ChatLoadingOverlay: View, Themed {
     
     let text: String
     let onCancel: () -> Void
-    
-    /// Websocket event response timeout is set to 10 seconds so 20 seconds should be fine
-    private static let cancelDelay: TimeInterval = 20
-    private static let contentVerticalSpacing: CGFloat = 10
-    private static let progressScaleEffect: CGFloat = 1.2
 
     // MARK: - Builder
     
     var body: some View {
         ZStack {
-            VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+            VisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
                 .ignoresSafeArea(.all)
             
-            VStack(spacing: Self.contentVerticalSpacing) {
-                ProgressView()
-                    .scaleEffect(Self.progressScaleEffect)
-                    .tint(colors.customizable.onBackground.opacity(0.5))
-                
-                Text(text)
-                    .font(.title3)
-                    .foregroundStyle(colors.customizable.onBackground.opacity(0.5))
+            VStack(spacing: Constants.Spacing.contentVertical) {
+                VStack(spacing: Constants.Spacing.progressTextVertical) {
+                    ProgressView()
+                        .scaleEffect(Constants.Sizing.progressScaleEffect)
+                        .tint(colors.content.secondary)
+                    
+                    Text(text)
+                        .font(.title3)
+                        .foregroundStyle(colors.content.secondary)
+                }
                 
                 if isCancelVisible {
                     Text(localization.overlayLoadingDelayTitle)
-                        .foregroundStyle(colors.customizable.onBackground.opacity(0.5))
+                        .foregroundStyle(colors.content.secondary)
                     
-                    Button(localization.overlayLoadingDelayButtonTitle, action: onCancel)
+                    Button(localization.commonCloseChat, action: onCancel)
                         .buttonStyle(.destructive)
                 }
             }
@@ -66,7 +79,7 @@ struct ChatLoadingOverlay: View, Themed {
             }
             self.workItem = workItem
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + Self.cancelDelay, execute: workItem)
+            DispatchQueue.main.asyncAfter(deadline: .now() + Constants.cancelDelay, execute: workItem)
         }
         .onDisappear {
             workItem?.cancel()
@@ -81,39 +94,39 @@ struct ChatLoadingOverlay: View, Themed {
 private struct TestContentView: View {
     
     var body: some View {
-        LazyVStack(spacing: 2) {
+        VStack(spacing: 2) {
             ChatMessageCell(
                 message: MockData.textMessage(user: MockData.agent),
                 messageGroupPosition: .first,
-                isProcessDialogVisible: .constant(false),
+                isLast: .constant(false),
                 alertType: .constant(nil)
             ) { _, _ in }
             
             ChatMessageCell(
                 message: MockData.textMessage(user: MockData.agent),
                 messageGroupPosition: .last,
-                isProcessDialogVisible: .constant(false),
+                isLast: .constant(false),
                 alertType: .constant(nil)
             ) { _, _ in }
             
             ChatMessageCell(
                 message: MockData.textMessage(user: MockData.customer),
                 messageGroupPosition: .first,
-                isProcessDialogVisible: .constant(false),
+                isLast: .constant(false),
                 alertType: .constant(nil)
             ) { _, _ in }
             
             ChatMessageCell(
                 message: MockData.textMessage(user: MockData.customer),
                 messageGroupPosition: .inside,
-                isProcessDialogVisible: .constant(false),
+                isLast: .constant(false),
                 alertType: .constant(nil)
             ) { _, _ in }
             
             ChatMessageCell(
                 message: MockData.textMessage(user: MockData.customer),
                 messageGroupPosition: .last,
-                isProcessDialogVisible: .constant(false),
+                isLast: .constant(true),
                 alertType: .constant(nil)
             ) { _, _ in }
             
@@ -132,10 +145,7 @@ private struct TestContentView: View {
         NavigationView {
             TestContentView()
         }
-
-        ChatDefaultOverlayPreview {
-            TestContentView()
-        }
+        
         if isPresented {
             ChatLoadingOverlay(text: "Connecting...") {
                 isPresented = false

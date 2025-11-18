@@ -18,8 +18,28 @@ import SwiftUI
 
 struct ValidatedTextField: View, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Sizing {
+            static let dividerFocusedHeight: CGFloat = 2
+            static let dividerHeight: CGFloat = 1
+        }
+        
+        enum Spacing {
+            static let bodyVertical: CGFloat = 6
+            static let textFieldDividerSpacing: CGFloat = 8
+        }
+        
+        enum Padding {
+            static let textFieldVertical: CGFloat = 4
+            static let errorTextBottom: CGFloat = 4
+        }
+    }
+    
     // MARK: - Properties
-
+    
     @EnvironmentObject var style: ChatStyle
     
     @Environment(\.colorScheme) var scheme
@@ -29,14 +49,7 @@ struct ValidatedTextField: View, Themed {
     @Binding var text: String
     
     @State private var error: String?
-    @State private var textColor: Color = .black
     
-    private static let spacingBetweenElements: CGFloat = 10
-    private static let errorTextPaddingBottom: CGFloat = 4
-    private static let dividerFocusedHeight: CGFloat = 2
-    private static let dividerHeight: CGFloat = 1
-    
-    let label: String?
     let title: String
     let validator: ((String) -> String?)?
     
@@ -46,66 +59,58 @@ struct ValidatedTextField: View, Themed {
         _ title: String,
         text: Binding<String>,
         validator: ((String) -> String?)? = nil,
-        label: String? = nil,
-        error: String? = nil
     ) {
         self.title = title
         self._text = text
         self.validator = validator
-        self.error = error
-        self.label = label
+        
+        if let error = validator?(text.wrappedValue) {
+            self._error = State(initialValue: error)
+        }
     }
     
     // MARK: - Builder
     
     var body: some View {
-        let error = validator?(text)
-
-        VStack(alignment: .leading, spacing: Self.spacingBetweenElements) {
-            if let label {
-                Text(label)
-                    .font(.caption)
-                    .foregroundColor(textColor)
-                    .bold()
-            }
+        VStack(alignment: .leading, spacing: Constants.Spacing.bodyVertical) {
+            Text(title)
+                .font(.callout)
+                .bold()
+                .foregroundStyle(error == nil ? colors.content.primary : colors.status.error)
             
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: Constants.Spacing.textFieldDividerSpacing) {
                 TextField("", text: $text)
-                    .placeholder(when: text.isEmpty) {
-                        Text(title)
-                            .foregroundColor(colors.customizable.onBackground.opacity(0.5))
-                    }
-                    .font(.callout)
-                    .foregroundStyle(textColor)
-                    .autocapitalization(.none)
-                    .padding(.bottom, .zero)
-                    .submitLabel(.done)
-                    .onSubmit {
-                        isFocused = false
-                    }
-                    .onReceive(Just(text)) { _ in
-                        textColor = error == nil 
-                            ? colors.customizable.onBackground
-                            : colors.background.errorContrast
-                    }
-                    .focused($isFocused)
+                .tint(error == nil ? colors.content.primary : colors.status.error)
+                .foregroundStyle(error == nil ? colors.content.primary : colors.status.error)
+                .padding(.vertical, Constants.Padding.textFieldVertical)
+                .autocapitalization(.none)
+                .submitLabel(.done)
+                .focused($isFocused)
+                .onSubmit {
+                    isFocused = false
+                }
                 
                 ColoredDivider(
                     error != nil
-                        ? colors.background.errorContrast
-                        : isFocused ? colors.customizable.primary : colors.customizable.onBackground.opacity(0.1),
-                    height: isFocused ? Self.dividerFocusedHeight : Self.dividerHeight
+                        ? colors.status.error
+                        : isFocused || !text.isEmpty
+                            ? colors.brand.primary
+                            : colors.border.default,
+                    height: isFocused || !text.isEmpty ? Constants.Sizing.dividerFocusedHeight : Constants.Sizing.dividerHeight
                 )
-                .padding(.bottom, Self.errorTextPaddingBottom)
-                
-                if let error = error {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundColor(colors.background.errorContrast)
-                }
             }
-            .animation(.default, value: isFocused)
+            
+            if let error {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(colors.status.error)
+            }
         }
+        .onChange(of: text) { value in
+            error = validator?(value)
+        }
+        .animation(.easeInOut(duration: StyleGuide.animationDuration), value: isFocused)
+        .animation(.easeInOut(duration: StyleGuide.animationDuration), value: error)
     }
 }
 
@@ -143,85 +148,44 @@ func allOf(_ validators: ((String) -> String?)...) -> (String) -> String? {
     }
 }
 
-// MARK: - Helpers
-
-private extension View {
-    
-    func placeholder<Content: View>(when shouldShow: Bool, alignment: Alignment = .leading, @ViewBuilder placeholder: () -> Content) -> some View {
-        ZStack(alignment: alignment) {
-            placeholder().opacity(shouldShow ? 1 : 0)
-            
-            self
-        }
-    }
-}
-
 // MARK: - Preview
 
-struct ValidatedTextField_Previews: PreviewProvider {
+@available(iOS 17, *)
+#Preview {
+    @Previewable @State var text: String = ""
     
-    @State static var text: String = ""
+    let localization = ChatLocalization()
 
-    private static let localization = ChatLocalization()
-
-    private static var isRequired: (String) -> String? {
+    var isRequired: (String) -> String? {
         required(localization)
     }
-    private static var isEmail: (String) -> String? {
+    var isEmail: (String) -> String? {
         email(localization)
     }
-    private static var isNumeric: (String) -> String? {
+    var isNumeric: (String) -> String? {
         numeric(localization)
     }
-
-    static var previews: some View {
-        Group {
-            ScrollView {
-                VStack(spacing: 24) {
-                    ValidatedTextField("Placeholder", text: $text, label: "Text")
-                    
-                    ValidatedTextField("Placeholder", text: $text, validator: isRequired, label: "Required Text")
-
-                    ValidatedTextField("Placeholder", text: $text, validator: isNumeric, label: "Numeric")
-                        .keyboardType(.decimalPad)
-                    
-                    ValidatedTextField("Placeholder", text: $text, validator: allOf(isNumeric, isRequired), label: "Required Numeric")
-                        .keyboardType(.decimalPad)
-                    
-                    ValidatedTextField("Placeholder", text: $text, validator: isEmail, label: "Email")
-                        .keyboardType(.emailAddress)
-                    
-                    ValidatedTextField("Placeholder", text: $text, validator: allOf(isRequired, isEmail), label: "Required Email")
-                        .keyboardType(.emailAddress)
-                }
-            }
-            .padding(.horizontal, 24)
-            .previewDisplayName("Light Mode")
+    
+    ScrollView {
+        VStack(spacing: 24) {
+            ValidatedTextField("Text", text: $text)
             
-            ScrollView {
-                VStack(spacing: 24) {
-                    ValidatedTextField("Placeholder", text: $text, label: "Text")
-                    
-                    ValidatedTextField("Placeholder", text: $text, validator: isRequired, label: "Required Text")
+            ValidatedTextField("Required Text", text: $text, validator: isRequired)
 
-                    ValidatedTextField("Placeholder", text: $text, validator: isNumeric, label: "Numeric")
-                        .keyboardType(.decimalPad)
-                    
-                    ValidatedTextField("Placeholder", text: $text, validator: allOf(isNumeric, isRequired), label: "Required Numeric")
-                        .keyboardType(.decimalPad)
-                    
-                    ValidatedTextField("Placeholder", text: $text, validator: isEmail, label: "Email")
-                        .keyboardType(.emailAddress)
-                    
-                    ValidatedTextField("Placeholder", text: $text, validator: allOf(isRequired, isEmail), label: "Required Email")
-                        .keyboardType(.emailAddress)
-                }
-            }
-            .padding(.horizontal, 24)
-            .preferredColorScheme(.dark)
-            .previewDisplayName("Dark Mode")
+            ValidatedTextField("Numeric", text: $text, validator: isNumeric)
+                .keyboardType(.decimalPad)
+            
+            ValidatedTextField("Required Numeric", text: $text, validator: allOf(isNumeric, isRequired))
+                .keyboardType(.decimalPad)
+            
+            ValidatedTextField("Email", text: $text, validator: isEmail)
+                .keyboardType(.emailAddress)
+            
+            ValidatedTextField("Required Email", text: $text, validator: allOf(isRequired, isEmail))
+                .keyboardType(.emailAddress)
         }
-        .environmentObject(ChatStyle())
-        .environmentObject(localization)
     }
+    .padding(.horizontal, 24)
+    .environmentObject(localization)
+    .environmentObject(ChatStyle())
 }

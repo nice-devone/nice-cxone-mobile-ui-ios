@@ -39,7 +39,7 @@ struct ChatContainerView: View, Themed, Alertable {
     var body: some View {
         ZStack {
             contentWrapper
-            	.alert(item: $viewModel.alertType, content: alertContent)
+                .alert(item: $viewModel.alertType, content: alertContent)
                 .sheet(isPresented: viewModel.isSheetDisplayed) {
                     viewModel.sheet?()
                 }
@@ -56,9 +56,10 @@ struct ChatContainerView: View, Themed, Alertable {
         )
         .fullScreenCover(isPresented: viewModel.isOverlayDisplayed) {
             viewModel.overlay?()
-                .presentationWithBackgroundColor(.clear)
+                .presentationWithBackgroundColor(viewModel.chatProvider.state == .offline ? colors.background.default : .clear)
         }
-        .tint(colors.customizable.primary)
+        .tint(colors.brand.primary)
+        .background(colors.background.default)
     }
 }
 
@@ -79,7 +80,7 @@ private extension ChatContainerView {
                                 }
                             } label: {
                                 Asset.down
-                                    .foregroundStyle(colors.customizable.primary)
+                                    .foregroundStyle(colors.brand.primary)
                             }
                         }
                     }

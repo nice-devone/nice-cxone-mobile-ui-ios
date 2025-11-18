@@ -28,8 +28,7 @@ open class ChatCoordinator {
     // MARK: - Properties
 
     /// The visual style configuration for the chat interface.
-    private let chatStyle = ChatStyle()
-    
+    public var chatStyle: ChatStyle
     /// The localization configuration for the chat interface.
     public var chatLocalization: ChatLocalization
     /// The additional configuration for the chat interface (additional fields, flags etc.).
@@ -45,14 +44,19 @@ open class ChatCoordinator {
     /// `ChatLocalization`. This property allows customization of the chat localization strings,
     /// ensuring that the chat views align language preferences.
     ///
-    /// - Parameter chatLocalization: An instance of `ChatLocalization` to handle language and locale-specific text and behavior.
-    ///     Defaults to a new instance of `ChatLocalization()`.
+    /// - Parameters:
+    ///   - chatStyle: An instance of ``ChatStyle`` that defines the visual style and appearance settings for a chat interface
+    ///   - chatLocalization: An instance of ``ChatLocalization`` to handle language and locale-specific text and behavior.
+    ///   - chatChonfiguration: an Instance of ``ChatConfiguration`` to handle additional configuration parameters
+    ///     that are passed to the UI module wrapping the SDK.
     ///
     /// If no parameters are provided, the default style and localization will be applied.
     public init(
+        chatStyle: ChatStyle = ChatStyle(),
         chatLocalization: ChatLocalization = ChatLocalization(),
         chatConfiguration: ChatConfiguration = ChatConfiguration()
     ) {
+        self.chatStyle = chatStyle
         self.chatLocalization = chatLocalization
         self.chatConfiguration = chatConfiguration
     }

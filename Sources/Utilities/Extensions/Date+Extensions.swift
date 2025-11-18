@@ -42,6 +42,11 @@ extension Date {
     func adding(_ component: Calendar.Component, value: Int) -> Date {
         let calendar = Calendar.current
         
-        return calendar.date(byAdding: component, value: value, to: self).unsafelyUnwrapped
+        guard let date = calendar.date(byAdding: component, value: value, to: self) else {
+            LogManager.error("Unable to add \(component) to \(self)")
+            return self
+        }
+        
+        return date
     }
 }

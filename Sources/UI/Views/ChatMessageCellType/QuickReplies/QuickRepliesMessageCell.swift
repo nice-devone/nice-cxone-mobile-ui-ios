@@ -17,27 +17,43 @@ import SwiftUI
 
 struct QuickRepliesMessageCell: View, Themed {
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Spacing {
+            static let elementsVertical: CGFloat = 0
+            static let titleMinLength: CGFloat = UIScreen.main.bounds.size.width / 10
+            static let instructionTextHorizontal: CGFloat = 8
+        }
+        
+        enum Padding {
+            static let titleVertical: CGFloat = 12
+            static let titleHorizontal: CGFloat = 12
+            static let optionsTop: CGFloat = 8
+        }
+    }
+    
     // MARK: - Properties
     
+    @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     @Environment(\.colorScheme) var scheme
     
+    @Binding private var isLast: Bool
+    
     @State private var selectedOption: RichMessageButton?
     
-    let item: QuickRepliesItem
-    let optionSelected: (RichMessageButton) -> Void
-    
+    private let item: QuickRepliesItem
+    private let optionSelected: (RichMessageButton) -> Void
     private let options: [RichMessageButton]
-    
-    private static let spacingCellAndOption: CGFloat = 14
-    private static let paddingVertical: CGFloat = 12
-    private static let paddingHorizontal: CGFloat = 12
     
     // MARK: - Init
     
-    init(item: QuickRepliesItem, optionSelected: @escaping (RichMessageButton) -> Void) {
+    init(item: QuickRepliesItem, isLast: Binding<Bool>, optionSelected: @escaping (RichMessageButton) -> Void) {
         self.item = item
+        self._isLast = isLast
         self.optionSelected = optionSelected
         self.options = item.options
     }
@@ -45,90 +61,117 @@ struct QuickRepliesMessageCell: View, Themed {
     // MARK: - Builder
     
     var body: some View {
-        VStack(alignment: .leading, spacing: Self.spacingCellAndOption) {
+        VStack(alignment: .leading, spacing: Constants.Spacing.elementsVertical) {
             HStack {
-                Text(item.title)
-                    .font(.callout)
-                    .foregroundStyle(colors.customizable.agentText)
-                    .padding(.vertical, Self.paddingVertical)
-                    .padding(.horizontal, Self.paddingHorizontal)
-                    .background(colors.customizable.agentBackground)
-                    .cornerRadius(StyleGuide.Message.cornerRadius, corners: .allCorners)
+                titleCard
                 
-                Spacer(minLength: UIScreen.main.bounds.size.width / 10)
+                Spacer(minLength: Constants.Spacing.titleMinLength)
             }
             
-            if selectedOption != nil {
-                RichContentOptionSelected()
-            } else {
+            if selectedOption == nil && isLast {
                 QuickRepliesMessageOptionsView(item: item) { option in
                     withAnimation {
                         selectedOption = option
                         optionSelected(option)
                     }
                 }
+                .padding(.top, Constants.Padding.optionsTop)
             }
         }
     }
+}
+
+// MARK: - Subviews
+
+private extension QuickRepliesMessageCell {
+    
+    var titleCard: some View {
+        VStack(alignment: .leading, spacing: Constants.Spacing.instructionTextHorizontal) {
+            Text(item.title)
+                .font(.callout)
+                .foregroundStyle(colors.content.primary)
+            
+            if selectedOption != nil {
+                RichContentOptionSelected()
+            } else if isLast {
+                instructionText
+            } else {
+                optionsUnavailableText
+            }
+        }
+        .padding(.vertical, Constants.Padding.titleVertical)
+        .padding(.horizontal, Constants.Padding.titleHorizontal)
+        .background(colors.background.surface.default)
+        .cornerRadius(StyleGuide.Sizing.Message.cornerRadius, corners: .allCorners)
+    }
+    
+    var instructionText: some View {
+        HStack(spacing: Constants.Spacing.instructionTextHorizontal) {
+            Asset.handPointDown
+                .foregroundColor(colors.brand.primary)
+            
+            Text(localization.chatMessageQuickRepliesSelectOneOption)
+                .font(.caption)
+                .foregroundColor(colors.brand.primary)
+        }
+    }
+    
+    var optionsUnavailableText: some View {
+        MessageCellTooltipView(
+            text: localization.chatMessageRichContentOptionsDisabled,
+            tooltip: localization.chatMessageRichContentOptionsDisabledTooltip
+        )
+    }
+    
 }
 
 // MARK: - Preview
 
-struct QuickRepliesMessageCell_Previews: PreviewProvider {
+@available(iOS 17.0, *)
+#Preview {
+    @Previewable @Environment(\.colorScheme) var colorScheme
     
-    static var previews: some View {
-        Group {
-            TestViewPreview()
-                .previewDisplayName("Light Mode")
-                
-            TestViewPreview()
-                .previewDisplayName("Dark Mode")
-                .preferredColorScheme(.dark)
-        }
-        .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
-    }
-}
-
-private struct TestViewPreview: View, Themed {
+    @Previewable @State var selectedOption: RichMessageButton?
     
-    @EnvironmentObject var style: ChatStyle
+    let style = ChatStyle()
     
-    @Environment(\.colorScheme) var scheme
-    
-    @State private var selectedOption: RichMessageButton?
-    
-    var body: some View {
-        VStack(spacing: 32) {
-            ZStack(alignment: .bottomLeading) {
-                QuickRepliesMessageCell(item: MockData.quickRepliesItem) { option in
-                    selectedOption = option
-                }
-                
-                AvatarView(imageUrl: MockData.agent.avatarURL, initials: MockData.agent.initials)
-                    .frame(width: 24, height: 24)
-                    .offset(x: -12, y: 12)
+    VStack(spacing: 32) {
+        ZStack(alignment: .bottomLeading) {
+            QuickRepliesMessageCell(item: MockData.quickRepliesItem, isLast: .constant(false)) { option in
+                selectedOption = option
             }
             
-            if let selectedOption {
-                HStack {
-                    Spacer(minLength: UIScreen.main.bounds.size.width / 10)
-                    
-                    Text(selectedOption.title)
-                        .foregroundStyle(colors.foreground.onContrast)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(colors.accent.accent)
-                    )
-                }
+            QuickRepliesMessageCell(item: MockData.quickRepliesItem, isLast: .constant(true)) { option in
+                selectedOption = option
             }
             
-            Spacer()
+            AvatarView(imageUrl: MockData.agent.avatarURL, initials: MockData.agent.initials)
+                .frame(width: 24, height: 24)
+                .offset(x: -12, y: 12)
         }
-        .listStyle(.inset)
-        .padding(.leading, 16)
-        .padding(.trailing, 4)
+        
+        if let selectedOption {
+            HStack {
+                Spacer(minLength: UIScreen.main.bounds.size.width / 10)
+                
+                Text(selectedOption.title)
+                    .foregroundStyle(style.colors(for: colorScheme).brand
+                        .onPrimary)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(style.colors(for: colorScheme).brand
+                            .primary)
+                )
+            }
+        }
+        
+        Spacer()
     }
+    .listStyle(.inset)
+    .padding(.leading, 16)
+    .padding(.trailing, 4)
+    .environmentObject(style)
+    .environmentObject(ChatLocalization())
 }
