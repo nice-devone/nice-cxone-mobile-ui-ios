@@ -1,7 +1,12 @@
+<a name="3.0.4"></a>
+# [3.0.4] - 2025-12-08
+
+### Fixes
+- Correct record voice message button visibility
+
+
 <a name="3.0.3"></a>
 # [3.0.3] - 2025-10-15
-
-## CXoneChatUI
 
 ### Fixes
 - Fix pre-chat survey form validation

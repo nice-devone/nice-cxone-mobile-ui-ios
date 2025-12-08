@@ -28,10 +28,12 @@ struct AttachmentRestrictions {
     
     /// True if audio files upload is allowed.
     ///
-    /// Audio files are allowed if the allowed types contain `audio/*`
-    /// or if the allowed types contain any of the audio mime types related to the currently used voice message file type.
+    /// Audio files are allowed if:
+    /// - `areAttachmentsEnabled` is `true`
+    /// -  the allowed types contain `audio/*` or if the allowed types contain any of the audio mime types
+    ///     related to the currently used voice message file type.
     var areVoiceMessagesEnabled: Bool {
-        allowedTypes.contains("audio/*") || allowedTypes.contains(AudioRecorder.currentAudioFile.mimeType)
+        areAttachmentsEnabled && (allowedTypes.contains("audio/*") || allowedTypes.contains(AudioRecorder.currentAudioFile.mimeType))
     }
 }
 
