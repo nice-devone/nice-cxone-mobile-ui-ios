@@ -24,7 +24,7 @@ enum ChatMessageMapper {
             : ChatUserMapper.map(from: message.authorEndUserIdentity)
         
         return ChatMessage(
-            id: message.id,
+            id: message.idString,
             user: user,
             types: ChatMessageTypeMapper.map(message, localization: localization),
             date: message.createdAt,

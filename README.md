@@ -52,7 +52,7 @@ When initializing, you must specify the presentation style using the 'presentMod
 
 #### SwiftUI Integration
 
-The SwiftUI implementation shows the chat via the method `public func content(threadId: UUID? = nil, presentModally: Bool, onFinish: (() -> Void)? = nil) -> some View`, which returns the SwiftUI `View` that can be embedded in a sheet or used as a navigation destination with the SwiftUI `NavigationLink`. Only the presentation mode is required; the rest of the parameters are optional.
+The SwiftUI implementation shows the chat via the method `public func content(threadId: String? = nil, presentModally: Bool, onFinish: (() -> Void)? = nil) -> some View`, which returns the SwiftUI `View` that can be embedded in a sheet or used as a navigation destination with the SwiftUI `NavigationLink`. Only the presentation mode is required; the rest of the parameters are optional.
 
 ```swift
 ...
@@ -110,7 +110,7 @@ chatCoordinator.content(modally: modally) { [weak self] in
 
 #### UIKit Integration
 
-The chat can be integrated with UIKit using the method `public func start(threadId: UUID? = nil, in parentViewController: UIViewController, presentModally: Bool, onFinish: (() -> Void)? = nil)`. This method requires a `UINavigationController` to control the navigation flow and presentation style..
+The chat can be integrated with UIKit using the method `public func start(threadId: String? = nil, in parentViewController: UIViewController, presentModally: Bool, onFinish: (() -> Void)? = nil)`. This method requires a `UINavigationController` to control the navigation flow and presentation style..
 
 ```swift
 let chatCoordinator = ChatCoordinator()

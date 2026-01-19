@@ -107,7 +107,6 @@ To support multiple languages:
    "chatui_common_ok" = "Aceptar";
    "chatui_chatList_title" = "Conversaciones";
    ```
-   ```
 
 3. **The SDK Automatically Uses the Correct Language**
 

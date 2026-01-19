@@ -19,7 +19,7 @@ import UserNotifications
 extension UNUserNotificationCenter {
     
     func scheduleThreadNotification(lastMessage: Message, chatLocalization: ChatLocalization) async throws {
-        LogManager.trace("Scheduling thread notification for message \(lastMessage.id) in thread \(lastMessage.threadId)")
+        LogManager.trace("Scheduling thread notification for message \(lastMessage.idString) in thread \(lastMessage.threadIdString)")
         
         // First check notification permission status
         let settings = await notificationSettings()
@@ -50,14 +50,14 @@ extension UNUserNotificationCenter {
         content.title = lastMessage.senderInfo?.fullName ?? chatLocalization.chatFallbackMessageNoName
         content.subtitle = lastMessage.getLocalizedContentOrFallbackText(basedOn: chatLocalization, useFallback: true) ?? ""
         content.userInfo = [
-            "threadId": lastMessage.threadId.uuidString,
-            "messageId": lastMessage.id.uuidString,
+            "threadId": lastMessage.threadIdString,
+            "messageId": lastMessage.idString,
             "timestamp": lastMessage.createdAt.timeIntervalSince1970,
             "messageFromDifferentThread": true
         ]
         content.sound = .default
         
-        let identifier = "\(NotificationCenter.threadDeeplinkNotificationName)_\(lastMessage.id.uuidString)"
+        let identifier = "\(NotificationCenter.threadDeeplinkNotificationName)_\(lastMessage.idString)"
         
         LogManager.trace("Creating notification with identifier: \(identifier)")
         
@@ -70,7 +70,7 @@ extension UNUserNotificationCenter {
         do {
             try await add(request)
             
-            LogManager.trace("Notification request added successfully for message \(lastMessage.id)")
+            LogManager.trace("Notification request added successfully for message \(lastMessage.idString)")
         } catch {
             error.logError()
             

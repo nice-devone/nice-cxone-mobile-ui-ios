@@ -36,11 +36,31 @@ enum MockData {
         AttachmentItem(url: imageUrl, friendlyName: "\(imageUrl.lastPathComponent).jpg", mimeType: "image/jpg", fileName: "\(imageUrl.lastPathComponent).jpg")
     }
     
-    static let selectableVideoAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .video(videoItem))
-    static let selectableImageAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .image(imageItem))
-    static let selectableAudioAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .audio(audioItem))
-    static let selectableDocumentAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .documentPreview(docPreviewItem))
-    static let selectablePDFAttachment = SelectableAttachment(id: UUID(), isSelected: false, messageType: .documentPreview(pdfPreviewItem))
+    static let selectableVideoAttachment = SelectableAttachment(
+        id: UUID().uuidString.lowercased(),
+        isSelected: false,
+        messageType: .video(videoItem)
+    )
+    static let selectableImageAttachment = SelectableAttachment(
+        id: UUID().uuidString.lowercased(),
+        isSelected: false,
+        messageType: .image(imageItem)
+    )
+    static let selectableAudioAttachment = SelectableAttachment(
+        id: UUID().uuidString.lowercased(),
+        isSelected: false,
+        messageType: .audio(audioItem)
+    )
+    static let selectableDocumentAttachment = SelectableAttachment(
+        id: UUID().uuidString.lowercased(),
+        isSelected: false,
+        messageType: .documentPreview(docPreviewItem)
+    )
+    static let selectablePDFAttachment = SelectableAttachment(
+        id: UUID().uuidString.lowercased(),
+        isSelected: false,
+        messageType: .documentPreview(pdfPreviewItem)
+    )
 
     static let audioUrl = URL(string: "https://file-examples.com/storage/fe11f9541a67d9f2f9b2038/2017/11/file_example_MP3_700KB.mp3").unsafelyUnwrapped
     static let audioItem = AttachmentItem(
@@ -98,7 +118,7 @@ enum MockData {
     
     static func textMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(Lorem.sentence())],
             date: date,
@@ -108,7 +128,7 @@ enum MockData {
     
     static func hyperlinkMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(hyperlinkContent)],
             date: date,
@@ -118,7 +138,7 @@ enum MockData {
     
     static func phoneNumberMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(phoneNumberContent)],
             date: date,
@@ -128,7 +148,7 @@ enum MockData {
     
     static func emojiMessage(count: Int = .zero, user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(randomEmoji(count: count).joined())],
             date: date,
@@ -138,7 +158,7 @@ enum MockData {
     
     static func imageMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .image(imageItem) },
             date: date,
@@ -151,7 +171,7 @@ enum MockData {
         content.append(contentsOf: (1...(elementsCount ?? 1)).map { _ in .image(imageItem) })
         
         return ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: content,
             date: date,
@@ -161,7 +181,7 @@ enum MockData {
     
     static func videoMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .video(videoItem) },
             date: date,
@@ -171,7 +191,7 @@ enum MockData {
     
     static func audioMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .audio(audioItem) },
             date: date,
@@ -181,7 +201,7 @@ enum MockData {
     
     static func documentMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in
                 [
@@ -197,7 +217,7 @@ enum MockData {
     
     static func pdfMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .documentPreview(pdfPreviewItem) },
             date: date,
@@ -207,7 +227,7 @@ enum MockData {
     
     static func multipleMediaAttachmentsMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [
                 .text(Lorem.sentence()),
@@ -223,7 +243,7 @@ enum MockData {
     
     static func multipleDocumentAttachmentsMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [
                 .text(Lorem.sentence()),
@@ -239,15 +259,15 @@ enum MockData {
     }
     
     static func quickRepliesMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
-        ChatMessage(id: UUID(), user: agent, types: [.richContent(.quickReplies(quickRepliesItem))], date: date, status: status)
+        ChatMessage(id: UUID().uuidString.lowercased(), user: agent, types: [.richContent(.quickReplies(quickRepliesItem))], date: date, status: status)
     }
     
     static func listPickerMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
-        ChatMessage(id: UUID(), user: agent, types: [.richContent(.listPicker(listPickerItem))], date: date, status: status)
+        ChatMessage(id: UUID().uuidString.lowercased(), user: agent, types: [.richContent(.listPicker(listPickerItem))], date: date, status: status)
     }
     
     static func richLinkMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
-        ChatMessage(id: UUID(), user: agent, types: [.richContent(.richLink(richLinkItem))], date: date, status: status)
+        ChatMessage(id: UUID().uuidString.lowercased(), user: agent, types: [.richContent(.richLink(richLinkItem))], date: date, status: status)
     }
 
     static func textFieldEntity(isRequired: Bool = false) -> TextFieldEntity {
@@ -313,7 +333,7 @@ enum MockData {
     
     static func unsupportedMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID(),
+            id: UUID().uuidString.lowercased(),
             user: agent,
             types: [.unknown(Self.unsupportedMessageContent)],
             date: date,

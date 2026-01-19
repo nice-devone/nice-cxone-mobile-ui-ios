@@ -27,7 +27,7 @@ public extension NotificationCenter {
     /// Posts a notification to navigate directly to a thread.
     ///
     /// - Parameter threadId: The unique identifier of the thread to navigate to.
-    func postThreadDeeplinkNotification(threadId: UUID) {
+    func postThreadDeeplinkNotification(threadId: String) {
         post(
             name: Notification.Name(Self.threadDeeplinkNotificationName),
             object: nil,
