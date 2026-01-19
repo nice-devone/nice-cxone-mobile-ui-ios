@@ -26,7 +26,7 @@ struct MessageGroup: Identifiable, Equatable {
     let status: MessageStatus
     
     // swiftlint:disable force_unwrapping
-    var id: UUID { messages.map(\.id).hash() ?? UUID() }
+    var id: String { messages.map(\.idString).hashValue.description }
     var date: Date { messages.first!.date }
     var sender: ChatUser? { messages.first!.user }
     var shouldShowAvatar: Bool { sender?.isAgent == true }

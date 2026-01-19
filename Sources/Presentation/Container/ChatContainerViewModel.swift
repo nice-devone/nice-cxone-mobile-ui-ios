@@ -24,7 +24,8 @@ class ChatContainerViewModel: ObservableObject {
     @Published var sheet: (() -> AnyView)?
     @Published var overlay: (() -> AnyView)?
     @Published var alertType: ChatAlertType?
-
+    @Published var isRecoveringThread = false
+    
     let chatProvider: ChatProvider
     let chatLocalization: ChatLocalization
     let chatStyle: ChatStyle
@@ -35,10 +36,9 @@ class ChatContainerViewModel: ObservableObject {
     // Used to determine if the chat should be refreshed,
     // for example after when a thread is open but client disconnect via entering background
     var shouldRefreshThread = false
-    var threadToOpen: UUID?
+    var threadToOpen: String?
     var disconnecting = false
     var processingDeeplink = false
-    @Published var isRecoveringThread = false
     
     lazy var isSheetDisplayed = Binding { [weak self] in
         self?.sheet != nil
@@ -57,7 +57,7 @@ class ChatContainerViewModel: ObservableObject {
     // Observe notification taps to navigate to the correct thread
     private var directNavigationToken: NSObjectProtocol?
     // To be able to handle receiving new messages from different thread, it is necessary to cache current thread list
-    private var cachedThreadMessageCount = [UUID: Int]()
+    private var cachedThreadMessageCount = [String: Int]()
     private var isProcessingChatUpdate = false
     private var pendingChatUpdateTasks = [() -> Void]()
     
@@ -65,7 +65,7 @@ class ChatContainerViewModel: ObservableObject {
 
     init(
         chatProvider: ChatProvider,
-        threadToOpen: UUID? = nil,
+        threadToOpen: String? = nil,
         chatLocalization: ChatLocalization,
         chatStyle: ChatStyle,
         chatConfiguration: ChatConfiguration,
@@ -81,7 +81,7 @@ class ChatContainerViewModel: ObservableObject {
         self.onDismiss = onDismiss
 
         directNavigationToken = NotificationCenter.default.threadDeeplinkObserver { [weak self] notification in
-            guard let threadId = notification.userInfo?["threadId"] as? UUID else {
+            guard let threadId = notification.userInfo?["threadId"] as? String else {
                 LogManager.error("Unable to retrieve threadId from notification")
                 return
             }
@@ -500,11 +500,11 @@ extension ChatContainerViewModel: CXoneChatDelegate {
         }
         
         // Handle a local notification if the thread is not the one currently displayed one
-        if cachedThreadViewModel?.thread?.id == chatThread.id {
+        if cachedThreadViewModel?.thread?.id == chatThread.idString {
             LogManager.trace("The thread is the currently one so it will be handled in the ThreadViewModel, just update the cache")
             
             chatProvider.threads.get().forEach { [weak self] thread in
-                self?.cachedThreadMessageCount[thread.id] = thread.messages.count
+                self?.cachedThreadMessageCount[thread.idString] = thread.messages.count
             }
         } else if !processingDeeplink {
             LogManager.trace("The thread is not the currently displayed one = try to schedule a local notification")
@@ -518,11 +518,11 @@ extension ChatContainerViewModel: CXoneChatDelegate {
             let cachedThreadMessageCount = self.cachedThreadMessageCount
             // Update the cache for future thread updates
             chatProvider.threads.get().forEach { [weak self] thread in
-                self?.cachedThreadMessageCount[thread.id] = thread.messages.count
+                self?.cachedThreadMessageCount[thread.idString] = thread.messages.count
             }
             
             // Check if count of threads has been changed (=> new message for different thread)
-            guard let count = cachedThreadMessageCount[chatThread.id], count != chatThread.messages.count else {
+            guard let count = cachedThreadMessageCount[chatThread.idString], count != chatThread.messages.count else {
                 // Thread has been updated but no new messages are same = no interaction needed
                 LogManager.info("Thread has been updated but no new messages")
                 return
@@ -620,7 +620,7 @@ private extension ChatContainerViewModel {
         case .ready:
             // Cache to be able to handle local notifications
             chatProvider.threads.get().forEach { thread in
-                self.cachedThreadMessageCount[thread.id] = thread.messages.count
+                self.cachedThreadMessageCount[thread.idString] = thread.messages.count
             }
             
             if cachedThreadViewModel == nil {
@@ -690,11 +690,11 @@ private extension ChatContainerViewModel {
     
     func createNotificationForInactiveThreadMessage(_ updatedThread: CXoneChatSDK.ChatThread) async {
         guard let lastMessage = updatedThread.messages.last else {
-            LogManager.error("Unable to get last message for thread \(updatedThread.id)")
+            LogManager.error("Unable to get last message for thread \(updatedThread.idString)")
             return
         }
         
-        LogManager.trace("Creating notification for inactive thread: \(updatedThread.id)")
+        LogManager.trace("Creating notification for inactive thread: \(updatedThread.idString)")
         
         do {
             try await UNUserNotificationCenter
@@ -708,14 +708,14 @@ private extension ChatContainerViewModel {
     }
     
     @MainActor
-    func navigateDirectlyToThread(_ threadId: UUID) async {
+    func navigateDirectlyToThread(_ threadId: String) async {
         LogManager.trace("Starting navigation to thread: \(threadId)")
         
         processingDeeplink = true
         
         let threads = chatProvider.threads.get()
         
-        guard let thread = threads.first(where: { $0.id == threadId }) else {
+        guard let thread = threads.first(where: { $0.idString == threadId }) else {
             LogManager.error("Could not find thread with ID: \(threadId)")
             processingDeeplink = false
             return

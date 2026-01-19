@@ -137,9 +137,8 @@ To open a specific chat thread (e.g., from a push notification), pass the thread
 
 ```swift
 // Open a specific thread
-let threadId = UUID(uuidString: "123e4567-e89b-12d3-a456-426614174000")
 chatCoordinator.start(
-    threadId: threadId,
+    threadId: "123e4567-e89b-12d3-a456-426614174000",
     in: navigationController,
     presentModally: true,
     onFinish: nil
@@ -173,7 +172,7 @@ class StoreCoordinator {
     
     // MARK: - Methods
     
-    func openChat(modally: Bool = true, threadId: UUID? = nil) {
+    func openChat(modally: Bool = true, threadId: String? = nil) {
         chatCoordinator.start(
             threadId: threadId,
             in: navigationController,

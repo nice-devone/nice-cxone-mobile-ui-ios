@@ -88,6 +88,7 @@ class ThreadViewModel: ObservableObject {
         // Force clean delegate registration to handle iOS 16 rapid lifecycle
         chatProvider.remove(delegate: self)
         chatProvider.add(delegate: self)
+        
         Task { @MainActor [weak self] in
             guard let self else {
                 return
@@ -461,7 +462,7 @@ extension ThreadViewModel: CXoneChatDelegate {
         // This prevents the issue where new threads weren't being displayed after closing a previous thread.
         //
         // 2. We only want to update the thread view state if the updatedThread is the one currently in use.
-        guard thread == nil || thread?.id == updatedThread.id else {
+        guard thread == nil || thread?.id == updatedThread.idString else {
             LogManager.trace("Ignoring thread update - the thread is not the current one")
             return
         }
@@ -471,7 +472,7 @@ extension ThreadViewModel: CXoneChatDelegate {
         }
     }
 
-    func onAgentTyping(_ isTyping: Bool, agent: Agent, threadId: UUID) {
+    func onAgentTyping(_ isTyping: Bool, agent: Agent, threadId: String) {
         guard threadId == thread?.id else {
             return
         }
@@ -575,11 +576,14 @@ private extension ThreadViewModel {
     func updateMultithreadThread(_ updatedThread: CXoneChatUI.ChatThread?, flowContinues: inout Bool) async {
         LogManager.trace("Updating thread for multithread channel configuration")
 
-        if let updatedThread, ((containerViewModel?.shouldRefreshThread == true) || updatedThread.state == .loaded), containerViewModel?.isRecoveringThread == false {
+        let shouldRecover = (containerViewModel?.shouldRefreshThread == true || updatedThread?.state == .loaded)
+            && containerViewModel?.isRecoveringThread == false
+        if shouldRecover, let updatedThread {
             // Trigger the load if the UI module entered the background or the thread is not loaded yet
             // Skip if recovery is already in progress to prevent duplicate recovery attempts on iOS 16
             containerViewModel?.shouldRefreshThread = false
             containerViewModel?.isRecoveringThread = true
+            
             await reloadThread(with: updatedThread.id)
             // Note: isRecoveringThread flag is reset inside reloadThread() before triggering UI update
             // If the thread is not loaded, we don't want to update the view. It will be updated once the thread is loaded via `onThreadUpdated(_:)`.
@@ -589,6 +593,7 @@ private extension ThreadViewModel {
             // Hide the loading overlay if the thread is ready or not closed
             await containerViewModel?.hideOverlay()
         }
+        
         // Store the thread name to be able to display it in the update thread name textfield
         self.threadName = updatedThread?.name ?? ""
     }
@@ -596,15 +601,22 @@ private extension ThreadViewModel {
     @MainActor
     func updateLiveChatThread(_ updatedThread: CXoneChatUI.ChatThread?, flowContinues: inout Bool) async {
         LogManager.trace("Updating thread for live chat channel configuration")
-        if !chatProvider.state.isChatAvailable {
+        
+        guard chatProvider.state.isChatAvailable else {
             // If the chat is not available yet, we don't want to update the thread view at all
             flowContinues = false
             return
-        } else if let updatedThread, containerViewModel?.shouldRefreshThread == true, isShowingInactivityPopup == false, containerViewModel?.isRecoveringThread == false {
+        }
+        
+        let shouldRecover = containerViewModel?.shouldRefreshThread == true
+            && isShowingInactivityPopup == false
+            && containerViewModel?.isRecoveringThread == false
+        if shouldRecover, let updatedThread {
             // Trigger the load if the UI module entered the background or the thread is not loaded yet
             // Skip if recovery is already in progress to prevent duplicate recovery attempts on iOS 16
             containerViewModel?.shouldRefreshThread = false
             containerViewModel?.isRecoveringThread = true
+            
             await reloadThread(with: updatedThread.id)
             // Note: isRecoveringThread flag is reset inside reloadThread() before triggering UI update
             // If the thread is not loaded, we don't want to update the view. It will be updated once the thread is loaded via `onThreadUpdated(_:)`.
@@ -628,7 +640,7 @@ private extension ThreadViewModel {
     }
     
     @MainActor
-    func reloadThread(with id: UUID) async {
+    func reloadThread(with id: String) async {
         LogManager.trace("Recovering thread with id: \(id)")
         await containerViewModel?.showLoading(message: localization.commonLoading)
         do {
@@ -670,7 +682,7 @@ private extension ThreadViewModel {
     
     @MainActor
     func handleMultithreadReadyState() async {
-        if let thread, let sdkThread = chatProvider.threads.get().first(where: { $0.id == thread.id }) {
+        if let thread, let sdkThread = chatProvider.threads.get().first(where: { $0.idString == thread.id }) {
             // Update the thread only if it exists and is in the `.pending` or `.loaded` state.
             // If the state is `.pending`, we want to update the with the locally created thread
             // If the state is `.loaded`, the `updateThread(with:)` triggers thread recover.

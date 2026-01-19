@@ -48,7 +48,7 @@ class ThreadListViewModel: ObservableObject {
     }
     
     private var localization: ChatLocalization
-    private var threadToOpen: UUID?
+    private var threadToOpen: String?
 
     weak var containerViewModel: ChatContainerViewModel?
     
@@ -192,8 +192,8 @@ extension ThreadListViewModel: CXoneChatDelegate {
         LogManager.scope {
             LogManager.trace("updated state = \(String(describing: chatState))")
             
-            if chatState == .ready, let threadToOpen, let thread = chatProvider.threads.get().first(where: { $0.id == threadToOpen }) {
-                LogManager.trace("Opening thread with id \(thread.id)")
+            if chatState == .ready, let threadToOpen, let thread = chatProvider.threads.get().first(where: { $0.idString == threadToOpen }) {
+                LogManager.trace("Opening thread with id \(thread.idString)")
                 
                 self.threadToOpen = nil
                 

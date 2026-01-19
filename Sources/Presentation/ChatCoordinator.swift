@@ -81,8 +81,31 @@ open class ChatCoordinator {
     ///   - onFinish: A closure that is executed when the chat session finishes or is dismissed.
     ///
     /// The method will automatically dismiss any currently presented view controller on the `parentViewController`.
+    @available(*, deprecated, message: "Use alternative with `String` parameter. It preserves the original case-sensitive identifier from the backend.")
     public func start(threadId: UUID? = nil, in parentViewController: UIViewController, presentModally: Bool, onFinish: (() -> Void)? = nil) {
-        LogManager.trace("Starting the chat coordinator with threadId: \(threadId?.uuidString ?? "nil")")
+        start(threadId: threadId?.uuidString, in: parentViewController, presentModally: presentModally, onFinish: onFinish)
+    }
+    
+    /// Starts the chat coordinator by presenting the chat interface within the given parent view controller.
+    ///
+    /// This method initializes a `UIHostingController` with a SwiftUI view, which is presented modally
+    /// on the provided `parentViewController`. You have the option of providing a `threadId` to open an existing chat thread.
+    /// This feature is used for deep linking into specific chat threads
+    /// within a multi-threaded channel configuration to resume previous conversations.
+    ///
+    /// - Note: The `threadId` parameter does not have any effect if the channel configuration is set to single-threaded or live chat
+    /// because there is always a single conversation so it's not necessary to handle the `threadId`.
+    ///
+    /// - Parameters:
+    ///   - threadId: The unique identifier for the chat thread to be opened (deeplinking). If `nil`,
+    ///     the SDK tries to refresh existing conversation(s) or creates a new one for single-thread and live chat configurations.
+    ///   - parentViewController: The view controller in which the chat UI will be presented.
+    ///   - presentModally: The flag if the content view is going to be presented modally or in full-screen.
+    ///   - onFinish: A closure that is executed when the chat session finishes or is dismissed.
+    ///
+    /// The method will automatically dismiss any currently presented view controller on the `parentViewController`.
+    public func start(threadId: String? = nil, in parentViewController: UIViewController, presentModally: Bool, onFinish: (() -> Void)? = nil) {
+        LogManager.trace("Starting the chat coordinator with threadId: \(threadId ?? "nil")")
         
         let content = content(threadId: threadId, presentModally: presentModally) {
             onFinish?()
@@ -124,7 +147,33 @@ open class ChatCoordinator {
     /// - Returns: A `View` representing the chat UI to be displayed.
     ///
     /// This view is may be used within a `UIHostingController` for integration into a UIKit-based app.
+    @available(*, deprecated, message: "Use alternative with `String` parameter. It preserves the original case-sensitive identifier from the backend.")
     public func content(threadId: UUID? = nil, presentModally: Bool, onFinish: (() -> Void)? = nil) -> some View {
+        content(threadId: threadId?.uuidString, presentModally: presentModally, onFinish: onFinish)
+    }
+    
+    /// Provides the SwiftUI view content for the chat interface.
+    ///
+    /// This method generates a chat container view that handles  the entire chat experience.
+    /// The method allows to provide a `threadId` to open an existing chat thread.
+    /// This feature is used for deep linking into specific chat threads
+    /// within a multi-threaded channel configuration to resume previous conversations.
+    /// A closure, `onFinish`, is provided to handle the
+    /// dismissal or any cleanup when the chat session finishes.
+    ///
+    /// - Note: The `threadId` parameter does not have any effect if the channel configuration is set to single-threaded or live chat
+    /// because there is always a single conversation so it's not necessary to handle the `threadId`.
+    ///
+    /// - Parameters:
+    ///   - threadId: The unique identifier for the chat thread to be opened (deeplinking). If `nil`,
+    ///     the SDK tries to refresh existing conversation(s) or creates a new one for single-thread and live chat configurations.
+    ///   - presentModally: The flag if the content view is going to be presented modally or in full-screen.
+    ///   - onFinish: A closure that is executed when the chat session finishes or is dismissed.
+    ///
+    /// - Returns: A `View` representing the chat UI to be displayed.
+    ///
+    /// This view is may be used within a `UIHostingController` for integration into a UIKit-based app.
+    public func content(threadId: String? = nil, presentModally: Bool, onFinish: (() -> Void)? = nil) -> some View {
         isActive = true
         
         return ChatContainerView(

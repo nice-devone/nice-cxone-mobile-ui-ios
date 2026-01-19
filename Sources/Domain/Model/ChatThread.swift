@@ -20,7 +20,7 @@ import Foundation
 struct ChatThread: Identifiable {
     
     /// The unique id of the thread. Refers to the `idOnExternalPlatform`.
-    let id: UUID
+    let id: String
     
     /// The name given to the thread (for multi-thread channels only).
     let name: String?
