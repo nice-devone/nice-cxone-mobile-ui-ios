@@ -31,6 +31,8 @@ public class ChatLocalization: ObservableObject {
     public lazy var commonCancel = lookup(key: "chatui_common_cancel")
     /// "Confirm"
     public lazy var commonConfirm = lookup(key: "chatui_common_confirm")
+    /// "Submit"
+    public lazy var commonSubmit = lookup(key: "chatui_common_submit")
     /// "Required"
     public lazy var commonRequired = lookup(key: "chatui_common_required")
     /// "No selection"
@@ -39,6 +41,8 @@ public class ChatLocalization: ObservableObject {
     public lazy var commonInvalidEmail = lookup(key: "chatui_common_invalidEmail")
     /// "Invalid number"
     public lazy var commonInvalidNumber = lookup(key: "chatui_common_invalidNumber")
+    /// "Fields do not match"
+    public lazy var commonFieldsDontMatch = lookup(key: "chatui_common_fieldsDontMatch")
     /// "Select"
     public lazy var commonSelect = lookup(key: "chatui_common_select")
     /// "Attachments"
@@ -90,6 +94,12 @@ public class ChatLocalization: ObservableObject {
     public lazy var alertInvalidFileTypeMessage = lookup(key: "chatui_alert_invalidFileType_message")
     /// "Unable to upload attachment(s). Attachment(s) size higher than %1$d MB"
     public lazy var alertInvalidFileSizeMessage = lookup(key: "chatui_alert_invalidFileSize_message")
+    /// "Send Transcript"
+    public lazy var alertSendTranscriptTitle = lookup(key: "chatui_alert_sendTranscript_title")
+    /// "Chat transcript successfully sent"
+    public lazy var alertSendTranscriptSuccessMessage = lookup(key: "chatui_alert_sendTranscript_success")
+    /// "Unable to send transcript. Please try again later."
+    public lazy var alertSendTranscriptFailMessage = lookup(key: "chatui_alert_sendTranscript_error_message")
     
     // MARK: - Overlay
     
@@ -129,7 +139,6 @@ public class ChatLocalization: ObservableObject {
     public lazy var chatFallbackMessageUnknownTooltipText = lookup(key: "chatui_chat_fallbackMessage_unknown_tooltip_text")
     /// "This message could not be displayed in the chat as it uses a format that is currently unsupported."
     public lazy var chatFallbackMessageUnknownTooltipContent = lookup(key: "chatui_chat_fallbackMessage_unknown_tooltip_content")
-    
     /// "No name"
     public lazy var chatFallbackMessageNoName = lookup(key: "chatui_chat_fallbackMessage_noName")
 
@@ -183,6 +192,8 @@ public class ChatLocalization: ObservableObject {
     public lazy var chatMenuOptionUpdateName = lookup(key: "chatui_chat_menuOption_updateName")
     /// "End conversation"
     public lazy var chatMenuOptionEndConversation = lookup(key: "chatui_chat_menuOption_endConversation")
+    /// "Send Transcript"
+    public lazy var chatMenuOptionSendTranscript = lookup(key: "chatui_chat_menuOption_sendTranscript")
     
     // MARK: - Chat - TORM
     
@@ -232,13 +243,32 @@ public class ChatLocalization: ObservableObject {
     /// "This conversation will now end due to inactivity"
     public lazy var liveChatInactivityTimeoutText = lookup(key: "chatui_liveChat_inactivityPopup_sessionTimeout_text")
     
-    // MARK: - PreContactSurvey
+    // MARK: - Form
+    
+    /// "%@ *"
+    public lazy var formRequiredLabel = lookup(key: "chatui_form_requiredLabel")
+    
+    // MARK: - Form - Pre-contact Survey
     
     /// "Please fill out all fields and submit the form."
     public lazy var prechatSurveySubtitle = lookup(key: "chatui_preChatSurvey_subtitle")
-    /// "%@ *"
-    public lazy var prechatSurveyRequiredLabel = lookup(key: "chatui_preChatSurvey_requiredLabel")
-	// MARK: - Init
+	
+    // MARK: - Form - Send Transcript
+    
+    /// "Chat Transcript"
+    public lazy var sendTranscriptTitle = lookup(key: "chatui_sendTranscript_title")
+    /// "We do not share submitted emails with any 3rd party affiliate marketing or offer programs"
+    public lazy var sendTranscriptSubtitle = lookup(key: "chatui_sendTranscript_subtitle")
+    /// "E-mail"
+    public lazy var sendTranscriptEmailLabel = lookup(key: "chatui_sendTranscript_email_label")
+    /// "Enter your email address"
+    public lazy var sendTranscriptEmailPlaceholder = lookup(key: "chatui_sendTranscript_email_placeholder")
+    /// "Confirm e-mail"
+    public lazy var sendTranscriptConfirmEmailLabel = lookup(key: "chatui_sendTranscript_confirmEmail_label")
+    /// "Confirm your email address"
+    public lazy var sendTranscriptConfirmEmailPlaceholder = lookup(key: "chatui_sendTranscript_confirmEmail_placeholder")
+    
+    // MARK: - Init
 
     public init(bundle: Bundle = .main, tablename: String = "CXOneChatUI") {
         self.bundle = bundle

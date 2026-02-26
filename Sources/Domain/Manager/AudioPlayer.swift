@@ -84,8 +84,10 @@ class AudioPlayer: NSObject, ObservableObject {
                 try audioSession.setActive(true)
 
                 _ = await MainActor.run {
-                    self.formattedProgress = self.formattedZeroDuration
-                    self.formattedDuration = self.formatter.string(from: TimeInterval(self.avPlayer.totalDuration)) ?? self.formattedZeroDuration
+                    self.formattedProgress = self.safeFormatTimeInterval(0)
+                    
+                    let total = TimeInterval(self.avPlayer.totalDuration)
+                    self.formattedDuration = self.safeFormatTimeInterval(total)
                 }
             } catch {
                 error.logError()
@@ -146,8 +148,23 @@ class AudioPlayer: NSObject, ObservableObject {
 
 private extension AudioPlayer {
     
+    /// Formats a time interval into a positional mm:ss string safely.
+    ///
+    /// Guards against non-finite (NaN/±infinity) and negative values that can
+    /// cause `DateComponentsFormatter` to assert or crash. Non-finite or
+    /// negative inputs are treated as 0.
+    ///
+    /// - Parameter interval: The raw `TimeInterval` to format.
+    ///
+    /// - Returns: A formatted string or `formattedZeroDuration` when input is invalid.
+    func safeFormatTimeInterval(_ interval: TimeInterval) -> String {
+        let clamped: TimeInterval = interval.isFinite && interval >= 0 ? interval : 0
+        
+        return formatter.string(from: clamped) ?? formattedZeroDuration
+    }
+    
     func reset() {
-        LogManager.trace("Reseting AudioPlayer")
+        LogManager.trace("Resetting AudioPlayer")
         
         isPlaying = false
         formattedProgress = formattedZeroDuration
@@ -158,7 +175,7 @@ private extension AudioPlayer {
     
     @objc
     func timerAction() {
-        formattedProgress = formatter.string(from: TimeInterval(avPlayer.currentDuration)) ?? formattedZeroDuration
+        formattedProgress = safeFormatTimeInterval(TimeInterval(avPlayer.currentDuration))
 
         if avPlayer.playProgress >= 1 {
             isPlaying = false
@@ -229,3 +246,4 @@ private extension AudioPlayer {
         return lastPathComponent
     }
 }
+

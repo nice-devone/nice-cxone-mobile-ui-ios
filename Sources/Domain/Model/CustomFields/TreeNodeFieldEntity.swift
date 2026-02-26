@@ -22,28 +22,28 @@ import Foundation
 ///
 /// ```
 /// let children = [
-///     TreeNodeFieldEntity(label: "Mobile Phone", value: "phone", children: [
-///         TreeNodeFieldEntity(label: "Apple", value: "apple", children: [
-///             TreeNodeFieldEntity(label: "iPhone 15", value: "iphone_15"),
-///             TreeNodeFieldEntity(label: "iPhone 15 Pro", value: "iphone_15_pro")
+///     TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Mobile Phone", value: "phone", children: [
+///         TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Apple", value: "apple", children: [
+///             TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "iPhone 15", value: "iphone_15"),
+///             TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "iPhone 15 Pro", value: "iphone_15_pro")
 ///         ]),
-///         TreeNodeFieldEntity(label: "Android", value: "android", children: [
+///         TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Android", value: "android", children: [
 ///             ...
 ///         ])
 ///     ]),
-///     TreeNodeFieldEntity(label: "Laptop", value: "laptop", children: [
-///         TreeNodeFieldEntity(label: "MacOS", value: "macos", children: [
-///             TreeNodeFieldEntity(label: "MacBook", value: "macbook"),
-///             TreeNodeFieldEntity(label: "MacBook Pro", value: "macbook_pro")
+///     TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Laptop", value: "laptop", children: [
+///         TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "MacOS", value: "macos", children: [
+///             TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "MacBook", value: "macbook"),
+///             TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "MacBook Pro", value: "macbook_pro")
 ///         ]),
-///         TreeNodeFieldEntity(label: "Windows", value: "windows", children: [
+///         TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Windows", value: "windows", children: [
 ///             ...
 ///         ]),
-///         TreeNodeFieldEntity(label: "Linux", value: "linux", children: [
+///         TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Linux", value: "linux", children: [
 ///             ...
 ///         ])
 ///     ]),
-///     TreeNodeFieldEntity(label: "Other", value: "other")
+///     TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Other", value: "other")
 /// ]
 /// let treeFieldEntity = TreeFieldEntity(...)
 ///
@@ -56,7 +56,11 @@ public class TreeNodeFieldEntity: ObservableObject, Identifiable {
     // MARK: - Properties
     
     /// The unique identifier of the tree node.
-    public let id: String
+    @available(*, deprecated, renamed: "idString", message: "Use `idString`. It preserves the original case-sensitive identifier from the backend.")
+    public let id: UUID // swiftlint:disable:this no_uuid
+    
+    /// The unique identifier of the tree node.
+    public let idString: String
     
     /// The label or name associated with the tree node.
     public let label: String
@@ -74,12 +78,43 @@ public class TreeNodeFieldEntity: ObservableObject, Identifiable {
     
     /// Initialization of the ListFieldEntity
     ///
+    /// - `id`: The unique identifier of the tree node.
     /// - `label`: The label or name associated with the tree node.
     /// - `value`: The value or unique identifier of the tree node.
     /// - `children`: An array of `TreeNodeFieldEntity` objects, representing child nodes within the tree.
     /// - `isSelected`: A boolean flag indicating whether the tree node is currently selected.
-    public init(id: String = UUID().uuidString.lowercased(), label: String, value: String, children: [TreeNodeFieldEntity]? = nil, isSelected: Bool = false) {
+    @available(*, deprecated, message: "Due to replacement of the `id` atrribute with `idString`, this initializer will be removed in a future.")
+    public init(
+        id: UUID = UUID(), // swiftlint:disable:this no_uuid
+        label: String,
+        value: String,
+        children: [TreeNodeFieldEntity]? = nil,
+        isSelected: Bool = false
+    ) {
         self.id = id
+        self.idString = id.uuidString
+        self.label = label
+        self.value = value
+        self.children = children
+        self.isSelected = isSelected
+    }
+    
+    /// Initialization of the ListFieldEntity
+    ///
+    /// - `id`: The unique identifier of the tree node.
+    /// - `label`: The label or name associated with the tree node.
+    /// - `value`: The value or unique identifier of the tree node.
+    /// - `children`: An array of `TreeNodeFieldEntity` objects, representing child nodes within the tree.
+    /// - `isSelected`: A boolean flag indicating whether the tree node is currently selected.
+    init(
+        id: String = LowercaseUUID().uuidString,
+        label: String,
+        value: String,
+        children: [TreeNodeFieldEntity]? = nil,
+        isSelected: Bool = false
+    ) {
+        self.id = UUID() // swiftlint:disable:this no_uuid
+        self.idString = id
         self.label = label
         self.value = value
         self.children = children

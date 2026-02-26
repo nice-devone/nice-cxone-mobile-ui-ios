@@ -70,7 +70,7 @@ struct SelectableImageMessageCell: View, Themed {
             if let image = viewModel.image.map(Image.init) {
                 Button {
                     if inSelectionMode {
-                        attachmentsViewModel.selectAttachment(uuid: item.id)
+                        attachmentsViewModel.selectAttachment(with: item.id)
                     } else {
                         isImagePresented.toggle()
                     }

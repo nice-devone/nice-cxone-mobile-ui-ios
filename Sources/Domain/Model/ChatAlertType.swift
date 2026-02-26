@@ -110,4 +110,12 @@ final class ChatAlertType: Identifiable {
             secondary: .cancel()
         )
     }
+    
+    static func sendTranscript(isSuccess: Bool, localization: ChatLocalization, action: @escaping () -> Void) -> ChatAlertType {
+        ChatAlertType(
+            title: localization.alertSendTranscriptTitle,
+            message: isSuccess ? localization.alertSendTranscriptSuccessMessage : localization.alertSendTranscriptFailMessage,
+            primary: .default(Text(localization.commonCancel), action: action)
+        )
+    }
 }

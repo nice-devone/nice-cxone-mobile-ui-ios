@@ -57,6 +57,7 @@ struct EndConversationView: View, Themed {
     let agentImageUrl: String?
     let onStartNewChatTapped: () -> Void
     let onBackToConversationTapped: () -> Void
+    let onSendTranscriptTapped: () -> Void
     let onCloseChatTapped: () -> Void
     
     private var title: String {
@@ -72,12 +73,14 @@ struct EndConversationView: View, Themed {
         agentImageUrl: String?,
         onStartNewChatTapped: @escaping () -> Void,
         onBackToConversationTapped: @escaping () -> Void,
+        onSendTranscriptTapped: @escaping () -> Void,
         onCloseChatTapped: @escaping () -> Void
     ) {
         self.agentName = agentName
         self.agentImageUrl = agentImageUrl
         self.onStartNewChatTapped = onStartNewChatTapped
         self.onBackToConversationTapped = onBackToConversationTapped
+        self.onSendTranscriptTapped = onSendTranscriptTapped
         self.onCloseChatTapped = onCloseChatTapped
     }
     
@@ -85,12 +88,14 @@ struct EndConversationView: View, Themed {
         thread: ChatThread,
         onStartNewChatTapped: @escaping () -> Void,
         onBackToConversationTapped: @escaping () -> Void,
+        onSendTranscriptTapped: @escaping () -> Void,
         onCloseChatTapped: @escaping () -> Void
     ) {
         self.agentName = thread.assignedAgent?.fullName ?? thread.lastAssignedAgent?.fullName
         self.agentImageUrl = thread.assignedAgent?.imageUrl ?? thread.lastAssignedAgent?.imageUrl
         self.onStartNewChatTapped = onStartNewChatTapped
         self.onBackToConversationTapped = onBackToConversationTapped
+        self.onSendTranscriptTapped = onSendTranscriptTapped
         self.onCloseChatTapped = onCloseChatTapped
     }
     
@@ -115,6 +120,15 @@ struct EndConversationView: View, Themed {
                         action: onBackToConversationTapped
                     )
                     .foregroundStyle(colors.brand.primary)
+                    
+                    if CXoneChat.shared.connection.channelConfiguration.isSendTranscriptEnabled {
+                        BottomSheetButton(
+                            image: Asset.sendTranscript,
+                            label: localization.chatMenuOptionSendTranscript,
+                            action: onSendTranscriptTapped
+                        )
+                        .foregroundStyle(colors.brand.primary)
+                    }
                     
                     BottomSheetButton(
                         image: Asset.close,
@@ -210,6 +224,7 @@ private extension EndConversationView {
                 agentImageUrl: MockData.imageUrl.absoluteString,
                 onStartNewChatTapped: { },
                 onBackToConversationTapped: { },
+                onSendTranscriptTapped: { },
                 onCloseChatTapped: { }
             )
         }
@@ -225,6 +240,7 @@ private extension EndConversationView {
                 agentImageUrl: "https://www.google.com",
                 onStartNewChatTapped: { },
                 onBackToConversationTapped: { },
+                onSendTranscriptTapped: { },
                 onCloseChatTapped: { }
             )
         }
@@ -240,6 +256,7 @@ private extension EndConversationView {
                 agentImageUrl: nil,
                 onStartNewChatTapped: { },
                 onBackToConversationTapped: { },
+                onSendTranscriptTapped: { },
                 onCloseChatTapped: { }
             )
         }
@@ -255,6 +272,7 @@ private extension EndConversationView {
                 agentImageUrl: nil,
                 onStartNewChatTapped: { },
                 onBackToConversationTapped: { },
+                onSendTranscriptTapped: { },
                 onCloseChatTapped: { }
             )
         }

@@ -28,8 +28,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "3.1.3"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios.git", from: "3.1.0"),
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "3.2.0"),
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios.git", from: "3.2.0"),
         .package(url: "https://github.com/airbnb/lottie-spm.git", from: "4.5.2"),
     ],
     targets: [

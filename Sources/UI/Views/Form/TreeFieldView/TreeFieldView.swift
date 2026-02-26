@@ -45,6 +45,8 @@ struct TreeFieldView: View, Themed {
     
     @ObservedObject var entity: TreeFieldEntity
     
+    @State private var error: String?
+    
     let onChange: () -> Void
     
     // MARK: - Init
@@ -58,20 +60,23 @@ struct TreeFieldView: View, Themed {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.bodyVertical) {
-            Text(entity.isRequired ? String(format: localization.prechatSurveyRequiredLabel, entity.label) : entity.label)
+            Text(entity.isRequired ? String(format: localization.formRequiredLabel, entity.label) : entity.label)
                 .font(.callout)
                 .bold()
-                .foregroundStyle(entity.isRequired && entity.value.isEmpty ? colors.status.error : colors.content.primary)
+                .foregroundStyle(error != nil ? colors.status.error : colors.content.primary)
             
-            ForEach(entity.children, id: \.id) { node in
+            ForEach(entity.children, id: \.idString) { node in
                 cell(node: node, leadingPadding: Constants.Padding.nodeInitialLeading)
             }
 
-            if entity.isRequired, entity.value.isEmpty {
-                Text(localization.commonRequired)
+            if let error {
+                Text(error)
                     .font(.caption)
                     .foregroundStyle(colors.status.error)
             }
+        }
+        .onChange(of: entity.value) { value in
+            error = value.isEmpty && entity.isRequired ? localization.commonRequired : nil
         }
     }
 }
@@ -157,7 +162,7 @@ private extension TreeFieldView {
 
 #Preview {
     ScrollView {
-        TreeFieldView(entity: MockData.treeFieldEntity()) { }
+        TreeFieldView(entity: MockData.treeFieldEntity(isRequired: true, value: "iphone_14")) { }
     }
     .padding(.horizontal, 12)
     .environmentObject(ChatStyle())

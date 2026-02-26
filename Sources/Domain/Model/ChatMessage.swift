@@ -24,7 +24,7 @@ public struct ChatMessage: Identifiable, Equatable {
     
     /// A unique identifier for the chat message.
     @available(*, deprecated, renamed: "idString", message: "Use `idString`. It preserves the original case-sensitive identifier from the backend.")
-    public let id: UUID
+    public let id: UUID // swiftlint:disable:this no_uuid
     
     /// A unique identifier for the chat message.
     public let idString: String
@@ -56,8 +56,8 @@ public struct ChatMessage: Identifiable, Equatable {
     ///   - types: Types of the chat message (e.g., text, image, file).
     ///   - date: The date and time when the message was sent.
     ///   - status: The delivery or read status of the message.
-    @available(*, deprecated, message: "Due to replacement of the `id` attribute with `idString`, this initializer will be removed in a future.")
-    public init(id: UUID, user: ChatUser?, types: [ChatMessageType], date: Date, status: MessageStatus) {
+    @available(*, deprecated, message: "Due to replacement of the `id` atrribute with `idString`, this initializer will be removed in a future.")
+    public init(id: UUID, user: ChatUser?, types: [ChatMessageType], date: Date, status: MessageStatus) { // swiftlint:disable:this no_uuid
         self.id = id
         self.idString = id.uuidString
         self.user = user
@@ -75,6 +75,7 @@ public struct ChatMessage: Identifiable, Equatable {
     ///   - date: The date and time when the message was sent.
     ///   - status: The delivery or read status of the message.
     public init(id: String, user: ChatUser?, types: [ChatMessageType], date: Date, status: MessageStatus) {
+        // swiftlint:disable:next no_uuid
         self.id = UUID() // Replaced with `idString`
         self.idString = id
         self.user = user

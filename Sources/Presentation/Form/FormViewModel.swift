@@ -16,84 +16,30 @@
 import CXoneChatSDK
 import SwiftUI
 
-class FormViewModel: ObservableObject {
+open class FormViewModel<T>: ObservableObject {
     
     // MARK: - Properties
     
-    @Published var customFields: [FormCustomFieldType]
     @Published var isFormValid = false
     
-    let onAccept: ([String: String]) -> Void
-    let onCancel: () -> Void
-
-    let title: String
-
-    // MARK: - Init
-
-    init(
-        title: String,
-        customFields: [FormCustomFieldType],
-        onAccept: @escaping ([String: String]) -> Void,
-        onCancel: @escaping () -> Void
-    ) {
-        self.customFields = customFields
-        self.onAccept = onAccept
+    var onFinished: (T) -> Void
+    var onCancel: () -> Void
+    
+    init(onFinished: @escaping (T) -> Void, onCancel: @escaping () -> Void) {
+        self.onFinished = onFinished
         self.onCancel = onCancel
-        self.title = title
         
-        // Trigger the validation if some fields are pre-filled so it can show errors
+        // Trigger validation in case fields are pre-populated
         validateForm()
     }
-}
-
-// MARK: - Internal Methods
-
-extension FormViewModel {
     
-    func onConfirm() {
-        LogManager.trace("Confirming form")
-        
-        // Retrigger the validation (just in case)
-        validateForm()
-        
-        if isFormValid {
-            LogManager.trace("The form is valid, accepting the form")
-            
-            onAccept(getCustomFields())
-        } else {
-            LogManager.error("The form is not valid")
-        }
+    // MARK: - Methods
+    
+    open func onSubmit() {
+        // Add custom implementation
     }
     
-    func validateForm() {
-        LogManager.trace("Validating form")
-        
-        isFormValid = self.customFields.allSatisfy { type in
-            var isValid = true
-            
-            if let textfield = type as? TextFieldEntity, textfield.isEmail {
-                isValid = type.value.isValidEmail
-            }
-            
-            return type.isRequired
-                ? !type.value.isEmpty && isValid
-                : isValid
-        }
-    }
-    
-}
-
-// MARK: - Private methods
-
-private extension FormViewModel {
-    
-    func getCustomFields() -> [String: String] {
-        var result = [String: String]()
-
-        customFields.forEach { type in
-            result[type.ident] = type.value
-        }
-        
-        return result
+    open func validateForm() {
+        // Add custom implementation
     }
 }

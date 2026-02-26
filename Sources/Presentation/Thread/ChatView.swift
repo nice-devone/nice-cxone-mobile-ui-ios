@@ -32,9 +32,8 @@ struct ChatView: View, Themed {
         }
         
         enum Padding {
-            static let positionInQueueTop: CGFloat = 32
+            static let positionInQueueVertical: CGFloat = 32
             static let positionInQueueHorizontal: CGFloat = 16
-            static let positionInQueueBottom: CGFloat = 24
             static let typingIndicatorLeading: CGFloat = 16
             static let archivedChatMessageDividerHorizontal: CGFloat = 24
             static var archivedChatMessageBottom: CGFloat {
@@ -101,26 +100,25 @@ struct ChatView: View, Themed {
 
     var body: some View {
         VStack(spacing: Constants.Spacing.bodyVertical) {
-            if let queuePosition {
-                LivechatPositionInQueueView(position: queuePosition)
-                    .padding(.top, Constants.Padding.positionInQueueTop)
-                    .padding(.horizontal, Constants.Padding.positionInQueueHorizontal)
-                    .padding(.bottom, Constants.Padding.positionInQueueBottom)
-            }
-            
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
-                    LazyVStack {
-                        Spacer(minLength: Constants.Spacing.messageGroupsMinLength)
-                        
-                        ForEach(messageGroups) { group in
-                            MessageGroupView(
-                                group: group,
-                                isLast: messageGroups.last?.id == group.id,
-                                alertType: $alertType,
-                                onRichMessageElementSelected: onRichMessageElementSelected
-                            )
-                            .id(group.id)
+                    LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
+                        Section {
+                            ForEach(messageGroups) { group in
+                                MessageGroupView(
+                                    group: group,
+                                    isLast: messageGroups.last?.id == group.id,
+                                    alertType: $alertType,
+                                    onRichMessageElementSelected: onRichMessageElementSelected
+                                )
+                                .id(group.id)
+                            }
+                        } header: {
+                            if let queuePosition {
+                                LivechatPositionInQueueView(position: queuePosition)
+                                    .padding(.vertical, Constants.Padding.positionInQueueVertical)
+                                    .padding(.horizontal, Constants.Padding.positionInQueueHorizontal)
+                            }
                         }
                     }
                     .onChange(of: messageGroups) { _ in

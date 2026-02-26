@@ -19,6 +19,8 @@ import Foundation
 /// All information about a chat thread as well as the messages for the thread.
 struct ChatThread: Identifiable {
     
+    // MARK: - Properties
+    
     /// The unique id of the thread. Refers to the `idOnExternalPlatform`.
     let id: String
     
@@ -50,6 +52,20 @@ struct ChatThread: Identifiable {
         !messages.isEmpty && !scrollToken.isEmpty
     }
     
+    // MARK: - Computed properties
+    
+    var titleForConversation: String? {
+        // The thread name has higher priority in multi-thread scenarios because it's set by the customer
+        name?.nilIfEmpty()
+            // If the thread name is not set, or it's a single-thread or live chat, use the assigned agent's nickname
+            ?? assignedAgent?.nickname?.nilIfEmpty()
+            // If the thread name is not set, or it's a single-thread or live chat, use the assigned agent's full name
+            ?? assignedAgent?.fullName.nilIfEmpty()
+            // If no agent is currently assigned, but one was previously, use the last assigned agent's nickname
+            ?? lastAssignedAgent?.nickname?.nilIfEmpty()
+            // If no agent is currently assigned, but one was previously, use the last assigned agent's full name
+            ?? lastAssignedAgent?.fullName.nilIfEmpty()
+    }
 }
 
 // MARK: - Equatable

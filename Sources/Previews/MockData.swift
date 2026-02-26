@@ -37,27 +37,27 @@ enum MockData {
     }
     
     static let selectableVideoAttachment = SelectableAttachment(
-        id: UUID().uuidString.lowercased(),
+        id: LowercaseUUID().uuidString,
         isSelected: false,
         messageType: .video(videoItem)
     )
     static let selectableImageAttachment = SelectableAttachment(
-        id: UUID().uuidString.lowercased(),
+        id: LowercaseUUID().uuidString,
         isSelected: false,
         messageType: .image(imageItem)
     )
     static let selectableAudioAttachment = SelectableAttachment(
-        id: UUID().uuidString.lowercased(),
+        id: LowercaseUUID().uuidString,
         isSelected: false,
         messageType: .audio(audioItem)
     )
     static let selectableDocumentAttachment = SelectableAttachment(
-        id: UUID().uuidString.lowercased(),
+        id: LowercaseUUID().uuidString,
         isSelected: false,
         messageType: .documentPreview(docPreviewItem)
     )
     static let selectablePDFAttachment = SelectableAttachment(
-        id: UUID().uuidString.lowercased(),
+        id: LowercaseUUID().uuidString,
         isSelected: false,
         messageType: .documentPreview(pdfPreviewItem)
     )
@@ -105,8 +105,8 @@ enum MockData {
     static let quickRepliesItem = QuickRepliesItem(title: Lorem.sentence(), message: Lorem.sentence(), options: quickReplyOptions())
     static let richLinkItem = RichLinkItem(title: Lorem.words(), url: imageUrl, imageUrl: imageUrl)
     
-    static let customer = ChatUser(id: UUID().uuidString, userName: "Peter Parker", avatarURL: nil, isAgent: false)
-    static let agent = ChatUser(id: UUID().uuidString, userName: "John Doe", avatarURL: imageUrl, isAgent: true)
+    static let customer = ChatUser(id: LowercaseUUID().uuidString, userName: "Peter Parker", avatarURL: nil, isAgent: false)
+    static let agent = ChatUser(id: LowercaseUUID().uuidString, userName: "John Doe", avatarURL: imageUrl, isAgent: true)
     
     static let attachmentRestrictions = AttachmentRestrictions(
         allowedFileSize: 40,
@@ -118,7 +118,7 @@ enum MockData {
     
     static func textMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID().uuidString.lowercased(),
+            id: LowercaseUUID().uuidString,
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(Lorem.sentence())],
             date: date,
@@ -128,7 +128,7 @@ enum MockData {
     
     static func hyperlinkMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID().uuidString.lowercased(),
+            id: LowercaseUUID().uuidString,
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(hyperlinkContent)],
             date: date,
@@ -138,7 +138,7 @@ enum MockData {
     
     static func phoneNumberMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID().uuidString.lowercased(),
+            id: LowercaseUUID().uuidString,
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(phoneNumberContent)],
             date: date,
@@ -148,7 +148,7 @@ enum MockData {
     
     static func emojiMessage(count: Int = .zero, user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID().uuidString.lowercased(),
+            id: LowercaseUUID().uuidString,
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [.text(randomEmoji(count: count).joined())],
             date: date,
@@ -158,7 +158,7 @@ enum MockData {
     
     static func imageMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID().uuidString.lowercased(),
+            id: LowercaseUUID().uuidString,
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .image(imageItem) },
             date: date,
@@ -171,7 +171,7 @@ enum MockData {
         content.append(contentsOf: (1...(elementsCount ?? 1)).map { _ in .image(imageItem) })
         
         return ChatMessage(
-            id: UUID().uuidString.lowercased(),
+            id: LowercaseUUID().uuidString,
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: content,
             date: date,
@@ -181,7 +181,7 @@ enum MockData {
     
     static func videoMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID().uuidString.lowercased(),
+            id: LowercaseUUID().uuidString,
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .video(videoItem) },
             date: date,
@@ -191,7 +191,7 @@ enum MockData {
     
     static func audioMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID().uuidString.lowercased(),
+            id: LowercaseUUID().uuidString,
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .audio(audioItem) },
             date: date,
@@ -201,7 +201,7 @@ enum MockData {
     
     static func documentMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID().uuidString.lowercased(),
+            id: LowercaseUUID().uuidString,
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in
                 [
@@ -217,7 +217,7 @@ enum MockData {
     
     static func pdfMessage(user: ChatUser? = nil, elementsCount: Int? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID().uuidString.lowercased(),
+            id: LowercaseUUID().uuidString,
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: (1...(elementsCount ?? 1)).map { _ in .documentPreview(pdfPreviewItem) },
             date: date,
@@ -227,7 +227,7 @@ enum MockData {
     
     static func multipleMediaAttachmentsMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID().uuidString.lowercased(),
+            id: LowercaseUUID().uuidString,
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [
                 .text(Lorem.sentence()),
@@ -243,7 +243,7 @@ enum MockData {
     
     static func multipleDocumentAttachmentsMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID().uuidString.lowercased(),
+            id: LowercaseUUID().uuidString,
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
             types: [
                 .text(Lorem.sentence()),
@@ -259,15 +259,15 @@ enum MockData {
     }
     
     static func quickRepliesMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
-        ChatMessage(id: UUID().uuidString.lowercased(), user: agent, types: [.richContent(.quickReplies(quickRepliesItem))], date: date, status: status)
+        ChatMessage(id: LowercaseUUID().uuidString, user: agent, types: [.richContent(.quickReplies(quickRepliesItem))], date: date, status: status)
     }
     
     static func listPickerMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
-        ChatMessage(id: UUID().uuidString.lowercased(), user: agent, types: [.richContent(.listPicker(listPickerItem))], date: date, status: status)
+        ChatMessage(id: LowercaseUUID().uuidString, user: agent, types: [.richContent(.listPicker(listPickerItem))], date: date, status: status)
     }
     
     static func richLinkMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
-        ChatMessage(id: UUID().uuidString.lowercased(), user: agent, types: [.richContent(.richLink(richLinkItem))], date: date, status: status)
+        ChatMessage(id: LowercaseUUID().uuidString, user: agent, types: [.richContent(.richLink(richLinkItem))], date: date, status: status)
     }
 
     static func textFieldEntity(isRequired: Bool = false) -> TextFieldEntity {
@@ -278,62 +278,62 @@ enum MockData {
         ListFieldEntity(label: "Color", isRequired: isRequired, ident: "color", options: ["blue": "Blue", "yellow": "Yellow"])
     }
 
-    static func treeFieldEntity(isRequired: Bool = false) -> TreeFieldEntity {
+    static func treeFieldEntity(isRequired: Bool = false, value: String? = nil) -> TreeFieldEntity {
         TreeFieldEntity(
             label: "Devices",
             isRequired: isRequired,
             ident: "devices",
             children: treeNodeFieldEntityChildren(),
-            value: "iphone_14"
+            value: value
         )
     }
     
     static func treeNodeFieldEntityChildren() -> [TreeNodeFieldEntity] {
         [
-            TreeNodeFieldEntity(label: "Mobile Phone", value: "phone", children: [
-                TreeNodeFieldEntity(label: "Apple", value: "apple", children: [
-                    TreeNodeFieldEntity(label: "iPhone 14", value: "iphone_14"),
-                    TreeNodeFieldEntity(label: "iPhone 14 Pro", value: "iphone_14_pro"),
-                    TreeNodeFieldEntity(label: "iPhone 15", value: "iphone_15"),
-                    TreeNodeFieldEntity(label: "iPhone 15 Pro", value: "iphone_15_pro")
+            TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Mobile Phone", value: "phone", children: [
+                TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Apple", value: "apple", children: [
+                    TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "iPhone 14", value: "iphone_14"),
+                    TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "iPhone 14 Pro", value: "iphone_14_pro"),
+                    TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "iPhone 15", value: "iphone_15"),
+                    TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "iPhone 15 Pro", value: "iphone_15_pro")
                 ]),
-                TreeNodeFieldEntity(label: "Android", value: "android", children: [
-                    TreeNodeFieldEntity(label: "Samsung", value: "samsung", children: [
-                        TreeNodeFieldEntity(label: "Galaxy A5", value: "samsung_galaxy_a5"),
-                        TreeNodeFieldEntity(label: "Galaxy A51", value: "samsung_galaxy_a51"),
-                        TreeNodeFieldEntity(label: "Galaxy S5", value: "samsung_galaxy_s5")
+                TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Android", value: "android", children: [
+                    TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Samsung", value: "samsung", children: [
+                        TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Galaxy A5", value: "samsung_galaxy_a5"),
+                        TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Galaxy A51", value: "samsung_galaxy_a51"),
+                        TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Galaxy S5", value: "samsung_galaxy_s5")
                     ]),
-                    TreeNodeFieldEntity(label: "Xiaomi", value: "xiaomi", children: [
-                        TreeNodeFieldEntity(label: "mi 5", value: "xiaomi_mi_5"),
-                        TreeNodeFieldEntity(label: "mi 6", value: "xiaomi_mi_6"),
-                        TreeNodeFieldEntity(label: "mi 7", value: "xiaomi_mi_7")
+                    TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Xiaomi", value: "xiaomi", children: [
+                        TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "mi 5", value: "xiaomi_mi_5"),
+                        TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "mi 6", value: "xiaomi_mi_6"),
+                        TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "mi 7", value: "xiaomi_mi_7")
                     ])
                 ])
             ]),
-            TreeNodeFieldEntity(label: "Laptop", value: "laptop", children: [
-                TreeNodeFieldEntity(label: "Windows", value: "windows", children: [
-                    TreeNodeFieldEntity(label: "Acer", value: "acer", children: [
-                        TreeNodeFieldEntity(label: "Aspire E5", value: "acer_aspire_e5"),
-                        TreeNodeFieldEntity(label: "Aspire E5 Pro", value: "acer_aspire_e5_pro")
+            TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Laptop", value: "laptop", children: [
+                TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Windows", value: "windows", children: [
+                    TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Acer", value: "acer", children: [
+                        TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Aspire E5", value: "acer_aspire_e5"),
+                        TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Aspire E5 Pro", value: "acer_aspire_e5_pro")
                     ]),
-                    TreeNodeFieldEntity(label: "Asus", value: "asus", children: [
-                        TreeNodeFieldEntity(label: "ZenBook", value: "zenbook"),
-                        TreeNodeFieldEntity(label: "ZenBook Pro", value: "zenbook_pro")
+                    TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Asus", value: "asus", children: [
+                        TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "ZenBook", value: "zenbook"),
+                        TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "ZenBook Pro", value: "zenbook_pro")
                     ])
                 ]),
-                TreeNodeFieldEntity(label: "MacOS", value: "macos", children: [
-                    TreeNodeFieldEntity(label: "MacBook", value: "macbook"),
-                    TreeNodeFieldEntity(label: "MacBook Air", value: "macbook_air"),
-                    TreeNodeFieldEntity(label: "MacBook Pro", value: "macbook_pro")
+                TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "MacOS", value: "macos", children: [
+                    TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "MacBook", value: "macbook"),
+                    TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "MacBook Air", value: "macbook_air"),
+                    TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "MacBook Pro", value: "macbook_pro")
                 ])
             ]),
-            TreeNodeFieldEntity(label: "Other", value: "other")
+            TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Other", value: "other")
         ]
     }
     
     static func unsupportedMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
-            id: UUID().uuidString.lowercased(),
+            id: LowercaseUUID().uuidString,
             user: agent,
             types: [.unknown(Self.unsupportedMessageContent)],
             date: date,

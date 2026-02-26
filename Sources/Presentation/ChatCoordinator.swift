@@ -35,6 +35,8 @@ open class ChatCoordinator {
     public var chatConfiguration: ChatConfiguration
     /// Indicates whether the chat is currectly active (i.e., a chat session is ongoing).
     public private(set) var isActive = false
+    /// A delegate protocol for receiving chat lifecycle callbacks.
+    public weak var delegate: ChatDelegate?
     
     // MARK: - Init
     
@@ -82,7 +84,12 @@ open class ChatCoordinator {
     ///
     /// The method will automatically dismiss any currently presented view controller on the `parentViewController`.
     @available(*, deprecated, message: "Use alternative with `String` parameter. It preserves the original case-sensitive identifier from the backend.")
-    public func start(threadId: UUID? = nil, in parentViewController: UIViewController, presentModally: Bool, onFinish: (() -> Void)? = nil) {
+    public func start(
+        threadId: UUID? = nil, // swiftlint:disable:this no_uuid
+        in parentViewController: UIViewController,
+        presentModally: Bool,
+        onFinish: (() -> Void)? = nil
+    ) {
         start(threadId: threadId?.uuidString, in: parentViewController, presentModally: presentModally, onFinish: onFinish)
     }
     
@@ -148,7 +155,7 @@ open class ChatCoordinator {
     ///
     /// This view is may be used within a `UIHostingController` for integration into a UIKit-based app.
     @available(*, deprecated, message: "Use alternative with `String` parameter. It preserves the original case-sensitive identifier from the backend.")
-    public func content(threadId: UUID? = nil, presentModally: Bool, onFinish: (() -> Void)? = nil) -> some View {
+    public func content(threadId: UUID? = nil, presentModally: Bool, onFinish: (() -> Void)? = nil) -> some View { // swiftlint:disable:this no_uuid
         content(threadId: threadId?.uuidString, presentModally: presentModally, onFinish: onFinish)
     }
     
@@ -176,21 +183,22 @@ open class ChatCoordinator {
     public func content(threadId: String? = nil, presentModally: Bool, onFinish: (() -> Void)? = nil) -> some View {
         isActive = true
         
-        return ChatContainerView(
-            viewModel: ChatContainerViewModel(
-                chatProvider: CXoneChat.shared,
-                threadToOpen: threadId,
-                chatLocalization: chatLocalization,
-                chatStyle: chatStyle,
-                chatConfiguration: chatConfiguration,
-                presentModally: presentModally
-            ) { [weak self] in
-                self?.isActive = false
-                
-                onFinish?()
-            }
-        )
-        .environmentObject(chatStyle)
-        .environmentObject(chatLocalization)
+        let viewModel = ChatContainerViewModel(
+            chatProvider: CXoneChat.shared,
+            threadToOpen: threadId,
+            chatLocalization: chatLocalization,
+            chatStyle: chatStyle,
+            chatConfiguration: chatConfiguration,
+            presentModally: presentModally
+        ) { [weak self] in
+            self?.isActive = false
+            
+            onFinish?()
+        }
+        viewModel.delegate = delegate
+        
+        return ChatContainerView(viewModel: viewModel)
+            .environmentObject(chatStyle)
+            .environmentObject(chatLocalization)
     }
 }

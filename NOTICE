@@ -1,0 +1,71 @@
+NOTICE
+
+CXone Mobile UI for iOS
+Copyright (c) 2021-2026 NiCE. All rights reserved.
+https://github.com/nice-devone/nice-cxone-mobile-ui-ios
+
+This product includes software developed by NiCE and its contributors.
+
+================================================================================
+
+THIRD-PARTY SOFTWARE NOTICES AND INFORMATION
+
+This project incorporates components from the projects listed below. The original
+copyright notices and the licenses under which NiCE received such components are
+set forth below. NiCE reserves all rights not expressly granted herein, whether
+by implication, estoppel or otherwise.
+
+================================================================================
+
+1. Kingfisher
+    Copyright (c) 2019 Wei Wang
+    Licensed under the MIT License
+    https://github.com/onevcat/Kingfisher
+
+2. Lottie
+    Copyright (c) Airbnb, Inc.
+    Licensed under the Apache License 2.0
+    https://github.com/airbnb/lottie-spm
+
+3. CXoneGuideUtility
+    Copyright 2021-2026 NiCE
+    Licensed under the NiCE Licese
+    https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios
+
+4. CXoneChatSDK
+    Copyright 2021-2026 NiCE
+    Licensed under the NiCE Licese
+    https://github.com/nice-devone/nice-cxone-mobile-sdk-ios
+
+================================================================================
+
+LICENSE SUMMARIES
+
+MIT License
+-----------
+The following components are licensed under the MIT License:
+- Kingfisher
+
+The MIT License text can be found at: https://opensource.org/licenses/MIT
+
+Apache License 2.0
+------------------
+The following components are licensed under the Apache License 2.0:
+- Lottie
+
+The Apache License 2.0 text can be found at: https://www.apache.org/licenses/LICENSE-2.0
+
+NiCE License
+------------
+The following components are licensed under the NiCE License:
+- CXoneGuideUtility
+- CXoneChatSDK
+
+The NiCE License text can be found at: https://github.com/nice-devone/nice-cxone-mobile-sdk-ios
+
+================================================================================
+
+Full license texts for all dependencies are available in their respective
+repositories linked above.
+
+For questions regarding this NOTICE file or licensing, please contact NiCE at https://www.nice.com/contact-us.

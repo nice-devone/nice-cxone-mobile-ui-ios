@@ -23,7 +23,15 @@ struct MenuBuilder {
     struct Item {
         let name: String
         let icon: Image
+        let role: ButtonRole?
         let action: () -> Void
+        
+        init(name: String, icon: Image, role: ButtonRole? = nil, action: @escaping () -> Void) {
+            self.name = name
+            self.icon = icon
+            self.role = role
+            self.action = action
+        }
     }
 
     // MARK: - Properties
@@ -42,9 +50,9 @@ struct MenuBuilder {
 
     // MARK: - Methods
     
-    func add(if condition: Bool = true, name: String, icon: Image, action: @escaping () -> Void) -> Self {
+    func add(if condition: Bool = true, name: String, icon: Image, role: ButtonRole? = nil, action: @escaping () -> Void) -> Self {
         if condition {
-            Self(items: items + [Item(name: name, icon: icon, action: action)])
+            Self(items: items + [Item(name: name, icon: icon, role: role, action: action)])
         } else {
             self
         }

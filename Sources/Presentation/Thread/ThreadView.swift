@@ -55,7 +55,7 @@ struct ThreadView: View, Themed {
         .background(colors.background.default)
         .onAppear(perform: viewModel.onAppear)
         .onDisappear(perform: viewModel.onDisappear)
-        .navigationTitle(viewModel.chatTitle)
+        .navigationTitle(viewModel.thread?.titleForConversation ?? localization.commonUnassignedAgent)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 viewModel.menu.build(colors: colors)

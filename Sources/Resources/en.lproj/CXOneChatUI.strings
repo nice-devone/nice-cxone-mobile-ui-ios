@@ -2,10 +2,12 @@
 "chatui_common_ok" = "Ok";
 "chatui_common_cancel" = "Cancel";
 "chatui_common_confirm" = "Confirm";
+"chatui_common_submit" = "Submit";
 "chatui_common_required" = "Required field";
 "chatui_common_noSelection" = "No selection";
 "chatui_common_invalidEmail" = "Invalid email";
 "chatui_common_invalidNumber" = "Invalid number";
+"chatui_common_fieldsDontMatch" = "Fields do not match";
 "chatui_common_select" = "Select";
 "chatui_common_attachments" = "Attachments";
 "chatui_common_copy" = "Copy";
@@ -32,6 +34,9 @@
 "chatui_alert_fileValidation_title" = "Oops!";
 "chatui_alert_invalidFileType_message" = "Unable to upload attachment(s) due to invalid file type.";
 "chatui_alert_invalidFileSize_message" = "Unable to upload attachment(s). Attachment(s) size greater than %1$d MB";
+"chatui_alert_sendTranscript_title" = "Send Transcript";
+"chatui_alert_sendTranscript_success" = "Chat transcript successfully sent";
+"chatui_alert_sendTranscript_error_message" = "Unable to send transcript. Please try again later.";
 
 // MARK: - Overlay
 "chatui_overlay_loading_delay_title" = "The operation is taking longer than expected.";
@@ -81,6 +86,7 @@
 // MARK: - Chat - Menu Actions
 "chatui_chat_menuOption_updateName" = "Update conversation name";
 "chatui_chat_menuOption_endConversation" = "End conversation";
+"chatui_chat_menuOption_sendTranscript" = "Send Transcript";
 
 // MARK: - Chat - Message: TORM
 "chatui_chat_message_richContent_optionSelected" = "Option selected";
@@ -108,6 +114,16 @@
 "chatui_liveChat_inactivityPopup_sessionTimeout_title" = "Time is up";
 "chatui_liveChat_inactivityPopup_sessionTimeout_text" = "This conversation will now end due to inactivity";
 
-// MARK: - Formfield - PreChatSurvey
+// MARK: - Form
+"chatui_form_requiredLabel" = "%@ *";
+
+// MARK: - Form - Pre-chat Survey
 "chatui_preChatSurvey_subtitle" = "Please fill out all fields and submit the form.";
-"chatui_preChatSurvey_requiredLabel" = "%@ *";
+
+// MARK: - Form - Send Transcript
+"chatui_sendTranscript_title" = "Chat Transcript";
+"chatui_sendTranscript_subtitle" = "We do not share submitted emails with any 3rd party affiliate marketing or offer programs";
+"chatui_sendTranscript_email_label" = "E-mail";
+"chatui_sendTranscript_email_placeholder" = "Enter your e-mail address";
+"chatui_sendTranscript_confirmEmail_label" = "Confirm e-mail";
+"chatui_sendTranscript_confirmEmail_placeholder" = "Confirm your e-mail address";

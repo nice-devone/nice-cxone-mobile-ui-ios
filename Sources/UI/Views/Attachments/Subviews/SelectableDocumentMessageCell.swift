@@ -85,7 +85,7 @@ struct SelectableDocumentMessageCell: View, Themed {
         ZStack(alignment: .topTrailing) {
             Button {
                 if inSelectionMode {
-                    attachmentsViewModel.selectAttachment(uuid: attachment.id)
+                    attachmentsViewModel.selectAttachment(with: attachment.id)
                 } else {
                     if documentStateViewModel.localURL != nil {
                         documentStateViewModel.isReadyToPresent = true

@@ -1,7 +1,22 @@
+<a name="3.2.0"></a>
+# [3.2.0] - 2026-02-26
+
+## Features
+- Support for Send Transcript
+- Use an agent's `nickname` instead of `fullName` for conversation title if it's available
+
+## Fixes 
+- Migrate from UUID to String
+- Resolve occasional UI module's crash for AudioPlayer
+- Safely calculate audio message progress width
+- Chat log no longer appears behind conversation's title
+- Edit custom fields available in Singlethread na Livechat
+
+
 <a name="3.1.3"></a>
 # [3.1.3] - 2026-01-19
 
-### Fixes
+## Fixes
 - Migrate from UUID to String
 
 ## Dependencies
@@ -432,7 +447,8 @@
     - failure
   - typing start/end
 
-[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.1.3...HEAD
+[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.2.0...HEAD
+[3.2.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.1.3...3.2.0
 [3.1.3]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.1.2...3.1.3
 [3.1.2]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.1.1...3.1.2
 [3.1.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.1.0...3.1.1
