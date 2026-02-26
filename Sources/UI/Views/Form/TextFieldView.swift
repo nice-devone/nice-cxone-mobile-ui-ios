@@ -19,27 +19,41 @@ struct TextFieldView: View {
     
     // MARK: - Properties
     
-    @ObservedObject var entity: FormCustomFieldType
+    @ObservedObject private var entity: FormCustomFieldType
     
     @EnvironmentObject private var localization: ChatLocalization
 
+    @Binding private var compareWith: String
+    
+    private let placeholder: String?
+    private let onChange: () -> Void
+    
     private var isEmail: Bool {
         (entity as? TextFieldEntity)?.isEmail ?? false
     }
     
-    let onChange: () -> Void
+    // MARK: - Init
+    
+    init(entity: FormCustomFieldType, placeholder: String? = nil, compareWith: Binding<String>? = nil, onChange: @escaping () -> Void) {
+        self.entity = entity
+        self.placeholder = placeholder
+        self._compareWith = compareWith ?? .constant("")
+        self.onChange = onChange
+    }
     
     // MARK: - Content
     
     var body: some View {
         ValidatedTextField(
             entity.isRequired
-                ? String(format: localization.prechatSurveyRequiredLabel, entity.label)
+                ? String(format: localization.formRequiredLabel, entity.label)
                 : entity.label,
             text: $entity.value,
+            placeholder: placeholder,
             validator: allOf(
                 entity.isRequired ? required(localization) : any,
-                isEmail ? email(localization) : any
+                isEmail ? email(localization) : any,
+                !compareWith.isEmpty ? compare(compareWith, localization) : any
             )
         )
         .if(isEmail) { view in
@@ -60,19 +74,24 @@ struct TextFieldView: View {
     @Previewable @State var firstNameEntity = TextFieldEntity(label: "First Name", isRequired: true, ident: "firstName", isEmail: false)
     @Previewable @State var ageEntity = TextFieldEntity(label: "Age", isRequired: false, ident: "age", isEmail: false)
     @Previewable @State var emailEntity = TextFieldEntity(label: "E-mail", isRequired: false, ident: "email", isEmail: true)
+    @Previewable @State var emailConfirmationEntity = TextFieldEntity(label: "Confirm e-mail", isRequired: true, ident: "confirm_email", isEmail: true)
     @Previewable @State var isValid = false
     
     VStack(spacing: 24) {
         TextFieldView(entity: firstNameEntity) {
-            isValid = firstNameEntity.value.isEmpty == false
+            isValid = firstNameEntity.value.isEmpty == false && emailEntity.value == emailConfirmationEntity.value
         }
         
         TextFieldView(entity: ageEntity) {
-            isValid = firstNameEntity.value.isEmpty == false
+            isValid = firstNameEntity.value.isEmpty == false && emailEntity.value == emailConfirmationEntity.value
         }
         
-        TextFieldView(entity: emailEntity) {
-            isValid = firstNameEntity.value.isEmpty == false
+        TextFieldView(entity: emailEntity, placeholder: "Enter your e-mail") {
+            isValid = firstNameEntity.value.isEmpty == false && emailEntity.value == emailConfirmationEntity.value
+        }
+        
+        TextFieldView(entity: emailConfirmationEntity, placeholder: "Confirm your e-mail", compareWith: $emailEntity.value) {
+            isValid = firstNameEntity.value.isEmpty == false && emailEntity.value == emailConfirmationEntity.value
         }
         
         HStack {

@@ -17,41 +17,29 @@ import SwiftUI
 
 struct NavigationMenuView: View {
     
-    // MARK: - Constants
-    
-    private enum Constants {
-        static let maxElementsInline = 1
-        static let labelRotationEffect = Angle(degrees: 90)
-    }
-    
     // MARK: - Properties
 
     let items: [MenuBuilder.Item]
+    let colors: StyleColors
     
     // MARK: - Builder
     
     var body: some View {
-        HStack {
-            if items.count > Constants.maxElementsInline {
-                Menu {
-                    ForEach(items, id: \.name) { item in
-                        Button(action: item.action) {
-                            HStack(alignment: .center) {
-                                item.icon.padding(.leading)
-
-                                Text(item.name)
-                            }
-                        }
-                    }
-                } label: {
-                    Asset.menu.rotationEffect(Constants.labelRotationEffect)
-                }
-            } else {
+        if items.isEmpty {
+            EmptyView()
+        } else {
+            Menu {
                 ForEach(items, id: \.name) { item in
-                    Button(action: item.action) {
+                    Button(role: item.role, action: item.action) {
+                        Text(item.name)
+                        
                         item.icon
                     }
+                    // Applies color on the icon, not on the text. The text color is done via NavigationBar appearance update
+                    .tint(item.role == .destructive ? colors.status.error : colors.content.primary)
                 }
+            } label: {
+                Asset.menu
             }
         }
     }
@@ -62,14 +50,17 @@ struct NavigationMenuView: View {
 extension MenuBuilder {
 
     func build(colors: StyleColors) -> some View {
-        NavigationMenuView(items: items)
-            .foregroundStyle(colors.brand.primary)
+        NavigationMenuView(items: items, colors: colors)
     }
 }
 
 // MARK: - Previews
 
+@available(iOS 17.0, *)
 #Preview("one item") {
+    @Previewable @Environment(\.colorScheme) var scheme
+    let style = ChatStyle()
+    
     let items = [
         MenuBuilder.Item(
             name: ChatLocalization().chatListNewThread,
@@ -82,11 +73,15 @@ extension MenuBuilder {
             Text("Background")
         }
         .navigationTitle("Page")
-        .navigationBarItems(trailing: NavigationMenuView(items: items))
+        .navigationBarItems(trailing: NavigationMenuView(items: items, colors: style.colors(for: scheme)))
     }
 }
 
+@available(iOS 17.0, *)
 #Preview("multiple items") {
+    @Previewable @Environment(\.colorScheme) var scheme
+    let style = ChatStyle()
+    
     let items = [
         MenuBuilder.Item(
             name: "First",
@@ -94,11 +89,13 @@ extension MenuBuilder {
         ) {},
         MenuBuilder.Item(
             name: "Second",
-            icon: Asset.List.new
+            icon: Asset.List.new,
+            role: .cancel
         ) {},
         MenuBuilder.Item(
             name: "Third",
-            icon: Asset.List.new
+            icon: Asset.List.new,
+            role: .destructive
         ) {}
     ]
 
@@ -106,7 +103,11 @@ extension MenuBuilder {
         VStack {
             Text("Background")
         }
+        .onAppear {
+            UINavigationBar.appearance(for: .light).chatAppearance(with: style.colors.light)
+            UINavigationBar.appearance(for: .dark).chatAppearance(with: style.colors.dark)
+        }
         .navigationTitle("Page")
-        .navigationBarItems(trailing: NavigationMenuView(items: items))
+        .navigationBarItems(trailing: NavigationMenuView(items: items, colors: style.colors(for: scheme)))
     }
 }

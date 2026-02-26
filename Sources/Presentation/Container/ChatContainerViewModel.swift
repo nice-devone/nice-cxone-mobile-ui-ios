@@ -17,12 +17,12 @@
 import CXoneChatSDK
 import SwiftUI
 
-class ChatContainerViewModel: ObservableObject {
+class ChatContainerViewModel: ObservableObject, Overlayable {
 
     // MARK: - Properties
 
-    @Published var sheet: (() -> AnyView)?
     @Published var overlay: (() -> AnyView)?
+    @Published var sheet: (() -> AnyView)?
     @Published var alertType: ChatAlertType?
     @Published var isRecoveringThread = false
     
@@ -45,12 +45,9 @@ class ChatContainerViewModel: ObservableObject {
     } set: { [weak self] _ in
         self?.sheet = nil
     }
-    lazy var isOverlayDisplayed = Binding { [weak self] in
-        self?.overlay != nil
-    } set: { [weak self] _ in
-        self?.overlay = nil
-    }
 
+    weak var delegate: ChatDelegate?
+    
     private weak var cachedListViewModel: ThreadListViewModel?
     private(set) weak var cachedThreadViewModel: ThreadViewModel?
 
@@ -212,6 +209,25 @@ extension ChatContainerViewModel {
 
         do {
             try await chatProvider.connection.connect()
+        } catch CXoneChatError.transactionTokenExpired {
+            LogManager.trace("Transaction token is expired -> re-trigger OAuth flow and try to reconnect")
+            
+            await delegate?.onConnectionTokenExpired()
+            
+            do {
+                // Retrigger connection
+                try await chatProvider.connection.connect()
+            } catch {
+                error.logError()
+                
+                await hideOverlay()
+                
+                alertType = .connectionErrorAlert(localization: self.chatLocalization) {
+                    Task { [weak self] in
+                        await self?.disconnect()
+                    }
+                }
+            }
         } catch {
             error.logError()
             
@@ -269,7 +285,7 @@ extension ChatContainerViewModel {
             }
 
             // Show the pre-chat form and wait for user input
-            guard let customFields = await showForm(title: preChatSurvey.name, fields: fieldEntities) else {
+            guard let customFields = await showPrechatSurveyForm(title: preChatSurvey.name, fields: fieldEntities) else {
                 // The user cancelled the pre-chat form
                 return nil
             }
@@ -332,12 +348,14 @@ extension ChatContainerViewModel {
         await MainActor.run { [weak self] in
             self?.sheet = nil
         }
+        
+        await Task.sleep(seconds: 0.5)
     }
     
     @MainActor
-    func showForm(title: String, fields: [FormCustomFieldType]) async -> [String: String]? {
+    func showPrechatSurveyForm(title: String, fields: [FormCustomFieldType]) async -> [String: String]? {
         await withCheckedContinuation { continuation in
-            let formViewModel = FormViewModel(title: title, customFields: fields) { fields in
+            let formViewModel = PrechatSurveyFormViewModel(customFields: fields) { fields in
                 Task { @MainActor [weak self] in
                     await self?.hideSheet()
                 }
@@ -348,13 +366,44 @@ extension ChatContainerViewModel {
                     await self?.hideSheet()
                 }
                 
-                continuation.resume(returning: Optional<[String: String]>.none)
+                continuation.resume(returning: nil)
             }
 
             Task { @MainActor [weak self] in
                 self?.sheet = {
-                    AnyView(FormView(viewModel: formViewModel))
+                    AnyView(PrechatSurveyFormView(viewModel: formViewModel, title: title))
                 }
+                
+                await Task.sleep(seconds: 0.5)
+            }
+        }
+    }
+
+    @MainActor
+    func showSendTranscriptForm(for thread: ChatThread) async -> Bool? {
+        await withCheckedContinuation { continuation in
+            let sendTranscriptViewModel = SendTranscriptFormViewModel(chatThread: thread, chatLocalization: chatLocalization) { result in
+                Task { @MainActor [weak self] in
+                    await self?.hideSheet()
+                    
+                    // Return Bool to indicate the form has been sent (either successfully or with a failure result)
+                    continuation.resume(returning: result)
+                }
+            } onCancel: {
+                Task { @MainActor [weak self] in
+                    await self?.hideSheet()
+                    
+                    // Return nil if user cancelled.
+                    continuation.resume(returning: nil)
+                }
+            }
+            
+            Task { @MainActor [weak self] in
+                self?.sheet = {
+                    AnyView(SendTranscriptFormView(viewModel: sendTranscriptViewModel))
+                }
+                
+                await Task.sleep(seconds: 0.5)
             }
         }
     }
@@ -363,45 +412,19 @@ extension ChatContainerViewModel {
 // MARK: - Overlays
 
 extension ChatContainerViewModel {
-    
-    @MainActor
-    func showOverlay<Content: View>(file: StaticString = #file, line: UInt = #line, @ViewBuilder _ overlay: @escaping () -> Content) async {
-        guard self.overlay == nil else {
-            LogManager.error("Some overlay is already being shown, cannot show another one", file: file, line: line)
-            return
-        }
-        
-        self.overlay = {
-            AnyView(overlay())
-        }
-        
-        // Optional delay to ensure UI updates are smooth because the overlay's fullScreenCover transition is not instant
-        await Task.sleep(seconds: 0.5)
-    }
 
     @MainActor
-    func hideOverlay(file: StaticString = #file, line: UInt = #line) async {
-        guard overlay != nil else {
-            // No overlay to hide
-            return
-        }
-        
-        LogManager.trace("Hiding overlay", file: file, line: line)
-        
-        self.overlay = nil
-        
-        // Optional delay to ensure UI updates are smooth because the overlay's fullScreenCover transition is not instant
-        await Task.sleep(seconds: 0.5)
-    }
-
-    @MainActor
-    func showLoading(message: String, file: StaticString = #file, line: UInt = #line) async {
+    func showLoading(message: String, action: (() async -> Void)? = nil, file: StaticString = #file, line: UInt = #line) async {
         LogManager.trace("Showing loading overlay with status message: \(message)", file: file, line: line)
 
         await showOverlay(file: file, line: line) {
             ChatLoadingOverlay(text: message) {
                 Task { @MainActor [weak self] in
-                    await self?.disconnect()
+                    if let action {
+                        await action()
+                    } else {
+                        await self?.disconnect()
+                    }
                 }
             }
         }

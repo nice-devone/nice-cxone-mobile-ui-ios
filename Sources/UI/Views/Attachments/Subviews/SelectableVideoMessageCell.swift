@@ -69,7 +69,7 @@ struct SelectableVideoMessageCell: View, Themed {
         ZStack(alignment: .topTrailing) {
             Button {
                 if inSelectionMode {
-                    attachmentsViewModel.selectAttachment(uuid: item.id)
+                    attachmentsViewModel.selectAttachment(with: item.id)
                 } else {
                     isVideoSheetVisible.toggle()
                 }

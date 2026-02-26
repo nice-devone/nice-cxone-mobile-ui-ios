@@ -48,17 +48,25 @@ struct ListFieldView: View, Themed {
     @ObservedObject var entity: ListFieldEntity
 
     @State private var isActionSheetVisible = false
-
+    @State private var error: String?
+    
     let onChange: () -> Void
+    
+    // MARK: - Init
+    
+    init(entity: ListFieldEntity, onChange: @escaping () -> Void) {
+        self.entity = entity
+        self.onChange = onChange
+    }
     
     // MARK: - Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.bodyVertical) {
-            Text(entity.isRequired ? String(format: localization.prechatSurveyRequiredLabel, entity.label) : entity.label)
+            Text(entity.isRequired ? String(format: localization.formRequiredLabel, entity.label) : entity.label)
                 .font(.callout)
                 .bold()
-                .foregroundStyle(entity.isRequired && entity.value.isEmpty ? colors.status.error : colors.content.primary)
+                .foregroundStyle(error != nil ? colors.status.error : colors.content.primary)
             
             VStack(spacing: Constants.Spacing.textFieldDividerSpacing) {
                 Button {
@@ -66,13 +74,13 @@ struct ListFieldView: View, Themed {
                 } label: {
                     HStack(spacing: Constants.Spacing.valueDisclosureHorizontal) {
                         Text(entity.value.isEmpty ? localization.commonNoSelection : entity.selectedOption)
-                            .foregroundStyle(entity.isRequired && entity.value.isEmpty ? colors.status.error : colors.content.primary)
+                            .foregroundStyle(error != nil ? colors.status.error : colors.content.primary)
                         
                         Spacer()
                         
                         Asset.down
                             .font(.footnote.weight(.bold))
-                            .foregroundStyle(entity.isRequired && entity.value.isEmpty ? colors.status.error : colors.content.tertiary)
+                            .foregroundStyle(error != nil ? colors.status.error : colors.content.tertiary)
                             .padding(.horizontal, Constants.Padding.chevronHorizontal)
                     }
                 }
@@ -94,22 +102,36 @@ struct ListFieldView: View, Themed {
                                 }
                         }
                     }
-                    
+
                     Button(localization.commonCancel, role: .cancel) {
                         entity.value = ""
                     }
                 }
                 
                 ColoredDivider(
-                    isActionSheetVisible || !entity.value.isEmpty ? colors.brand.primary : colors.border.default,
-                    height: isActionSheetVisible || !entity.value.isEmpty ? Constants.Sizing.dividerFocusedHeight : Constants.Sizing.dividerHeight
+                    error != nil
+                        ? colors.status.error
+                        : isActionSheetVisible || !entity.value.isEmpty
+                            ? colors.brand.primary
+                            : colors.border.default,
+                    height: isActionSheetVisible || !entity.value.isEmpty
+                        ? Constants.Sizing.dividerFocusedHeight
+                        : Constants.Sizing.dividerHeight
                 )
             }
             
-            if entity.isRequired, entity.value.isEmpty {
-                Text(localization.commonRequired)
+            if let error {
+                Text(error)
                     .font(.caption)
                     .foregroundStyle(colors.status.error)
+            }
+        }
+        .onChange(of: entity.value) { value in
+            error = value.isEmpty && entity.isRequired ? localization.commonRequired : nil
+        }
+        .onChange(of: isActionSheetVisible) { isVisible in
+            if !isVisible {
+                error = entity.value.isEmpty && entity.isRequired ? localization.commonRequired : nil
             }
         }
         .animation(.easeInOut(duration: StyleGuide.animationDuration), value: isActionSheetVisible)

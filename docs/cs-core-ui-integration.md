@@ -73,6 +73,10 @@ class AppCoordinator {
 }
 ```
 
+> Warning: If you are using OAuth, it is also necessary to register `ChatDelegate` and handle `onConnectionTokenExpired()` method to be able to re-trigger
+> OAuth flow to refresh connection token with new authentication code and code verifier.
+
+
 ### 3. Present the Chat Interface
 
 There are two main ways to present the chat interface:

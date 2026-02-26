@@ -17,6 +17,9 @@ custom_rules:
   implicit_init:
     regex: "\\W\\.init\\("
     message: "Don't use implicit init. Use explicit initializer of the object."
+  no_uuid:
+    message: "Do not create UUID() directly—prefer `LowercaseUUID` instead."
+    regex: '(?:^|[^A-Za-z_])(UUID)'
 
 disabled_rules: # rule identifiers to exclude from running
   - nesting
@@ -46,7 +49,7 @@ included: # paths to include during linting. `--path` is ignored if present.
   - Sources
 excluded:
   - Sources/Utilities/Lorem.swift
-  - Sources/Resources/Generated/XCAssets+Generated.swift
+  - Sources/Resources/Generated/*.swift
 
 force_unwrapping:
   severity: error

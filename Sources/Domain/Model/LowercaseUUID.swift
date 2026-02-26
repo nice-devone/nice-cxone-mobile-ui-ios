@@ -1,0 +1,48 @@
+//
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
+//
+// Licensed under the NICE License;
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://github.com/nice-devone/nice-cxone-mobile-ui-ios/blob/main/LICENSE
+//
+// TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE CXONE MOBILE SDK IS PROVIDED ON
+// AN “AS IS” BASIS. NICE HEREBY DISCLAIMS ALL WARRANTIES AND CONDITIONS, EXPRESS
+// OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
+//
+// swiftlint:disable no_uuid
+
+import Foundation
+
+/// Class for operating with UUID values to ensure that they are sent in lowercase format.
+///
+/// This is required because with Swift, all `UUID` values are uppercase and cannot be
+/// changed while keeping the `UUID` type. Currently, the back end doesn't support these
+/// uppercase values on certain events (visitor events), so this is done as a workaround.
+struct LowercaseUUID: Equatable {
+
+    // MARK: - Properties
+
+    private let uuid: UUID
+
+    var uuidString: String {
+        uuid.uuidString.lowercased()
+    }
+    
+    // MARK: - Init
+
+    init(uuid: UUID = UUID()) {
+        self.uuid = uuid
+    }
+    
+    init?(uuidString: String) {
+        guard let uuid = UUID(uuidString: uuidString) else {
+            return nil
+        }
+        
+        self.uuid = uuid
+    }
+}
+// swiftlint:enable no_uuid

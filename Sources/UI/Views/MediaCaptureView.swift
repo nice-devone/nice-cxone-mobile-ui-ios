@@ -118,7 +118,7 @@ private extension MediaCaptureView.Coordinator {
             throw CommonError.unableToParse("jpegData")
         }
         
-        let localPath = cachesUrl.appendingPathComponent("\(UUID().uuidString.lowercased()).jpeg")
+        let localPath = cachesUrl.appendingPathComponent("\(LowercaseUUID().uuidString).jpeg")
         try data.write(to: localPath)
         
         return localPath

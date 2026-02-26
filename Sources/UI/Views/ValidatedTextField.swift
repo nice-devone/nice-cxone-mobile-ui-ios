@@ -51,6 +51,7 @@ struct ValidatedTextField: View, Themed {
     @State private var error: String?
     
     let title: String
+    let placeholder: String?
     let validator: ((String) -> String?)?
     
     // MARK: - Init
@@ -58,15 +59,13 @@ struct ValidatedTextField: View, Themed {
     init(
         _ title: String,
         text: Binding<String>,
+        placeholder: String? = nil,
         validator: ((String) -> String?)? = nil,
     ) {
         self.title = title
         self._text = text
+        self.placeholder = placeholder
         self.validator = validator
-        
-        if let error = validator?(text.wrappedValue) {
-            self._error = State(initialValue: error)
-        }
     }
     
     // MARK: - Builder
@@ -79,7 +78,7 @@ struct ValidatedTextField: View, Themed {
                 .foregroundStyle(error == nil ? colors.content.primary : colors.status.error)
             
             VStack(alignment: .leading, spacing: Constants.Spacing.textFieldDividerSpacing) {
-                TextField("", text: $text)
+                TextField(placeholder ?? "", text: $text)
                 .tint(error == nil ? colors.content.primary : colors.status.error)
                 .foregroundStyle(error == nil ? colors.content.primary : colors.status.error)
                 .padding(.vertical, Constants.Padding.textFieldVertical)
@@ -109,6 +108,11 @@ struct ValidatedTextField: View, Themed {
         .onChange(of: text) { value in
             error = validator?(value)
         }
+        .onChange(of: isFocused) { focused in
+            if !focused {
+                error = validator?(text)
+            }
+        }
         .animation(.easeInOut(duration: StyleGuide.animationDuration), value: isFocused)
         .animation(.easeInOut(duration: StyleGuide.animationDuration), value: error)
     }
@@ -133,6 +137,12 @@ func numeric(_ localization: ChatLocalization) -> (String) -> String? {
 func email(_ localization: ChatLocalization) -> (String) -> String? {
     { text in
         !text.isValidEmail ? localization.commonInvalidEmail : nil
+    }
+}
+
+func compare(_ expected: String, _ localization: ChatLocalization) -> (String) -> String? {
+    { text in
+        text != expected ? localization.commonFieldsDontMatch : nil
     }
 }
 
@@ -172,13 +182,13 @@ func allOf(_ validators: ((String) -> String?)...) -> (String) -> String? {
             
             ValidatedTextField("Required Text", text: $text, validator: isRequired)
 
-            ValidatedTextField("Numeric", text: $text, validator: isNumeric)
+            ValidatedTextField("Numeric", text: $text, placeholder: "Enter a number", validator: isNumeric)
                 .keyboardType(.decimalPad)
             
             ValidatedTextField("Required Numeric", text: $text, validator: allOf(isNumeric, isRequired))
                 .keyboardType(.decimalPad)
             
-            ValidatedTextField("Email", text: $text, validator: isEmail)
+            ValidatedTextField("Email", text: $text, placeholder: "Enter your e-mail", validator: isEmail)
                 .keyboardType(.emailAddress)
             
             ValidatedTextField("Required Email", text: $text, validator: allOf(isRequired, isEmail))

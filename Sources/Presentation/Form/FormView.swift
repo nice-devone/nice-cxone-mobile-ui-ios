@@ -16,47 +16,42 @@
 import CXoneChatSDK
 import SwiftUI
 
-struct FormView: View, Themed {
+// MARK: - Constants
 
-    // MARK: - Constants
+private enum Constants {
     
-    private enum Constants {
-        
-        enum Spacing {
-            static let bodyVertical: CGFloat = 0
-            static let headerVertical: CGFloat = 4
-            static let contentVertical: CGFloat = 24
-            static let contentMinGap: CGFloat = 20
-            static let controlButtonsVertical: CGFloat = 12
-        }
-        
-        enum Padding {
-            static let headerBottom: CGFloat = 16
-            static let contentTop: CGFloat = 24
-            static let controlButtonsHorizontal: CGFloat = 16
-            static let controlButtonsBottom: CGFloat = 26
-            static let topScrollView: CGFloat = 24
-            static let contentHorizontal: CGFloat = 16
-            static let bodyTop: CGFloat = 48
-            static let edgeControlButtons: CGFloat = 16
-            
-        }
+    enum Spacing {
+        static let bodyVertical: CGFloat = 0
+        static let headerVertical: CGFloat = 4
+        static let controlButtonsVertical: CGFloat = 12
     }
     
+    enum Padding {
+        static let headerBottom: CGFloat = 16
+        static let contentTop: CGFloat = 24
+        static let controlButtonsHorizontal: CGFloat = 16
+        static let controlButtonsBottom: CGFloat = 26
+        static let contentHorizontal: CGFloat = 16
+        static let bodyTop: CGFloat = 48
+    }
+}
+
+// MARK: - FormView
+
+struct FormView<Content: View, FormType: Any>: View, Themed {
+
     // MARK: - Properties
 
     @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     @SwiftUI.Environment(\.colorScheme) var scheme
-
-    @ObservedObject var viewModel: FormViewModel
-
-    // MARK: - Init
-
-    init(viewModel: FormViewModel) {
-        self.viewModel = viewModel
-    }
+    
+    @ObservedObject var viewModel: FormViewModel<FormType>
+    
+    let title: String
+    let subtitle: String
+    let content: () -> Content
 
     // MARK: - Content
 
@@ -67,7 +62,7 @@ struct FormView: View, Themed {
             
             ColoredDivider(colors.border.default)
             
-            content
+            content()
                 .padding(.top, Constants.Padding.contentTop)
                 .padding(.horizontal, Constants.Padding.contentHorizontal)
             
@@ -79,34 +74,15 @@ struct FormView: View, Themed {
         .background(colors.background.default)
     }
     
-    private var content: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: Constants.Spacing.contentVertical) {
-                ForEach(viewModel.customFields) { entity in
-                    switch entity {
-                    case let entity as TreeFieldEntity:
-                        TreeFieldView(entity: entity, onChange: viewModel.validateForm)
-                    case let entity as ListFieldEntity:
-                        ListFieldView(entity: entity, onChange: viewModel.validateForm)
-                    default:
-                        TextFieldView(entity: entity, onChange: viewModel.validateForm)
-                    }
-                }
-                
-                Spacer(minLength: Constants.Spacing.contentMinGap)
-            }
-        }
-    }
-    
     @ViewBuilder
     private var header: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.headerVertical) {
-            Text(viewModel.title)
+            Text(title)
                 .font(.title3)
                 .fontWeight(.bold)
                 .foregroundStyle(colors.content.primary)
             
-            Text(localization.prechatSurveySubtitle)
+            Text(subtitle)
                 .font(.subheadline)
                 .foregroundStyle(colors.content.secondary)
                 .padding(.bottom, Constants.Padding.headerBottom)
@@ -122,7 +98,7 @@ struct FormView: View, Themed {
 
                 Spacer()
 
-                Button(localization.commonConfirm, action: viewModel.onConfirm)
+                Button(localization.commonSubmit, action: viewModel.onSubmit)
                     .disabled(!viewModel.isFormValid)
             }
             .font(.body.weight(.medium))
@@ -137,22 +113,25 @@ struct FormView: View, Themed {
 // MARK: - Preview
 
 #Preview {
-    let viewModel = FormViewModel(
-        title: "Title",
-        customFields: [
-            MockData.textFieldEntity(),
-            MockData.listFieldEntity(isRequired: true),
-            MockData.treeFieldEntity()
-        ],
-        onAccept: { customFields in
-            print("CustomFields: \(customFields)")
-        },
-        onCancel: {}
-    )
-    
+    let viewModel: FormViewModel<[String: String]> = FormViewModel { customFields in
+        print("Submit \(customFields)")
+    } onCancel: {
+        print("Cancelled")
+    }
+
     Color.clear
         .sheet(isPresented: .constant(true)) {
-            FormView(viewModel: viewModel)
+            FormView<VStack, [String: String]>(viewModel: viewModel, title: "Title", subtitle: "Subtitle") {
+                VStack {
+                    TextFieldView(entity: MockData.textFieldEntity()) {
+                        
+                    }
+                    
+                    ListFieldView(entity: MockData.listFieldEntity(isRequired: true)) {
+                        
+                    }
+                }
+            }
         }
         .environmentObject(ChatStyle())
         .environmentObject(ChatLocalization())

@@ -31,7 +31,6 @@ class ThreadViewModel: ObservableObject {
     @Published var hasMoreMessagesToLoad = true
     @Published var typingAgent: ChatUser?
     @Published var isUserTyping = false
-    @Published var canEditCustomFields = false
     @Published var isEditingThreadName = false
     @Published var threadName: String = ""
     @Published var positionInQueue: Int?
@@ -45,16 +44,6 @@ class ThreadViewModel: ObservableObject {
     var alertType: ChatAlertType? {
         get { containerViewModel?.alertType }
         set { containerViewModel?.alertType = newValue }
-    }
-    var chatTitle: String {
-        // The thread name has higher priority in multi-thread scenarios because it's set by the customer
-        thread?.name?.nilIfEmpty()
-            // If the thread name is not set, or it's a single-thread or live chat, use the assigned agent's full name
-            ?? thread?.assignedAgent?.fullName.nilIfEmpty()
-            // If no agent is currently assigned, but one was previously, use the last assigned agent's full name
-            ?? thread?.lastAssignedAgent?.fullName.nilIfEmpty()
-            // If none of the above are available, use "No agent"
-            ?? localization.commonUnassignedAgent
     }
     
     private let chatProvider: ChatProvider
@@ -77,7 +66,6 @@ class ThreadViewModel: ObservableObject {
         self.chatProvider = containerViewModel.chatProvider
         self.attachmentRestrictions = AttachmentRestrictions.map(from: chatProvider.connection.channelConfiguration.fileRestrictions)
         self.localization = containerViewModel.chatLocalization
-        self.canEditCustomFields = chatProvider.threads.preChatSurvey?.customFields.isEmpty == false
     }
 
     // MARK: - Methods
@@ -133,7 +121,8 @@ extension ThreadViewModel {
             FormCustomFieldTypeMapper.map(definition, with: chatProvider.threads.customFields.get(for: thread.id))
         }
         
-        guard let answers = await containerViewModel?.showForm(title: localization.alertEditPrechatCustomFieldsTitle, fields: customFields) else {
+        guard let answers = await containerViewModel?.showPrechatSurveyForm(title: localization.alertEditPrechatCustomFieldsTitle, fields: customFields) else {
+            LogManager.trace("The customer canceled the edit prechat custom fields form")
             return
         }
 
@@ -190,6 +179,11 @@ extension ThreadViewModel {
                 onBackToConversationTapped: {
                     Task { @MainActor [weak self] in
                         await self?.onEndConversationBackTapped()
+                    }
+                },
+                onSendTranscriptTapped: {
+                    Task { @MainActor [weak self] in
+                        await self?.sendTranscript(fromMenu: false)
                     }
                 },
                 onCloseChatTapped: {
@@ -288,9 +282,20 @@ extension ThreadViewModel {
     func loadMoreMessages() async {
         LogManager.trace("Trying to load more messages")
         
-        guard let thread, thread.hasMoreMessagesToLoad, let threadProvider = try? chatProvider.threads.provider(for: thread.id) else {
+        guard let thread else {
             LogManager.error("Unexpected nil thread")
+            
+            return
+        }
+        guard thread.hasMoreMessagesToLoad else {
+            LogManager.warning("The thread does not have more messages to load")
+            
             hasMoreMessagesToLoad = false
+            return
+        }
+        guard let threadProvider = try? chatProvider.threads.provider(for: thread.id) else {
+            LogManager.error("Unable to get the thread's provider")
+            
             return
         }
         
@@ -422,6 +427,36 @@ extension ThreadViewModel {
         
         await containerViewModel?.disconnect()
     }
+    
+    @MainActor
+    func sendTranscript(fromMenu: Bool) async {
+        LogManager.trace("Send chat transcript")
+        
+        guard let thread else {
+            LogManager.error("Unexpected nil thread")
+            return
+        }
+        
+        // Hide any overlay (just to be clear)
+        await containerViewModel?.hideOverlay()
+        
+        // Present the form
+        guard let sentSuccessfully = await containerViewModel?.showSendTranscriptForm(for: thread) else {
+            LogManager.trace("User cancelled send transcript form")
+            return
+        }
+        // Show alert dialog with either success or failure result
+        alertType = .sendTranscript(isSuccess: sentSuccessfully, localization: localization) {
+            // Don't show end conversation if the feature was triggered from navigation bar's menu
+            guard !fromMenu else {
+                return
+            }
+            
+            Task { @MainActor [weak self] in
+                await self?.showEndConversation()
+            }
+        }
+    }
 }
 
 // MARK: - CXoneChatDelegate
@@ -433,9 +468,6 @@ extension ThreadViewModel: CXoneChatDelegate {
             guard let self else {
                 return
             }
-            
-            self.canEditCustomFields = self.chatProvider.mode == .multithread
-                && self.chatProvider.threads.preChatSurvey?.customFields.isEmpty == false
             
             do {
                 switch state {
@@ -772,23 +804,37 @@ extension ThreadViewModel {
     var menu: MenuBuilder {
         MenuBuilder()
             .add(
-                if: !isThreadClosed && canEditCustomFields,
-                name: localization.alertEditPrechatCustomFieldsTitle,
-                icon: Asset.ChatThread.editPrechatCustomFields) {
-                    Task { @MainActor [weak self] in
-                        await self?.onEditPrechatField()
-                    }
-                }
-            .add(
                 if: !isThreadClosed && containerViewModel?.chatProvider.mode == .multithread,
                 name: localization.chatMenuOptionUpdateName,
-                icon: Asset.ChatThread.editThreadName,
-                action: onEditThreadName
-            )
+                icon: Asset.ChatThread.editThreadName
+            ) {
+                Task { @MainActor [weak self] in
+                    self?.onEditThreadName()
+                }
+            }
+            .add(
+                if: !isThreadClosed && chatProvider.threads.preChatSurvey?.customFields.isEmpty == false,
+                name: localization.alertEditPrechatCustomFieldsTitle,
+                icon: Asset.ChatThread.editPrechatCustomFields
+            ) {
+                Task { @MainActor [weak self] in
+                    await self?.onEditPrechatField()
+                }
+            }
+            .add(
+                if: thread?.state != .pending && chatProvider.connection.channelConfiguration.isSendTranscriptEnabled,
+                name: localization.chatMenuOptionSendTranscript,
+                icon: Asset.sendTranscript
+            ) {
+                Task { @MainActor [weak self] in
+                    await self?.sendTranscript(fromMenu: true)
+                }
+            }
             .add(
                 if: containerViewModel?.chatProvider.mode == .liveChat,
                 name: localization.chatMenuOptionEndConversation,
-                icon: Asset.close
+                icon: Asset.close,
+                role: .destructive
             ) {
                 Task { @MainActor [weak self] in
                     guard let self else {

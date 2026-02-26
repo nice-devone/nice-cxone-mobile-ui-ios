@@ -21,7 +21,7 @@ extension String {
     
     private enum Constants {
         static let maxEmojiCountForLargeTitle = 3
-        static let emailRegEx = #"^(?:|([A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,64}))$"#
+        static let emailRegEx = #"^[A-Za-z0-9_%+-]+(?:\.[A-Za-z0-9_%+-]+)*@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,9}$"#
     }
     
     // MARK: - Properties
@@ -35,9 +35,7 @@ extension String {
     }
     
     var isValidEmail: Bool {
-        let isValidFormat = self.range(of: Constants.emailRegEx, options: [.regularExpression]) != nil
-        
-        return isValidFormat
+        self.range(of: Constants.emailRegEx, options: [.regularExpression]) != nil
     }
     
     // MARK: - Methods

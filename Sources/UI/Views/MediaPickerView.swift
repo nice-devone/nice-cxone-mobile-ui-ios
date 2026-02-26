@@ -281,7 +281,7 @@ private extension MediaPickerView.Coordinator {
             return first
         }
         
-        let fileName = "\(assetIdentifier?.split(separator: "/").first?.description ?? UUID().uuidString.lowercased()).jpeg"
+        let fileName = "\(assetIdentifier?.split(separator: "/").first?.description ?? LowercaseUUID().uuidString).jpeg"
         let localPath = cachesUrl.appendingPathComponent(fileName)
         try data.write(to: localPath)
         

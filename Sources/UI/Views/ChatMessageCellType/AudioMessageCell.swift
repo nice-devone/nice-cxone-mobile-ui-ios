@@ -110,11 +110,11 @@ private extension AudioMessageCell {
                         )
                         .opacity(Constants.Colors.progressBarOpacity)
                     
-                    if !audioPlayer.progress.isNaN {
+                    if proxy.size.width.isFinite && proxy.size.width > 0 {
                         Capsule()
                             .fill(message.isUserAgent ? colors.content.primary : colors.brand.onPrimary)
                             .frame(
-                                width: proxy.size.width * CGFloat(audioPlayer.progress),
+                                width: getSafeProgressWidth(from: audioPlayer.progress, proxy: proxy),
                                 height: Constants.Sizing.progressBarHeight
                             )
                     }
@@ -177,6 +177,35 @@ private extension AudioMessageCell {
             )
             .adjustForA11y()
         }
+    }
+}
+
+// MARK: - Private methods
+
+private extension AudioMessageCell {
+
+    /// Computes a safe, finite width for the progress bar fill.
+    ///
+    /// This method clamps the provided `progress` value to the 0...1 range and
+    /// multiplies it by the available width from the provided `GeometryProxy`.
+    /// It guards against non-finite and negative values to prevent invalid frame
+    /// dimensions that can cause SwiftUI runtime warnings or crashes.
+    ///
+    /// - Parameters:
+    ///   - progress: The raw playback progress in the range 0...1. Values outside
+    ///     this range or non-finite values are clamped/treated as 0.
+    ///   - proxy: The `GeometryProxy` providing the available width for the
+    ///     progress bar.
+    ///     
+    /// - Returns: A non-negative, finite `CGFloat` representing the width of the
+    ///   filled portion of the progress bar. Returns 0 if the computed width is
+    ///   non-finite or negative.
+    func getSafeProgressWidth(from progress: Double, proxy: GeometryProxy) -> CGFloat {
+        let rawProgress = CGFloat(progress)
+        let clampedProgress = rawProgress.isFinite ? max(0, min(1, rawProgress)) : 0
+        let computedWidth = proxy.size.width * clampedProgress
+        
+        return computedWidth.isFinite && computedWidth >= 0 ? computedWidth : 0
     }
 }
 

@@ -41,6 +41,8 @@ extension Asset {
     static let handTap = Image(systemName: "hand.tap")
     /// `hand.point.down`
     static let handPointDown = Image(systemName: "hand.point.down")
+    /// `envelope`
+    static let sendTranscript = Image(systemName: "envelope")
     
     // MARK: - List
     
