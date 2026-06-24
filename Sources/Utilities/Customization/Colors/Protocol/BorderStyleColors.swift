@@ -63,13 +63,13 @@ public struct BorderStyleColorsImpl: BorderStyleColors {
     // MARK: - Static Properties
 
     /// Default light theme border colors.
-    static let defaultLight = BorderStyleColorsImpl(
+    public static let defaultLight = BorderStyleColorsImpl(
         default: Asset.Colors.Neutral._200,
         subtle: Asset.Colors.Neutral._100
     )
     
     /// Default dark theme border colors.
-    static let defaultDark = BorderStyleColorsImpl(
+    public static let defaultDark = BorderStyleColorsImpl(
         default: Asset.Colors.Neutral._800,
         subtle: Asset.Colors.Neutral._900
     )
