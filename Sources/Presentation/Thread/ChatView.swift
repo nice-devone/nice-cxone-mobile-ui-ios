@@ -224,6 +224,7 @@ private extension ChatView {
             }
             .foregroundStyle(colors.content.tertiary)
         }
+        .background(colors.background.default)
     }
 }
 

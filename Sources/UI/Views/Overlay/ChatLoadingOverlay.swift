@@ -41,8 +41,7 @@ struct ChatLoadingOverlay: View, Themed {
     @Environment(\.colorScheme) var scheme
 
     @State private var isCancelVisible = false
-    @State private var workItem: DispatchWorkItem?
-    
+
     let text: String
     let onCancel: () -> Void
 
@@ -73,17 +72,20 @@ struct ChatLoadingOverlay: View, Themed {
                 }
             }
         }
-        .onAppear {
-            let workItem = DispatchWorkItem {
-                self.isCancelVisible = true
+        .task {
+            // Reveal the cancel button after the delay. `.task` ties the work to the
+            // view's identity and cancels automatically when the overlay leaves the
+            // hierarchy, so – unlike a DispatchWorkItem stored in @State – it cannot
+            // form a retain cycle that keeps the overlay (and its closure) alive.
+            await Task.sleep(seconds: Constants.cancelDelay)
+
+            // `Task.sleep(seconds:)` swallows cancellation, so bail out explicitly
+            // when the overlay was dismissed before the delay elapsed.
+            guard !Task.isCancelled else {
+                return
             }
-            self.workItem = workItem
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + Constants.cancelDelay, execute: workItem)
-        }
-        .onDisappear {
-            workItem?.cancel()
-            workItem = nil
+
+            isCancelVisible = true
         }
         .animation(.easeIn, value: isCancelVisible)
     }

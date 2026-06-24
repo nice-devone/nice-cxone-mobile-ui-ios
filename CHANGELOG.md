@@ -1,6 +1,15 @@
 <a name="Unreleased"></a>
 # [Unreleased]
 
+
+<a name="3.3.1"></a>
+# [3.3.1] - 2026-06-24
+
+## Fixes
+- make `BorderStyleColorsImpl`' s `defaultLight` and `defaultDark` publicly available
+- Fix retain cycle for loading overlay
+
+
 <a name="3.3.0"></a>
 # [3.3.0] - 2026-05-07
 
@@ -471,7 +480,8 @@
   - typing start/end
 
 
-[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.3.0...HEAD
+[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.3.1...HEAD
+[3.3.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.3.0...3.3.1
 [3.3.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.2.0...3.3.0
 [3.2.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.1.3...3.2.0
 [3.1.3]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.1.2...3.1.3

@@ -158,6 +158,7 @@ struct MessageInputView: View, Themed {
             .padding(.horizontal, Constants.Padding.inputBarHorizontal)
             .padding(.vertical, Constants.Padding.inputBarVertical)
         }
+        .background(colors.background.default)
         .animation(.spring(duration: 0.5), value: audioRecorder.state)
         .animation(.default, value: isSendButtonDisabled)
         .animation(.default, value: isSendingMessage)
