@@ -18,7 +18,7 @@ import Foundation
 /// A single selectable time slot used by ``MessageTimePicker``
 ///
 /// It contains an identifier, duration, and the start date/time for the slot
-public struct RichMessageTimeSlot: Hashable, Equatable {
+public struct RichMessageTimeSlot: Hashable, Equatable, Sendable {
 
     // MARK: - Properties
     
@@ -41,13 +41,9 @@ public struct RichMessageTimeSlot: Hashable, Equatable {
     ///
     /// - Example: "January 3, 2026 at 3:00 PM,  30 min"
     ///
-    /// - Parameters:
-    ///   - localization: The `ChatLocalization` instance providing the localized format string.
-    ///
     /// - Returns: A formatted string combining the slot's start date/time and its duration in minutes.
-    func formattedDescription(localization: ChatLocalization) -> String {
-        String(
-            format: localization.messageTimePickerFormatted,
+    var formattedDescription: String {
+        L10n.Chat.Message.TimePicker.formatted(
             self.startTime.formatted(date: .long, time: .shortened),
             self.durationInMinutes.description
         )

@@ -21,9 +21,10 @@ struct QuickRepliesMessageCell: View, Themed {
     
     private enum Constants {
         
+        @MainActor
         enum Spacing {
             static let elementsVertical: CGFloat = 0
-            static let titleMinLength: CGFloat = UIScreen.main.bounds.size.width / 10
+            static let titleMinLength: CGFloat = UIScreen.currentBounds.width / 10
             static let instructionTextHorizontal: CGFloat = 8
         }
         
@@ -36,7 +37,6 @@ struct QuickRepliesMessageCell: View, Themed {
     
     // MARK: - Properties
     
-    @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     @Environment(\.colorScheme) var scheme
@@ -45,13 +45,15 @@ struct QuickRepliesMessageCell: View, Themed {
     
     @State private var selectedOption: RichMessageButton?
     
+    private let message: ChatMessage
     private let item: QuickRepliesItem
     private let optionSelected: (RichMessageButton) -> Void
     private let options: [RichMessageButton]
     
     // MARK: - Init
     
-    init(item: QuickRepliesItem, isLast: Binding<Bool>, optionSelected: @escaping (RichMessageButton) -> Void) {
+    init(message: ChatMessage, item: QuickRepliesItem, isLast: Binding<Bool>, optionSelected: @escaping (RichMessageButton) -> Void) {
+        self.message = message
         self.item = item
         self._isLast = isLast
         self.optionSelected = optionSelected
@@ -90,39 +92,38 @@ private extension QuickRepliesMessageCell {
             Text(item.title)
                 .font(.callout)
                 .foregroundStyle(colors.content.primary)
-            
+                .accessibilityIdentifier(A11y.Conversation.MessageCell.QuickReplies.Title.identifier)
+
             if selectedOption != nil {
                 RichContentOptionSelected()
             } else if isLast {
                 instructionText
             } else {
-                optionsUnavailableText
+                MessageCellTooltipView(
+                    text: L10n.Chat.Message.RichContent.optionsDisabled,
+                    tooltip: L10n.Chat.Message.RichContent.optionsDisabledTooltip
+                )
             }
         }
         .padding(.vertical, Constants.Padding.titleVertical)
         .padding(.horizontal, Constants.Padding.titleHorizontal)
-        .background(colors.background.surface.default)
-        .cornerRadius(StyleGuide.Sizing.Message.cornerRadius, corners: .allCorners)
+        .messageChatStyle(message, position: .single)
+        .accessibilityElement(children: .combine)
     }
-    
+
     var instructionText: some View {
         HStack(spacing: Constants.Spacing.instructionTextHorizontal) {
             Asset.handPointDown
-                .foregroundColor(colors.brand.primary)
-            
-            Text(localization.chatMessageQuickRepliesSelectOneOption)
+                .foregroundStyle(colors.brand.primary)
+                .accessibilityHidden(true)
+
+            Text(L10n.Chat.Message.QuickReplies.selectOneOption)
                 .font(.caption)
-                .foregroundColor(colors.brand.primary)
+                .foregroundStyle(colors.brand.primary)
+                .accessibilityIdentifier(A11y.Conversation.MessageCell.QuickReplies.InstructionText.identifier)
+                .accessibilityHint(A11y.Conversation.MessageCell.QuickReplies.hint)
         }
     }
-    
-    var optionsUnavailableText: some View {
-        MessageCellTooltipView(
-            text: localization.chatMessageRichContentOptionsDisabled,
-            tooltip: localization.chatMessageRichContentOptionsDisabledTooltip
-        )
-    }
-    
 }
 
 // MARK: - Preview
@@ -135,13 +136,13 @@ private extension QuickRepliesMessageCell {
     
     let style = ChatStyle()
     
-    VStack(spacing: 32) {
+    VStack(spacing: 4) {
+        QuickRepliesMessageCell(message: MockData.quickRepliesMessage(), item: MockData.quickRepliesItem(), isLast: .constant(false)) { option in
+            selectedOption = option
+        }
+        
         ZStack(alignment: .bottomLeading) {
-            QuickRepliesMessageCell(item: MockData.quickRepliesItem, isLast: .constant(false)) { option in
-                selectedOption = option
-            }
-            
-            QuickRepliesMessageCell(item: MockData.quickRepliesItem, isLast: .constant(true)) { option in
+            QuickRepliesMessageCell(message: MockData.quickRepliesMessage(), item: MockData.quickRepliesItem(), isLast: .constant(true)) { option in
                 selectedOption = option
             }
             
@@ -152,7 +153,7 @@ private extension QuickRepliesMessageCell {
         
         if let selectedOption {
             HStack {
-                Spacer(minLength: UIScreen.main.bounds.size.width / 10)
+                Spacer(minLength: UIScreen.currentBounds.width / 10)
                 
                 Text(selectedOption.title)
                     .foregroundStyle(style.colors(for: colorScheme).brand
@@ -173,5 +174,4 @@ private extension QuickRepliesMessageCell {
     .padding(.leading, 16)
     .padding(.trailing, 4)
     .environmentObject(style)
-    .environmentObject(ChatLocalization())
 }

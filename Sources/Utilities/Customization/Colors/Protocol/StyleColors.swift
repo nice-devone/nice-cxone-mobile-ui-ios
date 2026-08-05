@@ -18,7 +18,7 @@ import SwiftUI
 /// Protocol defining the required color style groups for the chat UI.
 ///
 /// Conforming types provide grouped color styles for background, content, brand, border, and status elements.
-public protocol StyleColors {
+public protocol StyleColors: Sendable {
     /// The background color style group.
     var background: BackgroundStyleColors { get }
     /// The content color style group.
@@ -36,7 +36,7 @@ public protocol StyleColors {
 /// Default implementation of `StyleColors` providing grouped color styles for the chat UI.
 ///
 /// Use this struct to specify the main color style groups for light and dark themes.
-public struct StyleColorsImpl: StyleColors {
+public struct StyleColorsImpl: StyleColors, Sendable {
     
     // MARK: - Properties
     

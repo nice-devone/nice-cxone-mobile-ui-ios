@@ -1,0 +1,388 @@
+//
+// Copyright (c) 2021-2025. NICE Ltd. All rights reserved.
+//
+// Licensed under the NICE License;
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://github.com/nice-devone/nice-cxone-mobile-ui-ios/blob/main/LICENSE
+//
+// TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE CXONE MOBILE SDK IS PROVIDED ON
+// AN “AS IS” BASIS. NICE HEREBY DISCLAIMS ALL WARRANTIES AND CONDITIONS, EXPRESS
+// OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
+//
+
+// MARK: - Chat Container
+
+// MARK: NavigationBar
+
+"chat_container.navigation_bar.button_close.label" = "Close";
+"chat_container.navigation_bar.button_close.hint" = "Double-tap to close the chat session";
+"chat_container.navigation_bar.button_menu.label" = "Menu";
+"chat_container.navigation_bar.button_menu.hint" = "Double-tap to show options";
+"chat_container.navigation_bar.button_menu.option.hint" = "Double-tap to select";
+
+// MARK: Alert
+
+"chat_container.alert.button_cancel.hint" = "Double-tap to cancel";
+"chat_container.alert.generic_error.button_cancel.hint" = "Double-tap to cancel";
+"chat_container.alert.camera_permission_denied.button_settings.hint" = "Double-tap to navigate to system Settings";
+"chat_container.alert.microphone_permission_denied.button_settings.hint" = "Double-tap to navigate to system Settings";
+"chat_container.alert.connection_error.button_disconnect.hint" = "Double-tap to close the chat";
+"chat_container.alert.feature_unavailable.button_disconnect.hint" = "Double-tap to close the chat";
+"chat_container.alert.end_conversation.button_confirm.hint" = "Double-tap to end conversation";
+
+
+// MARK: - Chat Overlay
+
+"chat_overlay.loading.progress_view.label" = "Loading";
+"chat_overlay.loading.button_delay.hint" = "Double-tap to cancel and close the chat";
+
+
+// MARK: - Offline View
+
+"offline_view.button_close.hint" = "Double-tap to close the chat session";
+
+
+// MARK: - Thread List
+
+"thread_list.navigation_bar.button_new.label" = "New conversation";
+"thread_list.navigation_bar.button_new.hint" = "Double-tap to start a new conversation";
+
+"thread_list.empty_state.label" = "No conversations";
+
+// MARK: Cell
+
+"thread_list.cell.label" = "%1$@, %2$@, %3$@";
+"thread_list.cell.label.no_message" = "%1$@, %2$@";
+"thread_list.cell.hint" = "Double-tap to navigate to the conversation";
+"thread_list.cell.unread_indicator.label" = "Unread";
+
+"thread_list.cell.button_archive.label" = "Archive";
+"thread_list.cell.button_archive.hint" = "Double-tap to archive the conversation";
+
+"thread_list.cell.button_rename.label" = "Rename";
+"thread_list.cell.button_rename.hint" = "Double-tap to rename the conversation";
+
+
+// MARK: - Form
+
+"form.button_cancel.hint" = "Double-tap to cancel the form";
+"form.button_confirm.valid.hint" = "Double-tap to confirm the form";
+"form.button_confirm.invalid.hint" = "Please complete the required fields to continue";
+
+// MARK: TreeFieldView
+
+"form.tree_field_view.title.hint" = "Double-tap to select an option from the list";
+"form.tree_field_view.title.label" = "%1$@, %2$@";
+"form.tree_field_view.validation.invalid.argument" = "%1$@ is required";
+"form.tree_field_view.content.leaf.hint" = "Double-tap to select";
+"form.tree_field_view.content.leaf.selected.hint" = "Double-tap to deselect";
+
+// MARK: ListFieldView
+
+"form.list_field_view.content.label" = "%1$@, %2$@";
+"form.list_field_view.content.hint" = "Double-tap to select an option";
+"form.list_field_view.sheet.option.hint" = "Double-tap to select %1$@ as the %2$@ option";
+"form.list_field_view.sheet.option.cancel.label" = "Cancel %1$@ selection";
+"form.list_field_view.sheet.option.cancel.hint" = "Double-tap to cancel %1$@ selection";
+
+
+// MARK: - Conversation
+
+"conversation.message_cell.share.label" = "Share button";
+"conversation.message_cell.share.hint" = "Double-tap to share message content";
+"conversation.message_cell.avatar.image.hint" = "Agent's image";
+"conversation.message_cell.avatar.initials.hint" = "Agent's initials";
+
+// MARK: AI Authorship Indicator
+
+"conversation.ai_assistant_badge.hint" = "Indicates you are chatting with an AI assistant, not a human agent";
+
+// MARK: Typing Indicator
+
+"conversation.typing_indicator.label" = "%1$@ is typing";
+"conversation.typing_indicator.label.unknown" = "Agent is typing";
+
+// MARK: Rich Message's Sheet
+
+"conversation.message_cell.rich_message_sheet.control_buttons.cancel.hint" = "Double-tap to cancel option selection";
+"conversation.message_cell.rich_message_sheet.control_buttons.confirm.hint" = "Double-tap to confirm option selection";
+
+// MARK: Message
+
+"conversation.message_cell.agent_message.value" = "Message from %1$@";
+"conversation.message_cell.customer_message.value" = "Message from you";
+"conversation.message_cell.timestamp.label" = "Sent at %1$@";
+
+// MARK: Message+Status
+
+"conversation.message_cell.status.sent.label" = "Sent";
+"conversation.message_cell.status.delivered.label" = "Delivered";
+"conversation.message_cell.status.seen.label" = "Seen";
+"conversation.message_cell.status.failed.label" = "Failed to send";
+
+// MARK: Message+Tooltip
+
+"conversation.message_cell.tooltip.hint" = "Double-tap to show tooltip";
+
+// MARK: Message+Audio
+
+"conversation.message_cell.audio.seek_bar.label" = "Playback position";
+"conversation.message_cell.audio.seek_bar.value" = "%1$@ of %2$@";
+"conversation.message_cell.audio.seek_bar.hint" = "Current playback position in the audio recording";
+"conversation.message_cell.audio.button_rewind.label" = "Rewind";
+"conversation.message_cell.audio.button_rewind.hint" = "Double-tap to rewind the audio by %1$@ seconds";
+"conversation.message_cell.audio.button_play.label" = "Play";
+"conversation.message_cell.audio.button_play.hint" = "Double-tap to play the audio message";
+"conversation.message_cell.audio.button_pause.label" = "Pause";
+"conversation.message_cell.audio.button_pause.hint" = "Double-tap to pause playback";
+"conversation.message_cell.audio.button_advance.label" = "Fast forward";
+"conversation.message_cell.audio.button_advance.hint" = "Double-tap to fast forward the audio by %1$@ seconds";
+
+// MARK: Message+RichContent
+
+"conversation.message_cell.option_selected.hint" = "Option already selected";
+
+// MARK: Message+RichLink
+
+"conversation.message_cell.rich_link.hint" = "Double-tap to open link in browser";
+"conversation.message_cell.rich_link.context_menu.button_share.hint" = "Double-tap to share the link";
+"conversation.message_cell.rich_link.context_menu.button_copy.hint" = "Double-tap to copy the link";
+
+// MARK: Message+List Picker
+
+"conversation.message_cell.list_picker.hint" = "Double-tap to open option selection";
+"conversation.message_cell.list_picker.sheet.cell.hint" = "Double-tap to toggle option";
+"conversation.message_cell.list_picker.sheet.cell.check.label" = "Option is selected";
+"conversation.message_cell.list_picker.sheet.button_cancel.hint" = "Double-tap to cancel option selection";
+"conversation.message_cell.list_picker.sheet.button_confirm.hint" = "Double-tap to confirm option selection";
+
+// MARK: Message+TimePicker
+
+"conversation.message_cell.time_picker.hint" = "Double-tap to open time slot selection";
+"conversation.message_cell.time_picker.sheet.slot.hint" = "Double-tap to toggle time slot";
+"conversation.message_cell.time_picker.sheet.slot.label" = "%@, %@ minutes";
+"conversation.message_cell.time_picker.sheet.slot.selected.label" = "%@, %@ minutes, selected";
+
+// MARK: Message+Quick Replies
+
+"conversation.message_cell.quick_replies.hint" = "Select an option below";
+"conversation.message_cell.quick_replies.option.hint" = "Double-tap to select option";
+
+// MARK: Attachment(s)
+
+"conversation.message_cell.attachment.image.label" = "Image: %1$@";
+"conversation.message_cell.attachment.image.hint" = "Double-tap to view full image";
+
+"conversation.message_cell.attachment.video.label" = "Video: %1$@";
+"conversation.message_cell.attachment.video.hint" = "Double-tap to play video";
+
+"conversation.message_cell.attachment.video.failed.label" = "Video failed to load";
+"conversation.message_cell.attachment.video.failed.hint" = "Double-tap to retry";
+"conversation.message_cell.attachment.video.loading.label" = "Loading video";
+
+"conversation.message_cell.attachment.document.label" = "Document: %1$@";
+"conversation.message_cell.attachment.document.hint" = "Double-tap to open document";
+
+"conversation.message_cell.attachment.audio.label" = "Audio: %1$@";
+"conversation.message_cell.attachment.audio.progress_bar.label" = "Audio playback progress";
+"conversation.message_cell.attachment.audio.progress_bar.value" = "%1$@ of %2$@";
+"conversation.message_cell.attachment.audio.button_rewind.label" = "Rewind";
+"conversation.message_cell.attachment.audio.button_rewind.hint" = "Double-tap to rewind 10 seconds";
+"conversation.message_cell.attachment.audio.button_play.label" = "Play";
+"conversation.message_cell.attachment.audio.button_play.hint" = "Double-tap to play audio";
+"conversation.message_cell.attachment.audio.button_pause.label" = "Pause";
+"conversation.message_cell.attachment.audio.button_pause.hint" = "Double-tap to pause audio";
+"conversation.message_cell.attachment.audio.button_advance.label" = "Advance";
+"conversation.message_cell.attachment.audio.button_advance.hint" = "Double-tap to advance 10 seconds";
+
+"conversation.message_cell.attachment.button_share.label" = "Share";
+"conversation.message_cell.attachment.button_share.hint" = "Double-tap to share %1$@";
+"conversation.message_cell.attachment.button_share.fallback" = "attachment";
+
+"conversation.message_cell.attachment.failed.label" = "Attachment failed to load";
+"conversation.message_cell.attachment.failed.hint" = "Double-tap to retry";
+
+"conversation.message_cell.multiple_attachments.container.label" = "%1$@ attachments";
+"conversation.message_cell.multiple_attachments.more_indicator.label" = "Plus %1$@ more";
+"conversation.message_cell.multiple_attachments.more_indicator.hint" = "Double-tap to view all attachments";
+"conversation.message_cell.multiple_attachments.button_share.label" = "Share";
+"conversation.message_cell.multiple_attachments.button_share.hint" = "Double-tap to share %1$@";
+"conversation.message_cell.multiple_attachments.button_share.fallback" = "attachments";
+
+
+// MARK: - Attachments View
+
+"attachments_view.title.label" = "Attachments";
+"attachments_view.button_select.label" = "Select";
+"attachments_view.button_select.hint" = "Double-tap to enter selection mode";
+"attachments_view.button_cancel.label" = "Cancel";
+"attachments_view.button_cancel.hint" = "Double-tap to exit selection mode";
+
+"attachments_view.item.image.label" = "Image: %1$@";
+"attachments_view.item.image.hint.browse" = "Double-tap to view";
+"attachments_view.item.image.hint.select" = "Double-tap to toggle selection";
+"attachments_view.item.image.value.selected" = "Selected";
+"attachments_view.item.image.value.not_selected" = "Not selected";
+
+"attachments_view.item.video.label" = "Video: %1$@";
+"attachments_view.item.video.hint.browse" = "Double-tap to play";
+"attachments_view.item.video.hint.select" = "Double-tap to toggle selection";
+"attachments_view.item.video.value.selected" = "Selected";
+"attachments_view.item.video.value.not_selected" = "Not selected";
+
+"attachments_view.item.document.label" = "Document: %1$@";
+"attachments_view.item.document.hint.browse" = "Double-tap to open";
+"attachments_view.item.document.hint.select" = "Double-tap to toggle selection";
+"attachments_view.item.document.value.selected" = "Selected";
+"attachments_view.item.document.value.not_selected" = "Not selected";
+
+"attachments_view.button_select_all.label" = "Select all";
+"attachments_view.button_select_all.hint" = "Double-tap to select all attachments";
+"attachments_view.button_deselect.label" = "Deselect all";
+"attachments_view.button_deselect.hint" = "Double-tap to deselect all attachments";
+"attachments_view.button_share.label" = "Share";
+"attachments_view.button_share.hint.none" = "Select attachments to share";
+"attachments_view.button_share.hint.single" = "Double-tap to share selected attachment";
+"attachments_view.button_share.hint.multiple" = "Double-tap to share %1$@ selected attachments";
+
+"attachments_view.status.selection_mode.label" = "Selection mode";
+"attachments_view.status.selected_count.label" = "%1$@ selected";
+
+"attachments_view.item.value.loading" = "Loading";
+"attachments_view.item.value.failed" = "Failed to load";
+
+
+// MARK: - Image Viewer
+
+"image_viewer.button_close.label" = "Close";
+"image_viewer.button_close.hint" = "Double-tap to close image viewer";
+"image_viewer.content.label" = "Full screen image";
+"image_viewer.content.hint" = "Pinch to zoom";
+
+
+// MARK: - Message Input
+
+// MARK: Textfield
+
+"message_input.text_field.label" = "Message";
+"message_input.text_field.hint" = "Double-tap to edit message";
+
+// MARK: Send
+
+"message_input.button_send.label" = "Send message";
+"message_input.button_send.hint_enabled" = "Double-tap to send a message";
+"message_input.button_send.hint_disabled" = "Enter a message to enable sending";
+
+// MARK: Attachment Source
+
+"message_input.button_attachment_source.label" = "Add attachment";
+"message_input.button_attachment_source.hint" = "Double-tap to choose an attachment source";
+"message_input.button_attachment_source.files.label" = "Choose from files";
+"message_input.button_attachment_source.files.hint" = "Double-tap to browse and select files";
+"message_input.button_attachment_source.photos.label" = "Choose from photo library";
+"message_input.button_attachment_source.photos.hint" = "Double-tap to browse and select photos or videos";
+"message_input.button_attachment_source.camera.label" = "Take photo or video";
+"message_input.button_attachment_source.camera.hint" = "Double-tap to open camera";
+
+// MARK: Attachment(s) Preview
+
+"message_input.attachment_preview.thumbnail.image.label" = "Image: %1$@";
+"message_input.attachment_preview.thumbnail.image.hint" = "Double-tap to remove";
+"message_input.attachment_preview.thumbnail.video.label" = "Video: %1$@";
+"message_input.attachment_preview.thumbnail.video.hint" = "Double-tap to remove";
+"message_input.attachment_preview.thumbnail.document.label" = "Document: %1$@";
+"message_input.attachment_preview.thumbnail.document.hint" = "Double-tap to remove";
+"message_input.attachment_preview.button_remove.label" = "Remove";
+"message_input.attachment_preview.button_remove.hint" = "Double-tap to remove %1$@ from message";
+"message_input.attachment_preview.loading.label" = "Uploading attachments";
+"message_input.attachment_preview.loading.value" = "%1$@ percent complete";
+
+// MARK: VoiceMessage
+
+"message_input.voice_message.label" = "Record voice message";
+"message_input.voice_message.hint" = "Double-tap to record a voice message";
+"message_input.voice_message.delete.label" = "Delete recording";
+"message_input.voice_message.delete.hint" = "Double-tap to delete the voice message";
+"message_input.voice_message.stop.label" = "Stop recording";
+"message_input.voice_message.stop.hint" = "Double-tap to stop voice message recording";
+"message_input.voice_message.play.label" = "Play recording";
+"message_input.voice_message.play.hint" = "Double-tap to play voice message recording";
+"message_input.voice_message.pause.label" = "Pause playback";
+"message_input.voice_message.pause.hint" = "Double-tap to pause voice message playback";
+"message_input.voice_message.recording.label" = "Recording";
+"message_input.voice_message.recording.hint" = "Voice message is being recorded";
+"message_input.voice_message.recorded.label" = "Recorded";
+"message_input.voice_message.recorded.hint" = "Voice message has been recorded";
+"message_input.voice_message.playing.label" = "Playing";
+"message_input.voice_message.playing.hint" = "Playing recorded voice message";
+"message_input.voice_message.length.hint" = "Current length of the voice message";
+
+
+// MARK: - Popups
+
+// MARK: Inactivity Popup
+
+"inactivity_popup.header.active.label" = "Chat expiring soon";
+"inactivity_popup.header.active.value" = "%1$@ remaining";
+"inactivity_popup.header.timed_out.label" = "Chat session expired";
+"inactivity_popup.button_refresh.hint" = "Double-tap to continue the conversation";
+"inactivity_popup.button_expire.hint" = "Double-tap to end the conversation";
+
+
+// MARK: End Conversation Popup
+
+"end_conversation_popup.header.agent_info.label" = "Agent: %1$@";
+"end_conversation_popup.button_new_chat.hint" = "Double-tap to start a new conversation";
+"end_conversation_popup.button_back.hint" = "Double-tap to return to the current conversation";
+"end_conversation_popup.button_send_transcript.hint" = "Double-tap to send a transcript of this conversation";
+"end_conversation_popup.button_close.hint" = "Double-tap to close the chat session";
+
+
+// MARK: - Validated Text Field
+
+"validated_text_field.hint" = "Enter %1$@";
+"validated_text_field.validation.valid.empty.value" = "Empty, valid";
+"validated_text_field.validation.valid.value" = "%1$@, valid";
+"validated_text_field.validation.invalid.empty.value" = "Empty, invalid";
+"validated_text_field.validation.invalid.value" = "%1$@, invalid";
+
+
+// MARK: - Announcements
+
+// MARK: Form
+
+"announcement.form.validation.invalid.argument" = "Please complete the required field(s) to continue";
+
+// MARK: Agent Assignment
+
+"announcement.agent_assignment.assigned" = "Agent %1$@ has joined the conversation";
+"announcement.agent_assignment.assigned.unknown" = "An agent has joined the conversation";
+
+// MARK: Typing Indicator
+
+"announcement.conversation.typing_indicator.started" = "%1$@ is typing";
+"announcement.conversation.typing_indicator.started.unknown" = "Agent is typing";
+
+// MARK: Message
+
+"announcement.message.sent" = "Message sent";
+"announcement.message.incoming" = "New incoming message";
+"announcement.message.status.sent" = "Message sent";
+"announcement.message.status.delivered" = "Message delivered";
+"announcement.message.status.seen" = "Message read";
+"announcement.message.status.failed" = "Message failed to send";
+
+// MARK: Attachment(s)
+
+"announcement.attachment.added" = "%1$@ added";
+"announcement.attachment.removed" = "%1$@ removed";
+
+"announcement.attachments_view.selected" = "%1$@ selected";
+"announcement.attachments_view.deselected" = "%1$@ deselected";
+"announcement.attachments_view.selection_mode.enabled" = "Selection mode enabled";
+"announcement.attachments_view.selection_mode.disabled" = "Selection mode disabled";
+"announcement.attachments_view.selected_all" = "All attachments selected";
+"announcement.attachments_view.deselected_all" = "All attachments deselected";

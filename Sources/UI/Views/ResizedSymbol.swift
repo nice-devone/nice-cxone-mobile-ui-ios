@@ -41,21 +41,8 @@ struct ResizedSymbol: View {
     // MARK: - Content
 
     var body: some View {
-        if #available(iOS 16.0, *) {
-            return createiOS16Image()
-        } else {
-            return image
-                .resizable()
-                .frame(width: targetSize, height: targetSize)
-        }
-    }
-    
-    // MARK: - Private Methods
-    
-    @available(iOS 16.0, *)
-    private func createiOS16Image() -> some View {
         let size = CGSize(width: targetSize, height: targetSize)
-        
+        // swiftlint:disable:next accessibility_label_for_image
         return Image(size: size) { ctx in
             let resolvedImage = ctx.resolve(image)
             let imageSize = resolvedImage.size
@@ -88,6 +75,7 @@ struct ResizedSymbol: View {
 
 // MARK: - Preview
 
+// swiftlint:disable hardcoded_strings
 #Preview {
     HStack(spacing: 32) {
         VStack {
@@ -111,3 +99,4 @@ struct ResizedSymbol: View {
         }
     }
 }
+// swiftlint:enable hardcoded_strings

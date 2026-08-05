@@ -52,7 +52,6 @@ struct MultipleAttachmentDocumentView: View, Themed {
     let fileExtension: String?
     let url: URL
     let isSenderAgent: Bool
-    let localization: ChatLocalization
     
     private let displayMode: AttachmentThumbnailDisplayMode = .regular
     
@@ -61,16 +60,14 @@ struct MultipleAttachmentDocumentView: View, Themed {
     init(
         attachmentItem: AttachmentItem,
         isSenderAgent: Bool,
-        alertType: Binding<ChatAlertType?>,
-        localization: ChatLocalization
+        alertType: Binding<ChatAlertType?>
     ) {
         self.fileExtension = UTType(mimeType: attachmentItem.mimeType)?.preferredFilenameExtension
         self.url = attachmentItem.url
         self.isSenderAgent = isSenderAgent
-        self.localization = localization
 
-        self._documentStateViewModel = StateObject(wrappedValue: DocumentStateViewModel(alertType: alertType, localization: localization))
-        self._pdfViewModel = StateObject(wrappedValue: PDFViewModel(attachmentItem: attachmentItem, alertType: alertType, localization: localization))
+        self._documentStateViewModel = StateObject(wrappedValue: DocumentStateViewModel(alertType: alertType))
+        self._pdfViewModel = StateObject(wrappedValue: PDFViewModel(attachmentItem: attachmentItem, alertType: alertType))
     }
     // MARK: - Builder
     
@@ -171,7 +168,6 @@ private extension MultipleAttachmentDocumentView {
 #Preview {
     @Previewable @Environment(\.colorScheme) var scheme
     
-    let localization = ChatLocalization()
     let style = ChatStyle()
     
     VStack {
@@ -180,15 +176,13 @@ private extension MultipleAttachmentDocumentView {
                 MultipleAttachmentDocumentView(
                     attachmentItem: MockData.docPreviewItem,
                     isSenderAgent: true,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 MultipleAttachmentDocumentView(
                     attachmentItem: MockData.xlsPreviewItem,
                     isSenderAgent: true,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
             
@@ -196,15 +190,13 @@ private extension MultipleAttachmentDocumentView {
                 MultipleAttachmentDocumentView(
                     attachmentItem: MockData.pptPreviewItem,
                     isSenderAgent: true,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 MultipleAttachmentDocumentView(
                     attachmentItem: MockData.pdfPreviewItem,
                     isSenderAgent: true,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
         }
@@ -219,15 +211,13 @@ private extension MultipleAttachmentDocumentView {
                 MultipleAttachmentDocumentView(
                     attachmentItem: MockData.docPreviewItem,
                     isSenderAgent: false,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 MultipleAttachmentDocumentView(
                     attachmentItem: MockData.xlsPreviewItem,
                     isSenderAgent: false,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
             
@@ -235,15 +225,13 @@ private extension MultipleAttachmentDocumentView {
                 MultipleAttachmentDocumentView(
                     attachmentItem: MockData.pptPreviewItem,
                     isSenderAgent: false,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 MultipleAttachmentDocumentView(
                     attachmentItem: MockData.pdfPreviewItem,
                     isSenderAgent: false,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
         }

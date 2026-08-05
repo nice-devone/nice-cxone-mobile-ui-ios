@@ -66,16 +66,18 @@ struct BottomSheetButton: View, Themed {
                     image
                         .frame(minWidth: Constants.Sizing.imageMinDimension, minHeight: Constants.Sizing.imageMinDimension)
                         .padding(.vertical, Constants.Padding.imageVertical)
-                    
+                        .accessibilityHidden(true)
+
                     Text(label)
-                       
+
                     Spacer()
                 }
                 .font(.body.weight(.medium))
                 .padding(.horizontal, Constants.Padding.imageTitleHorizontal)
-                
+
                 if isDividerVisible {
                     ColoredDivider(colors.border.default)
+                        .accessibilityHidden(true)
                 }
             }
             .frame(minHeight: Constants.Sizing.contentMinHeight)
@@ -85,6 +87,7 @@ struct BottomSheetButton: View, Themed {
 
 // MARK: - Previews
 
+// swiftlint:disable sf_symbol_key_in_image
 #Preview {
     VStack(spacing: 0) {
         BottomSheetButton(image: Image(systemName: "bubble.left.and.text.bubble.right"), label: "Start a new chat") { }
@@ -98,3 +101,4 @@ struct BottomSheetButton: View, Themed {
     }
     .environmentObject(ChatStyle())
 }
+// swiftlint:enable sf_symbol_key_in_image

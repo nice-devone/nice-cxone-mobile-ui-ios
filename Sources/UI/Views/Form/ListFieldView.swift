@@ -41,7 +41,6 @@ struct ListFieldView: View, Themed {
     // MARK: - Properties
 
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject private var localization: ChatLocalization
     
     @Environment(\.colorScheme) var scheme
     
@@ -63,51 +62,15 @@ struct ListFieldView: View, Themed {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.bodyVertical) {
-            Text(entity.isRequired ? String(format: localization.formRequiredLabel, entity.label) : entity.label)
+            Text(entity.isRequired ? L10n.Form.requiredLabel(entity.label) : entity.label)
                 .font(.callout)
                 .bold()
                 .foregroundStyle(error != nil ? colors.status.error : colors.content.primary)
-            
-            VStack(spacing: Constants.Spacing.textFieldDividerSpacing) {
-                Button {
-                    isActionSheetVisible.toggle()
-                } label: {
-                    HStack(spacing: Constants.Spacing.valueDisclosureHorizontal) {
-                        Text(entity.value.isEmpty ? localization.commonNoSelection : entity.selectedOption)
-                            .foregroundStyle(error != nil ? colors.status.error : colors.content.primary)
-                        
-                        Spacer()
-                        
-                        Asset.down
-                            .font(.footnote.weight(.bold))
-                            .foregroundStyle(error != nil ? colors.status.error : colors.content.tertiary)
-                            .padding(.horizontal, Constants.Padding.chevronHorizontal)
-                    }
-                }
-                .foregroundStyle(colors.content.primary)
-                .padding(.vertical, Constants.Padding.textFieldVertical)
-                .confirmationDialog(entity.value, isPresented: $isActionSheetVisible) {
-                    ForEach(Array(entity.options.keys), id: \.self) { key in
-                        if let value = entity.options[key] {
-                            Button(value) {
-                                // Do not use actual value, it's necessary to use key which is unique identifier for the value
-                                entity.value = key
-                                
-                                onChange()
-                            }
-                        } else {
-                            EmptyView()
-                                .onAppear {
-                                    LogManager.error("Unable to get value for option \(key)")
-                                }
-                        }
-                    }
+                .accessibilityHidden(true)
 
-                    Button(localization.commonCancel, role: .cancel) {
-                        entity.value = ""
-                    }
-                }
-                
+            VStack(spacing: Constants.Spacing.textFieldDividerSpacing) {
+                buttonOptionSelector
+
                 ColoredDivider(
                     error != nil
                         ? colors.status.error
@@ -118,23 +81,94 @@ struct ListFieldView: View, Themed {
                         ? Constants.Sizing.dividerFocusedHeight
                         : Constants.Sizing.dividerHeight
                 )
+                .accessibilityHidden(true)
             }
-            
+
             if let error {
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(colors.status.error)
+                    .accessibilityHidden(true) // The information that the field is mandatory is part of the button.
             }
         }
         .onChange(of: entity.value) { value in
-            error = value.isEmpty && entity.isRequired ? localization.commonRequired : nil
+            error = value.isEmpty && entity.isRequired ? L10n.Common.required : nil
         }
         .onChange(of: isActionSheetVisible) { isVisible in
             if !isVisible {
-                error = entity.value.isEmpty && entity.isRequired ? localization.commonRequired : nil
+                error = entity.value.isEmpty && entity.isRequired ? L10n.Common.required : nil
+            }
+        }
+        .onChange(of: error) { newError in
+            if let newError {
+                A11y.announce(newError)
             }
         }
         .animation(.easeInOut(duration: StyleGuide.animationDuration), value: isActionSheetVisible)
+    }
+}
+
+// MARK: - Subviews
+
+private extension ListFieldView {
+
+    var buttonOptionSelector: some View {
+        Button {
+            isActionSheetVisible.toggle()
+        } label: {
+            HStack(spacing: Constants.Spacing.valueDisclosureHorizontal) {
+                Text(entity.value.isEmpty ? L10n.Common.noSelection : entity.selectedOption)
+                    .foregroundStyle(error != nil ? colors.status.error : colors.content.primary)
+
+                Spacer()
+
+                Asset.down
+                    .font(.footnote.weight(.bold))
+                    .foregroundStyle(error != nil && entity.value.isEmpty ? colors.status.error : colors.content.tertiary)
+                    .padding(.horizontal, Constants.Padding.chevronHorizontal)
+            }
+            .accessibilityHidden(true) // Let the VoiceOver read only the parent label (the button itself)
+        }
+        .foregroundStyle(colors.content.primary)
+        .padding(.vertical, Constants.Padding.textFieldVertical)
+        .confirmationDialog(entity.label, isPresented: $isActionSheetVisible) {
+            optionsSheet
+        }
+        .accessibilityIdentifier(A11y.Form.ListFieldView.Content.identifier(entity.ident))
+        .accessibilityLabel(error != nil ? A11y.Form.ListFieldView.Content.label(entity.label, L10n.Common.required) : entity.label)
+        .accessibilityValue(entity.value.isEmpty ? L10n.Common.noSelection : entity.value)
+        .accessibilityHint(A11y.Form.ListFieldView.Content.hint)
+    }
+
+    @ViewBuilder
+    var optionsSheet: some View {
+        ForEach(Array(entity.options.keys), id: \.self) { key in
+            if let value = entity.options[key] {
+                Button(value) {
+                    // Do not use actual value, it's necessary to use key which is unique identifier for the value
+                    entity.value = key
+
+                    onChange()
+                }
+                .accessibilityIdentifier(A11y.Form.ListFieldView.Sheet.Option.identifier(key))
+                .accessibilityLabel(A11y.Form.ListFieldView.Content.label(entity.label, value))
+                .accessibilityHint(A11y.Form.ListFieldView.Sheet.Option.hint(value, entity.label))
+                .accessibilityValue(value)
+            } else {
+                EmptyView()
+                    .onAppear {
+                        LogManager.error("Unable to get value for option \(key)")
+                    }
+            }
+        }
+
+        Button(L10n.Common.cancel, role: .cancel) {
+            entity.value = ""
+        }
+        .accessibilityIdentifier(A11y.Form.ListFieldView.Sheet.Option.Cancel.identifier)
+        .accessibilityLabel(A11y.Form.ListFieldView.Sheet.Option.Cancel.label(entity.label))
+        .accessibilityHint(A11y.Form.ListFieldView.Sheet.Option.Cancel.hint(entity.label))
+        .accessibilityValue(L10n.Common.noSelection)
     }
 }
 
@@ -163,5 +197,4 @@ struct ListFieldView: View, Themed {
     }
     .padding(.horizontal, 16)
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }

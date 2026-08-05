@@ -171,7 +171,7 @@ struct AnimationSequence {
 
     /// Start the animation sequence running
     /// - parameter completion: optional block to call on completion of the animation sequence.
-    func start(completion: (() -> Void)? = nil) {
+    func start(completion: (@Sendable () -> Void)? = nil) {
         var offset: TimeInterval = 0.0
 
         animations.indices.forEach { index in
@@ -227,6 +227,18 @@ struct AnimationSequence {
         }
     }
 }
+
+// MARK: - Sendable
+
+// AnimationSequence.Style contains a `custom` case that holds a function type, which Swift
+// cannot automatically prove is Sendable. All uses of Style occur on @MainActor (SwiftUI
+// views), so crossing concurrency domains with a Style value is not possible in practice.
+extension AnimationSequence.Style: @unchecked Sendable {}
+
+// AnimationSequence holds Step values whose `block` closures are non-Sendable function types.
+// Sequences are created and consumed exclusively on @MainActor (SwiftUI .task closures), so
+// crossing concurrency domains is not possible in practice.
+extension AnimationSequence: @unchecked Sendable {}
 
 // MARK: - Helpers
 

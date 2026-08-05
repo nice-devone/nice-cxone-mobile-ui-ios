@@ -15,6 +15,7 @@
 
 import SwiftUI
 
+@MainActor
 protocol Overlayable: AnyObject {
     
     var sheet: (() -> AnyView)? { get set }

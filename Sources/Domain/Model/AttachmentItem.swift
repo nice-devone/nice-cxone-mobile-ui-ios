@@ -20,27 +20,27 @@ import Foundation
 /// This struct is designed for representing attachments or files with associated metadata,
 /// making it suitable for various use cases, such as sharing files, resources, or documents.
 /// The `url` points to the attachment, and the `mimeType` and `fileName` provide additional information about the attachment's content.
-public struct AttachmentItem: Hashable, Equatable {
+struct AttachmentItem: Hashable, Equatable {
 
     // MARK: - Properties
     
     /// The URL pointing to the attachment.
-    public let url: URL
+    let url: URL
 
     /// A user-friendly name or label for the attachment.
-    public let friendlyName: String
+    let friendlyName: String
 
     /// The MIME type of the attachment, specifying its content type.
-    public let mimeType: String
+    let mimeType: String
 
     /// The file name of the attachment.
-    public let fileName: String
+    let fileName: String
     
     /// Indicates whether this attachment requires security-scoped resource access
-    public let requiresSecurityScope: Bool
+    let requiresSecurityScope: Bool
     
     /// The local identifier of the selected asset.
-    public let assetIdentifier: String?
+    let assetIdentifier: String?
     
     // MARK: - Init
     
@@ -52,7 +52,7 @@ public struct AttachmentItem: Hashable, Equatable {
     ///   - mimeType: The MIME type of the attachment, specifying its content type.
     ///   - fileName: The file name of the attachment.
     ///   - assetIdentifier: The local identifier of the selected asset.
-    public init(url: URL, friendlyName: String, mimeType: String, fileName: String, requiresSecurityScope: Bool = false, assetIdentifier: String? = nil) {
+    init(url: URL, friendlyName: String, mimeType: String, fileName: String, requiresSecurityScope: Bool = false, assetIdentifier: String? = nil) {
         self.url = url
         self.friendlyName = friendlyName
         self.mimeType = mimeType
@@ -66,7 +66,7 @@ public struct AttachmentItem: Hashable, Equatable {
 
 extension AttachmentItem {
     
-    private static var megabyte: Int32 = 1024 * 1024
+    private static let megabyte: Int32 = 1024 * 1024
     
     func isSizeValid(allowedFileSize: Int32) -> Bool {
         do {

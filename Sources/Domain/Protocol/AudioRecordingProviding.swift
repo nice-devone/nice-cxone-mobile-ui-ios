@@ -22,8 +22,8 @@ protocol AudioRecordingProviding: AnyObject {
     // MARK: - Properties
 
     var url: URL? { get }
-    var onFinishRecording: ((Bool) -> Void)? { get set }
-    var onEncodeError: ((Error?) -> Void)? { get set }
+    var onFinishRecording: (@Sendable (Bool) -> Void)? { get set }
+    var onEncodeError: (@Sendable (Error?) -> Void)? { get set }
 
     // MARK: - Methods
 
@@ -33,7 +33,8 @@ protocol AudioRecordingProviding: AnyObject {
     func deleteRecording()
 }
 
-class DefaultAudioRecordingProvider: NSObject, AudioRecordingProviding {
+// @unchecked Sendable: only accessed from AudioRecorder which is @MainActor; AVAudioRecorder? is mutable but never shared.
+final class DefaultAudioRecordingProvider: NSObject, AudioRecordingProviding, @unchecked Sendable {
 
     // MARK: - Properties
 
@@ -43,8 +44,8 @@ class DefaultAudioRecordingProvider: NSObject, AudioRecordingProviding {
         audioRecorder?.url
     }
 
-    var onFinishRecording: ((Bool) -> Void)?
-    var onEncodeError: ((Error?) -> Void)?
+    var onFinishRecording: (@Sendable (Bool) -> Void)?
+    var onEncodeError: (@Sendable (Error?) -> Void)?
 
     // MARK: - Methods
 

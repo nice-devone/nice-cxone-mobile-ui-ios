@@ -70,6 +70,8 @@ struct QuickRepliesMessageOptionsView: View, Themed {
                 RoundedRectangle(cornerRadius: Constants.Sizing.optionCornerRadius)
                     .fill(colors.background.surface.emphasis)
             )
+            .accessibilityIdentifier(A11y.Conversation.MessageCell.QuickReplies.Option.identifier(option.title))
+            .accessibilityHint(A11y.Conversation.MessageCell.QuickReplies.Option.hint)
         }
     }
 }

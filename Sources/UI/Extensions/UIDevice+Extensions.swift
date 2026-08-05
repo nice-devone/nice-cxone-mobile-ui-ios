@@ -30,7 +30,38 @@ extension UIDevice {
         return safeAreaBottom <= 0
     }
     
+    @MainActor
     static var isLandscape: Bool {
-        UIDevice.current.orientation == .landscapeLeft || UIDevice.current.orientation == .landscapeRight
+        UIWindowScene.activeWindowScene?.interfaceOrientation.isLandscape ?? false
+    }
+}
+
+// MARK: - UIScreen
+
+extension UIScreen {
+
+    /// Bounds of the current foreground scene's screen.
+    ///
+    /// Falls back to the deprecated `UIScreen.main.bounds` if no `UIWindowScene` is available
+    /// (cold launch, SwiftUI previews, headless test contexts). The fallback is intentional:
+    /// many `@MainActor static let` layout constants in `StyleGuide` derive from this property and
+    /// would collapse to zero permanently if first evaluated before any scene is connected.
+    @MainActor
+    static var currentBounds: CGRect {
+        UIWindowScene.activeWindowScene?.screen.bounds ?? UIScreen.main.bounds
+    }
+}
+
+// MARK: - UIWindowScene
+
+private extension UIWindowScene {
+
+    /// Foreground-active window scene, with a fallback to the first connected window scene to handle
+    /// pre-activation lifecycle and single-scene apps.
+    @MainActor
+    static var activeWindowScene: UIWindowScene? {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+
+        return scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
     }
 }

@@ -34,7 +34,6 @@ struct UnsupportedMessageCell: View, Themed {
     
     // MARK: - Properties
     
-    @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     @Environment(\.colorScheme) var scheme
@@ -55,9 +54,7 @@ struct UnsupportedMessageCell: View, Themed {
 
     var body: some View {
         HStack(spacing: Constants.Spacing.contentHorizontal) {
-            VStack(alignment: .leading, spacing: Constants.Spacing.contentVertical) {
-                messageCard
-            }
+            messageCard
             
             Spacer()
         }
@@ -73,16 +70,16 @@ private extension UnsupportedMessageCell {
             Text(text)
                 .font(.callout)
                 .foregroundStyle(colors.content.primary)
-            
+                .accessibilityIdentifier(A11y.Conversation.MessageCell.Unsupported.identifier)
+
             MessageCellTooltipView(
-                text: localization.chatFallbackMessageUnknownTooltipText,
-                tooltip: localization.chatFallbackMessageUnknownTooltipContent
+                text: L10n.Chat.FallbackMessage.UnknownTooltip.text,
+                tooltip: L10n.Chat.FallbackMessage.UnknownTooltip.content
             )
         }
         .padding(.vertical, Constants.Padding.cardVertical)
         .padding(.horizontal, Constants.Padding.cardHorizontal)
-        .background(colors.background.surface.default)
-        .cornerRadius(StyleGuide.Sizing.Message.cornerRadius, corners: .allCorners)
+        .messageChatStyle(message, position: position)
     }
 }
 
@@ -116,14 +113,18 @@ private extension UnsupportedMessageCell {
         )
         .padding(.top, 12)
         
+        TextMessageCell(
+            message: MockData.textMessage(user: MockData.agent),
+            text: Lorem.sentence(),
+            position: .first
+        )
+        .padding(.top, 12)
         UnsupportedMessageCell(
             message: MockData.unsupportedMessage(),
             text: MockData.unsupportedMessageContent,
-            position: .single
+            position: .last
         )
-        .padding(.top, 12)
     }
     .padding(.horizontal, 10)
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }

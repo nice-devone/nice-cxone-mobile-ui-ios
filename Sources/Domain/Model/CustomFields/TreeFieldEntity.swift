@@ -31,12 +31,12 @@ import Foundation
 ///     ...
 /// }
 /// ```
-public class TreeFieldEntity: FormCustomFieldType {
+class TreeFieldEntity: FormCustomFieldType {
 
     // MARK: - Properties
 
     /// An array of `TreeNodeFieldEntity` objects, representing the children of the tree field.
-    public var children: [TreeNodeFieldEntity]
+    var children: [TreeNodeFieldEntity]
 
     // MARK: - Init
     
@@ -48,7 +48,7 @@ public class TreeFieldEntity: FormCustomFieldType {
     ///   - ident: A unique identifier or key for this field.
     ///   - children: An array of `TreeNodeFieldEntity` objects, representing the children of the tree field.
     ///   - value: The current value associated with the field, which can be updated and observed using the `@Published` property wrapper.
-    public init(label: String, isRequired: Bool, ident: String, children: [TreeNodeFieldEntity] = [], value: String? = nil) {
+    init(label: String, isRequired: Bool, ident: String, children: [TreeNodeFieldEntity] = [], value: String? = nil) {
         self.children = children
         
         super.init(label: label, isRequired: isRequired, ident: ident, value: value ?? "")

@@ -10,8 +10,10 @@ This case study demonstrates how to integrate the CXone Chat UI module into your
 Before integrating the UI module, ensure you have:
 
 1. Added the CXone Chat UI package to your project
-2. Configured and initialized the CXone Chat SDK
+2. Constructed and held a `CXoneChat` instance (`let chatProvider = CXoneChat()`) for the lifetime of your chat experience — the UI module is built on top of the SDK and needs a `ChatProvider` to drive it. See the [SDK README](../../cxone-chat-sdk/README.md) for the lifecycle rules.
 3. Properly set up your CXone brand and channel configuration
+
+> 📖 **Upgrading from an earlier version that used `CXoneChat.shared` + `CXoneChatDelegate`?** See the [SDK Migration Guide](../../cxone-chat-sdk/docs/migration-from-singleton.md) — UI integrators are affected too, because `ChatCoordinator` now requires a `chatProvider:` parameter.
 
 
 ## Integration Approach
@@ -31,6 +33,7 @@ The recommended approach for integrating the chat UI is to create a custom coord
 Create a subclass of `ChatCoordinator` to encapsulate your chat configuration:
 
 ```swift
+import CXoneChatSDK
 import CXoneChatUI
 import SwiftUI
 import UIKit
@@ -38,19 +41,20 @@ import UIKit
 class MyChatCoordinator: ChatCoordinator {
 
     // MARK: - Init
-    
-    init() {
+
+    init(chatProvider: ChatProvider) {
         // Configure localization
         var localization = ChatLocalization()
         localization.commonConfirm = "OK" // Override default strings
-        
+
         // Configure styling
         let chatStyle = ChatStyle() // Use default or customize
-        
+
         // Configure additional settings
         let chatConfiguration = ChatConfiguration()
-        
+
         super.init(
+            chatProvider: chatProvider,
             chatStyle: chatStyle,
             chatLocalization: localization,
             chatConfiguration: chatConfiguration
@@ -65,16 +69,18 @@ Create an instance of your custom coordinator, typically in your app coordinator
 
 ```swift
 class AppCoordinator {
+    let chatProvider: ChatProvider
     let chatCoordinator: MyChatCoordinator
-    
+
     init() {
-        chatCoordinator = MyChatCoordinator()
+        let chatProvider = CXoneChat()
+        self.chatProvider = chatProvider
+        self.chatCoordinator = MyChatCoordinator(chatProvider: chatProvider)
     }
 }
 ```
 
-> Warning: If you are using OAuth, it is also necessary to register `ChatDelegate` and handle `onConnectionTokenExpired()` method to be able to re-trigger
-> OAuth flow to refresh connection token with new authentication code and code verifier.
+> Warning: If you are using OAuth (implicit flow), hand the SDK a connection token before connecting — `chatProvider.customer.setConnectionToken(_:expiresAt:)` — and register a token-delegate listener via `chatProvider.customer.setTokenDelegateListener(_:)` so the SDK refreshes the token silently before it expires; no UI-level callback is involved. Without a listener, an expired or rejected token surfaces as `CXoneChatError.invalidAccessToken` from the failing call — obtain a fresh token, set it again, and retry. See the [OAuth case study](../../cxone-chat-sdk/docs/cs-oauth.md) for the full flow.
 
 
 ### 3. Present the Chat Interface
@@ -117,7 +123,7 @@ struct ContentView: View {
     let chatCoordinator: MyChatCoordinator
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Button("Open Chat") {
                 showingChat = true
             }
@@ -157,20 +163,24 @@ chatCoordinator.start(
 Here's a complete example showing integration in a UIKit-based app:
 
 ```swift
+import CXoneChatSDK
 import CXoneChatUI
 import UIKit
 
 class StoreCoordinator {
-    
+
     // MARK: - Properties
-    
+
+    let chatProvider: ChatProvider
     let chatCoordinator: MyChatCoordinator
     let navigationController: UINavigationController
-    
+
     // MARK: - Init
-    
+
     init(navigationController: UINavigationController) {
-        self.chatCoordinator = MyChatCoordinator()
+        let chatProvider = CXoneChat()
+        self.chatProvider = chatProvider
+        self.chatCoordinator = MyChatCoordinator(chatProvider: chatProvider)
         self.navigationController = navigationController
     }
     

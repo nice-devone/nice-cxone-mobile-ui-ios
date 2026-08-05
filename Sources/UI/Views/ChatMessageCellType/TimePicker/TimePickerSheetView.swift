@@ -16,6 +16,7 @@
 import SwiftUI
 
 struct TimePickerSheetView: View, Themed {
+    private typealias Accessibility = A11y.Conversation.MessageCell.TimePicker.Sheet
 
     // MARK: - Constants
     
@@ -42,7 +43,6 @@ struct TimePickerSheetView: View, Themed {
     
     // MARK: - Properties
     
-    @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     @Environment(\.dismiss) var dismiss
@@ -74,14 +74,16 @@ struct TimePickerSheetView: View, Themed {
     var body: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.bodyVertical) {
             content
-            
+
             Spacer()
-            
+
             ColoredDivider(colors.border.default)
-            
+                .accessibilityHidden(true)
+
             controlButtons
         }
         .background(colors.background.default)
+        .accessibilityAddTraits(.isModal)
     }
 }
 
@@ -92,26 +94,32 @@ private extension TimePickerSheetView {
     var content: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.contentVertical) {
             header
-            
+
             ColoredDivider(colors.border.default)
-            
+                .accessibilityHidden(true)
+
             listOptions
                 .padding(.horizontal, Constants.Padding.contentHorizontal)
         }
         .padding(.top, Constants.Padding.contentTop)
     }
-    
+
     var header: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.headerVertical) {
             Text(item.sheetTitle)
                 .font(.title3.weight(.bold))
                 .foregroundStyle(colors.content.primary)
-            
-            Text(localization.formTimePickerSubtitle)
+                .accessibilityIdentifier(Accessibility.Title.identifier)
+                .accessibilityAddTraits(.isStaticText)
+
+            Text(L10n.Form.TimePicker.subtitle)
                 .font(.footnote)
                 .foregroundStyle(colors.content.secondary)
+                .accessibilityIdentifier(Accessibility.Message.identifier)
+                .accessibilityAddTraits(.isStaticText)
         }
         .padding(.horizontal, Constants.Padding.contentHorizontal)
+        .accessibilityAddTraits(.isHeader)
     }
     
     var listOptions: some View {
@@ -128,6 +136,7 @@ private extension TimePickerSheetView {
                         Text(formattedDay)
                             .font(.callout.weight(.bold))
                             .foregroundStyle(colors.content.primary)
+                            .accessibilityIdentifier(Accessibility.TimeSlots.identifier(day: formattedDay))
                         
                         LazyVGrid(columns: Self.gridConfig, alignment: .leading, spacing: Constants.Spacing.gridItemSpacing) {
                             let data = grouped[day]?.sorted {
@@ -147,23 +156,30 @@ private extension TimePickerSheetView {
     
     var controlButtons: some View {
         HStack(spacing: Constants.Spacing.controlButtonsHorizontal) {
-            Button(localization.commonCancel, action: dismiss.callAsFunction)
+            Button(L10n.Common.cancel, action: dismiss.callAsFunction)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(colors.brand.primary)
-            
+                .accessibilityIdentifier(A11y.Form.ButtonCancel.identifier)
+                .accessibilityHint(A11y.Form.ButtonCancel.hint)
+
             Spacer()
-            
-            Button(localization.commonConfirm) {
+
+            Button(L10n.Common.confirm) {
                 guard let selectedOption else {
                     LogManager.error(.failed("Unable to get selected option"))
                     return
                 }
-                
+
                 onFinished(selectedOption)
             }
             .disabled(selectedOption == nil)
             .font(.subheadline.weight(.medium))
             .foregroundStyle(selectedOption == nil ? colors.content.tertiary : colors.brand.primary)
+            .accessibilityIdentifier(A11y.Form.ButtonConfirm.identifier)
+            .ifLet(selectedOption) { view, option in
+                view.accessibilityValue(option.formattedDescription)
+            }
+            .accessibilityHint(selectedOption == nil ? A11y.Form.ButtonConfirm.Invalid.hint : A11y.Form.ButtonConfirm.Valid.hint)
         }
         .padding(.top, Constants.Padding.controlButtonsTop)
         .padding(.bottom, Constants.Padding.controlButtonsBottom)
@@ -174,6 +190,7 @@ private extension TimePickerSheetView {
 
 // MARK: - Previews
 
+// swiftlint:disable hardcoded_strings
 @available(iOS 17.0, *)
 #Preview {
     @Previewable @State var selectedOption: RichMessageTimeSlot?
@@ -200,5 +217,5 @@ private extension TimePickerSheetView {
         }
     }
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }
+// swiftlint:enable hardcoded_strings

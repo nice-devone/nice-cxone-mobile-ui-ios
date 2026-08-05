@@ -1,0 +1,101 @@
+// swiftlint:disable all
+// Generated using SwiftGen — https://github.com/SwiftGen/SwiftGen
+
+{% if tables.count > 0 %}
+{% set accessModifier %}{% if param.publicAccess %}public{% else %}internal{% endif %}{% endset %}
+import Foundation
+
+// MARK: - Strings
+
+{% macro parametersBlock types %}
+  {%- for type in types -%}
+    {%- if type == "String" -%}
+    _ p{{forloop.counter}}: Any
+    {%- else -%}
+    _ p{{forloop.counter}}: {{type}}
+    {%- endif -%}
+    {{ ", " if not forloop.last }}
+  {%- endfor -%}
+{% endmacro %}
+{% macro argumentsBlock types %}
+  {%- for type in types -%}
+    {%- if type == "String" -%}
+    String(describing: p{{forloop.counter}})
+    {%- elif type == "UnsafeRawPointer" -%}
+    Int(bitPattern: p{{forloop.counter}})
+    {%- else -%}
+    p{{forloop.counter}}
+    {%- endif -%}
+    {{ ", " if not forloop.last }}
+  {%- endfor -%}
+{% endmacro %}
+{% macro recursiveBlock table item %}
+  {% for string in item.strings %}
+  {% if not param.noComments %}
+  {% for line in string.comment|default:string.translation|split:"\n" %}
+  /// {{line}}
+  {% endfor %}
+  {% endif %}
+  {# Note: backslash (\) in fallback strings is not escaped here. Accessibility strings are #}
+  {# not expected to contain raw backslashes, so this is acceptable for this template. #}
+  {% set translation string.translation|replace:'"','\"'|replace:'	','\t' %}
+  {% if string.types %}
+  {{accessModifier}} static func {{string.name|swiftIdentifier:"pretty"|lowerFirstWord|escapeReservedKeywords}}({% call parametersBlock string.types %}) -> String {
+    return {{enumName}}.tr("{{table}}", "{{string.key}}", {%+ call argumentsBlock string.types %}, fallback: "{{translation}}")
+  }
+  {% else %}
+  {{accessModifier}} static var {{string.name|swiftIdentifier:"pretty"|lowerFirstWord|escapeReservedKeywords}}: String { return {{enumName}}.tr("{{table}}", "{{string.key}}", fallback: "{{translation}}") }
+  {% endif %}
+  {% endfor %}
+  {% for child in item.children %}
+  {{accessModifier}} enum {{child.name|swiftIdentifier:"pretty"|escapeReservedKeywords}} {
+    {% filter indent:2," ",true %}{% call recursiveBlock table child %}{% endfilter %}
+  }
+  {% endfor %}
+{% endmacro %}
+{% set enumName %}{{param.enumName|default:"L10n"}}{% endset %}
+{{accessModifier}} enum {{enumName}} {
+  {% if tables.count > 1 or param.forceFileNameEnum %}
+  {% for table in tables %}
+  {{accessModifier}} enum {{table.name|swiftIdentifier:"pretty"|escapeReservedKeywords}} {
+    {% filter indent:2," ",true %}{% call recursiveBlock table.name table.levels %}{% endfilter %}
+  }
+  {% endfor %}
+  {% else %}
+  {% call recursiveBlock tables.first.name tables.first.levels %}
+  {% endif %}
+}
+
+// MARK: - Implementation Details
+
+extension {{enumName}} {
+  private static func tr(_ table: String, _ key: String, _ args: CVarArg..., fallback value: String) -> String {
+    // 1. Programmatic provider (highest priority)
+    if let override = {{enumName}}.overrideProvider?.accessibilityString(forKey: key) {
+      return args.isEmpty ? override : String(format: override, locale: Locale.current, arguments: args)
+    }
+    // 2. Integrator's bundle (supports .lproj localization)
+    if let bundle = {{enumName}}.overrideBundle {
+      let fromBundle = bundle.localizedString(forKey: key, value: nil, table: table)
+      if fromBundle != key {
+        return args.isEmpty ? fromBundle : String(format: fromBundle, locale: Locale.current, arguments: args)
+      }
+    }
+    // 3. SDK's own bundle (default behavior)
+    let format = BundleToken.bundle.localizedString(forKey: key, value: value, table: table)
+    return args.isEmpty ? format : String(format: format, locale: Locale.current, arguments: args)
+  }
+}
+
+private final class BundleToken {
+  static let bundle: Bundle = {
+    #if SWIFT_PACKAGE
+    return Bundle.module
+    #else
+    return Bundle(for: BundleToken.self)
+    #endif
+  }()
+}
+{% else %}
+// No string found
+{% endif %}

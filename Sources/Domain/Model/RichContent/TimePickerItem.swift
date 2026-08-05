@@ -19,7 +19,7 @@ import Foundation
 ///
 /// A model representing a time picker message, including the text shown in the conversation,
 /// the sheet title, and the available time slots. Used to configure UI that presents time slot selection to the user.
-public struct TimePickerItem: Hashable, Equatable {
+public struct TimePickerItem: Hashable, Equatable, Sendable {
     
     // MARK: - Properties
     

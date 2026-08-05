@@ -21,7 +21,6 @@ struct MessageInputImageThumbnailView: View, Themed {
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
     
     @Environment(\.colorScheme) var scheme
     
@@ -36,13 +35,13 @@ struct MessageInputImageThumbnailView: View, Themed {
     var body: some View {
         Group {
             if let image = loadedImage {
-                Image(uiImage: image)
+                Image(uiImage: image) // swiftlint:disable:this accessibility_label_for_image
                     .resizable()
                     .scaledToFill()
             } else {
                 KFImage(url)
                     .onSuccess { result in
-                        loadedImage = result.image.fixOrientation()
+                        loadedImage = result.image
                     }
                     .placeholder {
                         AttachmentLoadingView(
@@ -65,7 +64,6 @@ struct MessageInputImageThumbnailView: View, Themed {
 // MARK: - Preview
 
 #Preview {
-    MessageInputImageThumbnailView(url: MockData.imageUrl)
+    MessageInputImageThumbnailView(url: MockData.imageUrl())
         .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
 }

@@ -51,53 +51,26 @@ import Foundation
 ///     ...
 /// }
 /// ```
-public class TreeNodeFieldEntity: ObservableObject, Identifiable {
+class TreeNodeFieldEntity: ObservableObject, Identifiable {
     
     // MARK: - Properties
     
     /// The unique identifier of the tree node.
-    @available(*, deprecated, renamed: "idString", message: "Use `idString`. It preserves the original case-sensitive identifier from the backend.")
-    public let id: UUID // swiftlint:disable:this no_uuid
-    
-    /// The unique identifier of the tree node.
-    public let idString: String
+    let id: String
     
     /// The label or name associated with the tree node.
-    public let label: String
+    let label: String
     
     /// The value or unique identifier of the tree node.
-    public let value: String
+    let value: String
     
     /// An array of `TreeNodeFieldEntity` objects, representing child nodes within the tree.
-    public let children: [TreeNodeFieldEntity]?
+    let children: [TreeNodeFieldEntity]?
     
     /// A boolean flag indicating whether the tree node is currently selected.
-    public var isSelected: Bool
+    var isSelected: Bool
     
     // MARK: - Init
-    
-    /// Initialization of the ListFieldEntity
-    ///
-    /// - `id`: The unique identifier of the tree node.
-    /// - `label`: The label or name associated with the tree node.
-    /// - `value`: The value or unique identifier of the tree node.
-    /// - `children`: An array of `TreeNodeFieldEntity` objects, representing child nodes within the tree.
-    /// - `isSelected`: A boolean flag indicating whether the tree node is currently selected.
-    @available(*, deprecated, message: "Due to replacement of the `id` atrribute with `idString`, this initializer will be removed in a future.")
-    public init(
-        id: UUID = UUID(), // swiftlint:disable:this no_uuid
-        label: String,
-        value: String,
-        children: [TreeNodeFieldEntity]? = nil,
-        isSelected: Bool = false
-    ) {
-        self.id = id
-        self.idString = id.uuidString
-        self.label = label
-        self.value = value
-        self.children = children
-        self.isSelected = isSelected
-    }
     
     /// Initialization of the ListFieldEntity
     ///
@@ -113,8 +86,7 @@ public class TreeNodeFieldEntity: ObservableObject, Identifiable {
         children: [TreeNodeFieldEntity]? = nil,
         isSelected: Bool = false
     ) {
-        self.id = UUID() // swiftlint:disable:this no_uuid
-        self.idString = id
+        self.id = id
         self.label = label
         self.value = value
         self.children = children

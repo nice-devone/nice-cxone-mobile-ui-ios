@@ -15,6 +15,7 @@
 
 import Foundation
 
+@MainActor
 final class AttachmentLoader: ObservableObject {
     
     // MARK: - Properties
@@ -44,7 +45,10 @@ final class AttachmentLoader: ObservableObject {
     func load() {
         loadTask?.cancel()
 
-        loadTask = Task {
+        loadTask = Task { [weak self] in
+            guard let self else {
+                return
+            }
             if let cached = AttachmentCache.shared.data(for: cacheKey) {
                 await MainActor.run {
                     self.loadingState = .loaded(cached)
@@ -53,7 +57,7 @@ final class AttachmentLoader: ObservableObject {
             }
 
             await MainActor.run {
-                loadingState = .loading
+                self.loadingState = .loading
             }
 
             do {

@@ -19,61 +19,58 @@ import UIKit
 import UniformTypeIdentifiers
 
 struct MediaCaptureView: UIViewControllerRepresentable {
-    
+
     // MARK: - Properties
-    
-    @SwiftUI.Environment(\.presentationMode) var presentationMode
-    
+
+    @SwiftUI.Environment(\.dismiss) var dismiss
+
     let attachmentRestrictions: AttachmentRestrictions
-    let localization: ChatLocalization
     let onSelected: (AttachmentItem) -> Void
     let onAlert: (ChatAlertType) -> Void
-    
+
     // MARK: - Methods
-    
+
     func makeCoordinator() -> Coordinator {
-        Coordinator(self, localization: localization, onAlert: onAlert)
+        Coordinator(self, onAlert: onAlert)
     }
-    
+
     func makeUIViewController(context: UIViewControllerRepresentableContext<MediaCaptureView>) -> UIImagePickerController {
         let validContentTypes = UTType.resolve(for: attachmentRestrictions.allowedTypes)
-        
+
         let picker = UIImagePickerController()
         picker.delegate = context.coordinator
         picker.sourceType = .camera
         picker.mediaTypes = validContentTypes.map(\.identifier)
         picker.allowsEditing = true
-        
+
         return picker
     }
-    
+
     func updateUIViewController(_ uiViewController: UIImagePickerController, context: UIViewControllerRepresentableContext<MediaCaptureView>) { }
-    
+
     // MARK: - Coordinator
-    
+
     final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
-        
+
         // MARK: - Properties
-        
+
         let parent: MediaCaptureView
-        let localization: ChatLocalization
         let onAlert: (ChatAlertType) -> Void
-        
+
         // MARK: - Init
-        
-        init(_ parent: MediaCaptureView, localization: ChatLocalization, onAlert: @escaping (ChatAlertType) -> Void) {
+
+        init(_ parent: MediaCaptureView, onAlert: @escaping (ChatAlertType) -> Void) {
             self.parent = parent
-            self.localization = localization
             self.onAlert = onAlert
         }
-        
+
         // MARK: - Methods
-        
+
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
             LogManager.trace("Media captured successfully")
-            
+
             let mediaUrl: URL
-            
+
             do {
                 if let url = info[UIImagePickerController.InfoKey.imageURL] as? URL {
                     mediaUrl = url
@@ -86,15 +83,15 @@ struct MediaCaptureView: UIViewControllerRepresentable {
                 } else {
                     throw CommonError.unableToParse("mediaUrl", from: info)
                 }
-                
+
                 parent.onSelected(AttachmentItem(from: mediaUrl))
             } catch {
                 error.logError()
-                
-                onAlert(.genericError(localization: localization))
+
+                onAlert(.genericError)
             }
-            
-            parent.presentationMode.wrappedValue.dismiss()
+
+            parent.dismiss()
         }
     }
 }
@@ -102,50 +99,46 @@ struct MediaCaptureView: UIViewControllerRepresentable {
 // MARK: - Helpers
 
 private extension MediaCaptureView.Coordinator {
-    
+
     func getImageUrl(_ image: UIImage) throws -> URL {
         LogManager.trace("Saving captured image to a temporary location to create an AttachmentItem")
-        
+
         guard let cachesUrl = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
             throw CommonError.failed("Unable to get Caches directory URL")
         }
-        
-        // For iOS 15 compatibility, ensure we're normalizing the image orientation
-        let normalizedImage = image.fixOrientation()
-        
+
         // Use higher compression quality for better image clarity
-        guard let data = normalizedImage.jpegData(compressionQuality: 0.85) else {
+        guard let data = image.jpegData(compressionQuality: 0.85) else {
             throw CommonError.unableToParse("jpegData")
         }
-        
+
         let localPath = cachesUrl.appendingPathComponent("\(LowercaseUUID().uuidString).jpeg")
         try data.write(to: localPath)
-        
+
         return localPath
     }
-    
+
     func getTemporaryUrlForMedia(_ url: URL) throws -> URL {
         LogManager.trace("Copying captured media to a temporary location to create an AttachmentItem")
-        
+
         guard let cachesUrl = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
             throw CommonError.failed("Unable to get Caches directory URL")
         }
-        
+
         let fileUrl = cachesUrl.appendingPathComponent(url.lastPathComponent)
-        
+
         if FileManager.default.fileExists(atPath: fileUrl.path) {
             return fileUrl
         } else {
             try FileManager.default.copyItem(at: url, to: fileUrl)
-            
+
             return fileUrl
         }
-        
     }
 }
 
 private extension AttachmentItem {
-    
+
     init(from url: URL) {
         self.init(
             url: url,

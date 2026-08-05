@@ -61,7 +61,7 @@ struct VideoThumbnailView: View, Themed {
                                 Asset.Colors.Base.white.swiftUIColor.opacity(Constants.Colors.playButtonOverlay)
                             )
                     )
-                    .cornerRadius(StyleGuide.Sizing.Attachment.cornerRadius)
+                    .clipShape(RoundedRectangle(cornerRadius: StyleGuide.Sizing.Attachment.cornerRadius))
             } else {
                 RoundedRectangle(cornerRadius: StyleGuide.Sizing.Attachment.cornerRadius)
             }

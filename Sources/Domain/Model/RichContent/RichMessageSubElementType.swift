@@ -21,7 +21,7 @@ import Foundation
 /// which can include interactive buttons, text content, and file attachments.
 /// The `postback` property allows easy access to the postback value for button elements,
 /// making it convenient for handling user interactions in rich messages.
-public enum RichMessageSubElementType: Hashable, Equatable {
+enum RichMessageSubElementType: Hashable, Equatable {
     
     // MARK: - Cases
     
@@ -39,7 +39,7 @@ public enum RichMessageSubElementType: Hashable, Equatable {
     // MARK: - Properties
     
     /// An optional property that extracts the postback value from a sub-element type, returning `nil` for other types.
-    public var postback: String? {
+    var postback: String? {
         switch self {
         case .button(let entity):
             return entity.postback

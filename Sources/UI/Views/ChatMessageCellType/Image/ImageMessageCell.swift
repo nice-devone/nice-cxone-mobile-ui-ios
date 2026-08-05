@@ -30,7 +30,6 @@ struct ImageMessageCell: View, Themed {
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
     
     @Environment(\.colorScheme) var scheme
     
@@ -49,13 +48,12 @@ struct ImageMessageCell: View, Themed {
         message: ChatMessage,
         item: AttachmentItem,
         position: MessageGroupPosition? = nil,
-        alertType: Binding<ChatAlertType?>,
-        localization: ChatLocalization
+        alertType: Binding<ChatAlertType?>
     ) {
         self.message = message
         self.position = position
 
-        _viewModel = StateObject(wrappedValue: ImageMessageCellViewModel(item: item, alertType: alertType, localization: localization))
+        _viewModel = StateObject(wrappedValue: ImageMessageCellViewModel(item: item, alertType: alertType))
     }
     
     // MARK: - Builder
@@ -96,6 +94,10 @@ private extension ImageMessageCell {
                 .sheet(isPresented: $isImagePresented) {
                     ImageViewer(image: image, viewerShown: $isImagePresented)
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityIdentifier(A11y.Conversation.MessageCell.Attachment.identifier(type: "image"))
+                .accessibilityLabel(A11y.Conversation.MessageCell.Attachment.Image.label(viewModel.item.fileName))
+                .accessibilityHint(A11y.Conversation.MessageCell.Attachment.Image.hint)
         case .failed:
             Button {
                 Task { @MainActor in
@@ -119,24 +121,20 @@ private extension ImageMessageCell {
 // MARK: - Preview
 
 #Preview("Single") {
-    let localization = ChatLocalization()
-
     ScrollView {
         VStack {
             ImageMessageCell(
                 message: MockData.imageMessage(user: MockData.agent),
                 item: MockData.imageItem,
                 position: .single,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             
             ImageMessageCell(
                 message: MockData.imageMessage(user: MockData.customer),
                 item: MockData.imageItem,
                 position: .single,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             
             VStack(spacing: 4) {
@@ -144,24 +142,21 @@ private extension ImageMessageCell {
                     message: MockData.imageMessage(user: MockData.agent),
                     item: MockData.imageItem,
                     position: .first,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 ImageMessageCell(
                     message: MockData.imageMessage(user: MockData.agent),
                     item: MockData.imageItem,
                     position: .inside,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 ImageMessageCell(
                     message: MockData.imageMessage(user: MockData.agent),
                     item: MockData.imageItem,
                     position: .last,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
             
@@ -170,54 +165,48 @@ private extension ImageMessageCell {
                     message: MockData.imageMessage(user: MockData.customer),
                     item: MockData.imageItem,
                     position: .first,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 ImageMessageCell(
                     message: MockData.imageMessage(user: MockData.customer),
                     item: MockData.imageItem,
                     position: .inside,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 ImageMessageCell(
                     message: MockData.imageMessage(user: MockData.customer),
                     item: MockData.imageItem,
                     position: .last,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
         }
     }
     .padding(.horizontal, 10)
     .environmentObject(ChatStyle())
-    .environmentObject(localization)
 }
 
 @available(iOS 17, *)
 #Preview("Multiple") {
     @Previewable @Environment(\.colorScheme) var scheme
-    
+
     let style = ChatStyle()
-    let localization = ChatLocalization()
+
     VStack {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
                 ImageMessageCell(
                     message: MockData.imageMessageWithText(user: MockData.agent),
                     item: MockData.imageItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 ImageMessageCell(
                     message: MockData.imageMessage(user: MockData.agent),
                     item: MockData.imageItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
             
@@ -225,15 +214,13 @@ private extension ImageMessageCell {
                 ImageMessageCell(
                     message: MockData.imageMessageWithText(user: MockData.agent),
                     item: MockData.imageItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 ImageMessageCell(
                     message: MockData.imageMessage(user: MockData.agent),
                     item: MockData.imageItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
         }
@@ -248,15 +235,13 @@ private extension ImageMessageCell {
                 ImageMessageCell(
                     message: MockData.imageMessageWithText(user: MockData.customer),
                     item: MockData.imageItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 ImageMessageCell(
                     message: MockData.imageMessage(user: MockData.customer),
                     item: MockData.imageItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
             
@@ -264,15 +249,13 @@ private extension ImageMessageCell {
                 ImageMessageCell(
                     message: MockData.imageMessageWithText(user: MockData.customer),
                     item: MockData.imageItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 ImageMessageCell(
                     message: MockData.imageMessage(user: MockData.customer),
                     item: MockData.imageItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
         }
@@ -283,5 +266,4 @@ private extension ImageMessageCell {
         )
     }
     .environmentObject(style)
-    .environmentObject(localization)
 }

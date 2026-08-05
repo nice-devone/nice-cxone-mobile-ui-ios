@@ -38,7 +38,6 @@ struct MesssageInputAttachmentListDocumentView: View, Themed {
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
     
     @Environment(\.colorScheme) var scheme
 
@@ -50,10 +49,10 @@ struct MesssageInputAttachmentListDocumentView: View, Themed {
     
     // MARK: - Init
 
-    init(item: AttachmentItem, alertType: Binding<ChatAlertType?>, localization: ChatLocalization) {
+    init(item: AttachmentItem, alertType: Binding<ChatAlertType?>) {
         self.item = item
 
-        _pdfViewModel = StateObject(wrappedValue: PDFViewModel(attachmentItem: item, alertType: alertType, localization: localization))
+        _pdfViewModel = StateObject(wrappedValue: PDFViewModel(attachmentItem: item, alertType: alertType))
     }
     
     // MARK: - Builder
@@ -120,9 +119,7 @@ private extension MesssageInputAttachmentListDocumentView {
 
 // MARK: - Previews
 
-@available(iOS 16, *)
 #Preview {
-    let localization = ChatLocalization()
     let mimeTypes: [[AttachmentItem]] = [
         [
             MockData.audioItem,
@@ -140,11 +137,10 @@ private extension MesssageInputAttachmentListDocumentView {
         ForEach(mimeTypes, id: \.self) { section in
             GridRow {
                 ForEach(section, id: \.self) { item in
-                    MesssageInputAttachmentListDocumentView(item: item, alertType: .constant(nil), localization: localization)
+                    MesssageInputAttachmentListDocumentView(item: item, alertType: .constant(nil))
                 }
             }
         }
     }
     .environmentObject(ChatStyle())
-    .environmentObject(localization)
 }

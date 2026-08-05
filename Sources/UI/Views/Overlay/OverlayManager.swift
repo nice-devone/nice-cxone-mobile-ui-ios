@@ -103,6 +103,7 @@ private extension OverlayManager {
 
 // MARK: - Preview
 
+// swiftlint:disable hardcoded_strings
 private struct TestView: View {
     
     // MARK: - Properties
@@ -113,7 +114,7 @@ private struct TestView: View {
     // MARK: - Builder
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Button {
                 showOverlay = true
             } label: {
@@ -121,7 +122,7 @@ private struct TestView: View {
                     Circle()
                         .fill(Color.red)
                         .padding()
-                    
+
                     Text("Show overlay")
                 }
             }
@@ -162,7 +163,7 @@ private struct TestView: View {
 }
 
 #Preview("Modal") {
-    NavigationView {
+    NavigationStack {
         Color.clear
             .sheet(isPresented: .constant(true)) {
                 TestView()
@@ -170,3 +171,4 @@ private struct TestView: View {
             .navigationTitle("Dashboard")
     }
 }
+// swiftlint:enable hardcoded_strings

@@ -16,24 +16,32 @@
 import CXoneChatSDK
 import SwiftUI
 
+// swiftlint:disable:next type_body_length
 enum MockData {
     
     // MARK: - Properties
-    
+
+    /// 2025-01-15 10:30:00 UTC — stable date for deterministic snapshot tests.
+    static let fixedDate = Date(timeIntervalSince1970: 1_736_936_200)
+
     static var unsupportedMessageContent: String {
         Lorem.sentence() + "\nPLUGIN – SATISFACTION_SURVEY"
     }
     static var hyperlinkContent: String {
-        Lorem.words(nbWords: Int.random(in: 0..<5)) + " \(imageUrl.absoluteString) " + Lorem.words(nbWords: Int.random(in: 0..<5))
+        Lorem.words(nbWords: Int.random(in: 0..<5)) + " \(imageUrl().absoluteString) " + Lorem.words(nbWords: Int.random(in: 0..<5))
     }
     static var phoneNumberContent: String {
         Lorem.words(nbWords: Int.random(in: 0..<5)) + " (123) 456-7890 " + Lorem.words(nbWords: Int.random(in: 0..<5))
     }
-    static var imageUrl: URL {
-        URL(string: "https://picsum.photos/id/\(Int.random(in: 1...700))/300/300").unsafelyUnwrapped
-    }
     static var imageItem: AttachmentItem {
-        AttachmentItem(url: imageUrl, friendlyName: "\(imageUrl.lastPathComponent).jpg", mimeType: "image/jpg", fileName: "\(imageUrl.lastPathComponent).jpg")
+        let imageUrl = imageUrl()
+        
+        return AttachmentItem(
+            url: imageUrl,
+            friendlyName: "\(imageUrl.lastPathComponent).jpg",
+            mimeType: "image/jpg",
+            fileName: "\(imageUrl.lastPathComponent).jpg"
+        )
     }
     
     static let selectableVideoAttachment = SelectableAttachment(
@@ -69,7 +77,7 @@ enum MockData {
         mimeType: audioUrl.mimeType,
         fileName: audioUrl.lastPathComponent
     )
-    
+
     static let videoUrl = URL(string: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4").unsafelyUnwrapped
     static let videoItem = AttachmentItem(url: videoUrl, friendlyName: "Big Buck Bunny", mimeType: videoUrl.mimeType, fileName: videoUrl.lastPathComponent)
     
@@ -101,27 +109,79 @@ enum MockData {
         mimeType: pptPreviewURL.mimeType,
         fileName: pptPreviewURL.lastPathComponent
     )
-    static let listPickerItem = ListPickerItem(title: Lorem.word(), message: Lorem.sentence(), buttons: richMessageOptions())
-    static let quickRepliesItem = QuickRepliesItem(title: Lorem.sentence(), message: Lorem.sentence(), options: quickReplyOptions())
-    static let richLinkItem = RichLinkItem(title: Lorem.words(), url: imageUrl, imageUrl: imageUrl)
-    static let timePickerItem = TimePickerItem(title: Lorem.words(), sheetTitle: Lorem.words(), timeSlots: timeSlotOptions())
-    
-    static let customer = ChatUser(id: LowercaseUUID().uuidString, userName: "Peter Parker", avatarURL: nil, isAgent: false)
-    static let agent = ChatUser(id: LowercaseUUID().uuidString, userName: "John Doe", avatarURL: imageUrl, isAgent: true)
-    
+    static let timePickerItem = TimePickerItem(
+        title: Lorem.words(),
+        sheetTitle: Lorem.words(),
+        timeSlots: timeSlotOptions()
+    )
+    static let customer = ChatUser(
+        id: LowercaseUUID().uuidString,
+        userName: "Peter Parker",
+        avatarURL: nil,
+        isAgent: false
+    )
+    static let agent = ChatUser(
+        id: LowercaseUUID().uuidString,
+        userName: "John Doe",
+        avatarURL: nil,
+        isAgent: true
+    )
     static let attachmentRestrictions = AttachmentRestrictions(
         allowedFileSize: 40,
         allowedTypes: ["image/*", "video/*", "audio/*"],
         areAttachmentsEnabled: true
     )
-    
+    static let attachmentRestrictionsNoVoice = AttachmentRestrictions(
+        allowedFileSize: 40,
+        allowedTypes: ["image/*", "video/*"],
+        areAttachmentsEnabled: true
+    )
+
     // MARK: - Methods
-    
-    static func textMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+
+    static func imageUrl(imageIndex: Int? = nil) -> URL {
+        URL(string: "https://picsum.photos/id/\(imageIndex ?? Int.random(in: 1...700))/300/300").unsafelyUnwrapped
+    }
+
+    static func listPickerItem(
+        title: String = Lorem.word(),
+        message: String? = Lorem.sentence(),
+        buttons: [RichMessageButton] = richMessageOptions()
+    ) -> ListPickerItem {
+        ListPickerItem(
+            title: title,
+            message: message,
+            buttons: buttons
+        )
+    }
+    static func quickRepliesItem(
+        title: String = Lorem.sentence(),
+        message: String? = Lorem.sentence(),
+        options: [RichMessageButton] = quickReplyOptions()
+    ) -> QuickRepliesItem {
+        QuickRepliesItem(
+            title: title,
+            message: message,
+            options: options
+        )
+    }
+    static func richLinkItem(
+        title: String = Lorem.words(),
+        url richLinkUrl: URL = Self.imageUrl(),
+        imageUrl: URL = Self.imageUrl()
+    ) -> RichLinkItem {
+        RichLinkItem(
+            title: title,
+            url: richLinkUrl,
+            imageUrl: imageUrl
+        )
+    }
+
+    static func textMessage(user: ChatUser? = nil, text: String = Lorem.sentence(), date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
         ChatMessage(
             id: LowercaseUUID().uuidString,
             user: user ?? [customer, agent].random().unsafelyUnwrapped,
-            types: [.text(Lorem.sentence())],
+            types: [.text(text)],
             date: date,
             status: status
         )
@@ -259,20 +319,54 @@ enum MockData {
         )
     }
     
-    static func quickRepliesMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
-        ChatMessage(id: LowercaseUUID().uuidString, user: agent, types: [.richContent(.quickReplies(quickRepliesItem))], date: date, status: status)
-    }
-    
-    static func listPickerMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
-        ChatMessage(id: LowercaseUUID().uuidString, user: agent, types: [.richContent(.listPicker(listPickerItem))], date: date, status: status)
-    }
-    
-    static func richLinkMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
-        ChatMessage(id: LowercaseUUID().uuidString, user: agent, types: [.richContent(.richLink(richLinkItem))], date: date, status: status)
+    static func quickRepliesMessage(item: QuickRepliesItem? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+        ChatMessage(id: LowercaseUUID().uuidString, user: agent, types: [.richContent(.quickReplies(item ?? quickRepliesItem()))], date: date, status: status)
     }
 
-    static func textFieldEntity(isRequired: Bool = false) -> TextFieldEntity {
-        TextFieldEntity(label: "First Name", isRequired: isRequired, ident: "firstName", isEmail: false)
+    static func listPickerMessage(item: ListPickerItem? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+        ChatMessage(id: LowercaseUUID().uuidString, user: agent, types: [.richContent(.listPicker(item ?? listPickerItem()))], date: date, status: status)
+    }
+
+    static func richLinkMessage(item: RichLinkItem? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+        ChatMessage(id: LowercaseUUID().uuidString, user: agent, types: [.richContent(.richLink(item ?? richLinkItem()))], date: date, status: status)
+    }
+
+    static func multipleMediaMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+        ChatMessage(
+            id: LowercaseUUID().uuidString,
+            user: user ?? agent,
+            types: [
+                .image(imageItem),
+                .video(videoItem),
+                .image(imageItem),
+                .video(videoItem)
+            ],
+            date: date,
+            status: status
+        )
+    }
+
+    static func multipleDocumentMessage(user: ChatUser? = nil, date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
+        ChatMessage(
+            id: LowercaseUUID().uuidString,
+            user: user ?? agent,
+            types: [
+                .documentPreview(docPreviewItem),
+                .documentPreview(pdfPreviewItem),
+                .documentPreview(pptPreviewItem)
+            ],
+            date: date,
+            status: status
+        )
+    }
+
+    static func textFieldEntity(
+        label: String = "First Name",
+        ident: String = "firstName",
+        isRequired: Bool = false,
+        isEmail: Bool = false
+    ) -> TextFieldEntity {
+        TextFieldEntity(label: label, isRequired: isRequired, ident: ident, isEmail: isEmail)
     }
 
     static func listFieldEntity(isRequired: Bool = false) -> ListFieldEntity {
@@ -289,46 +383,6 @@ enum MockData {
         )
     }
     
-    static func chatMessage(
-        id: String = "test-message-id",
-        user: ChatUser? = nil,
-        types: [ChatMessageType] = [.text("Test")],
-        date: Date = Date(),
-        status: MessageStatus = .seen
-    ) -> ChatMessage {
-        ChatMessage(id: id, user: user, types: types, date: date, status: status)
-    }
-
-    static func messageSequence(
-        from user: ChatUser,
-        count: Int,
-        startDate: Date = Date(),
-        interval: TimeInterval = 30
-    ) -> [ChatMessage] {
-        (0..<count).map { index in
-            chatMessage(
-                id: "msg-\(index)",
-                user: user,
-                date: startDate.addingTimeInterval(Double(index) * interval)
-            )
-        }
-    }
-
-    static func unsupportedMessage(date: Date = Date(), status: MessageStatus = .seen) -> ChatMessage {
-        ChatMessage(
-            id: LowercaseUUID().uuidString,
-            user: agent,
-            types: [.unknown(Self.unsupportedMessageContent)],
-            date: date,
-            status: status
-        )
-    }
-}
-
-// MARK: - Helpers
-
-extension MockData {
-
     static func treeNodeFieldEntityChildren() -> [TreeNodeFieldEntity] {
         [
             TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Mobile Phone", value: "phone", children: [
@@ -371,7 +425,51 @@ extension MockData {
             TreeNodeFieldEntity(id: LowercaseUUID().uuidString, label: "Other", value: "other")
         ]
     }
+    
+    static func chatMessage(
+        id: String = "test-message-id",
+        user: ChatUser? = nil,
+        types: [ChatMessageType] = [.text("Test")],
+        date: Date = Date(),
+        status: MessageStatus = .seen
+    ) -> ChatMessage {
+        ChatMessage(id: id, user: user, types: types, date: date, status: status)
+    }
 
+    static func messageSequence(
+        from user: ChatUser,
+        count: Int,
+        startDate: Date = Date(),
+        interval: TimeInterval = 30
+    ) -> [ChatMessage] {
+        (0..<count).map { index in
+            chatMessage(
+                id: "msg-\(index)",
+                user: user,
+                date: startDate.addingTimeInterval(Double(index) * interval)
+            )
+        }
+    }
+
+    static func unsupportedMessage(
+        text: String = Self.unsupportedMessageContent,
+        date: Date = Date(),
+        status: MessageStatus = .seen
+    ) -> ChatMessage {
+        ChatMessage(
+            id: LowercaseUUID().uuidString,
+            user: agent,
+            types: [.unknown(text)],
+            date: date,
+            status: status
+        )
+    }
+}
+
+// MARK: - Helpers
+
+extension MockData {
+    
     static func randomEmoji(count: Int) -> [String] {
         var result = [String]()
         
@@ -402,7 +500,7 @@ extension MockData {
                 RichMessageButton(
                     title: Lorem.words(nbWords: Int.random(in: 1..<3)),
                     description: Bool.random() ? Lorem.sentence() : nil,
-                    iconUrl: Bool.random() ? imageUrl : nil
+                    iconUrl: Bool.random() ? imageUrl() : nil
                 )
             }
     }

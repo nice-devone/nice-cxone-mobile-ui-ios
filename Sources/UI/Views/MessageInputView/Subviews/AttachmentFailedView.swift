@@ -57,6 +57,10 @@ struct AttachmentFailedView: View, Themed {
                         .fill(colors.background.default)
                 )
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(A11y.Conversation.MessageCell.Attachment.Failed.identifier)
+        .accessibilityLabel(A11y.Conversation.MessageCell.Attachment.Failed.label)
+        .accessibilityHint(A11y.Conversation.MessageCell.Attachment.Failed.hint)
     }
 }
 

@@ -32,13 +32,16 @@ struct MessageCellTooltipView: View, Themed {
         enum Colors {
             static let textOpacity: Double = 0.5
         }
+        @MainActor
         enum Size {
-            static let legacyTooltipContentWidth: CGFloat = UIScreen.main.bounds.width - 16 * 2
+            static let legacyTooltipContentWidth: CGFloat = UIScreen.currentBounds.width - 16 * 2
         }
     }
     
     // MARK: - Properties
     
+    @AccessibilityFocusState private var focusTooltip: Bool
+
     @EnvironmentObject var style: ChatStyle
     
     @Environment(\.colorScheme) var scheme
@@ -52,12 +55,12 @@ struct MessageCellTooltipView: View, Themed {
     // MARK: - Builder
     
     var body: some View {
-        HStack(spacing: Constants.Spacing.elementsHorizontal) {
-            Button {
-                withAnimation {
-                    showTooltip = true
-                }
-            } label: {
+        Button {
+            withAnimation {
+                showTooltip = true
+            }
+        } label: {
+            HStack(spacing: Constants.Spacing.elementsHorizontal) {
                 Asset.Message.tooltip
                     .adaptiveTooltip(isPresented: $showTooltip) {
                         if #available(iOS 16.4, *) {
@@ -75,14 +78,19 @@ struct MessageCellTooltipView: View, Themed {
                                 .padding(.vertical, Constants.Padding.legacyTooltipContentVertical)
                         }
                     }
-                    .accessibilityIdentifier("message_tooltip_icon")
+                
+                Text(text)
+                    .font(.caption)
             }
-            .foregroundColor(colors.status.error)
-            
-            Text(text)
-                .font(.caption)
-                .foregroundColor(colors.status.error)
+            .foregroundStyle(colors.status.error)
         }
+        .onChange(of: showTooltip) { isPresented in
+            focusTooltip = isPresented
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(A11y.Conversation.MessageCell.Tooltip.identifier)
+        .accessibilityLabel(text)
+        .accessibilityHint(A11y.Conversation.MessageCell.Tooltip.hint)
     }
 }
 
@@ -96,6 +104,9 @@ private extension MessageCellTooltipView {
             .foregroundColor(colors.content.primary)
             .multilineTextAlignment(.leading)
             .padding(.horizontal, Constants.Padding.tooltipContentHorizontal)
+            .accessibilityIdentifier(A11y.Conversation.MessageCell.Tooltip.Content.identifier)
+            .accessibilityAddTraits(.isModal)
+            .accessibilityFocused($focusTooltip)
     }
 }
 

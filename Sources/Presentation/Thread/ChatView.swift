@@ -13,7 +13,6 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
-import CXoneChatSDK
 import SwiftUI
 
 struct ChatView: View, Themed {
@@ -36,6 +35,7 @@ struct ChatView: View, Themed {
             static let positionInQueueHorizontal: CGFloat = 16
             static let typingIndicatorLeading: CGFloat = 16
             static let archivedChatMessageDividerHorizontal: CGFloat = 24
+            @MainActor
             static var archivedChatMessageBottom: CGFloat {
                 UIDevice.hasHomeButton ? 10 : 0
             }
@@ -45,8 +45,6 @@ struct ChatView: View, Themed {
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
-    
-    @EnvironmentObject private var localization: ChatLocalization
 
     @SwiftUI.Environment(\.colorScheme) var scheme
     
@@ -60,6 +58,7 @@ struct ChatView: View, Themed {
     @Binding private var isSendingMessage: Bool
 
     private let attachmentRestrictions: AttachmentRestrictions
+    private let isLiveChat: Bool
     private let onNewMessage: (ChatMessageType, [AttachmentItem]) -> Void
     private let loadMoreMessages: () async -> Void
     private let onRichMessageElementSelected: (RichMessageSubElementType) -> Void
@@ -76,8 +75,9 @@ struct ChatView: View, Themed {
         isUserTyping: Binding<Bool>,
         isInputEnabled: Binding<Bool>,
         isThreadClosed: Binding<Bool>,
-        alertType: Binding<ChatAlertType?>,
         isSendingMessage: Binding<Bool>,
+        isLiveChat: Bool,
+        alertType: Binding<ChatAlertType?>,
         attachmentRestrictions: AttachmentRestrictions,
         queuePosition: Int? = nil,
         onNewMessage: @escaping (ChatMessageType, [AttachmentItem]) -> Void,
@@ -93,6 +93,7 @@ struct ChatView: View, Themed {
         self._alertType = alertType
         self._isSendingMessage = isSendingMessage
         self.attachmentRestrictions = attachmentRestrictions
+        self.isLiveChat = isLiveChat
         self.queuePosition = queuePosition
         self.onNewMessage = onNewMessage
         self.loadMoreMessages = loadMoreMessages
@@ -104,12 +105,54 @@ struct ChatView: View, Themed {
     var body: some View {
         VStack(spacing: Constants.Spacing.bodyVertical) {
             ScrollViewReader { proxy in
-                contentContainer(proxy: proxy)
-                    .if(hasMoreMessagesToLoad) { view in
-                        view.refreshable {
-                            await loadMoreMessages()
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
+                        Section {
+                            ForEach(messageGroups) { group in
+                                MessageGroupView(
+                                    group: group,
+                                    isLast: messageGroups.last?.id == group.id,
+                                    alertType: $alertType,
+                                    onRichMessageElementSelected: onRichMessageElementSelected
+                                )
+                                .id(group.id)
+                            }
+                        } header: {
+                            if let queuePosition {
+                                LivechatPositionInQueueView(position: queuePosition)
+                                    .padding(.vertical, Constants.Padding.positionInQueueVertical)
+                                    .padding(.horizontal, Constants.Padding.positionInQueueHorizontal)
+                            }
                         }
                     }
+                    .onChange(of: messageGroups) { _ in
+                        // On iOS 16, `.onChange` runs before the appended message has laid
+                        // out, so a synchronous `scrollTo` targets the previous bottom.
+                        // Schedule on a fresh MainActor turn so layout completes first. DE-175228.
+                        Task { @MainActor in
+                            withAnimation {
+                                proxy.scrollTo(Constants.bottomID, anchor: .bottom)
+                            }
+                        }
+                    }
+                    .task { @MainActor in
+                        proxy.scrollTo(messageGroups.last?.id, anchor: .bottom)
+                    }
+
+                    if let typingAgent {
+                        typingIndicator(agent: typingAgent, proxy: proxy)
+                            .padding(.leading, Constants.Padding.typingIndicatorLeading)
+                    }
+                    
+                    Spacer(minLength: Constants.Spacing.messageGroupsMinLength)
+                        .id(Constants.bottomID)
+                }
+                .if(hasMoreMessagesToLoad) { view in
+                    view.refreshable {
+                        await loadMoreMessages()
+                    }
+                }
+                .scrollDismissesKeyboard(.interactively)
             }
 
             if isThreadClosed {
@@ -122,12 +165,22 @@ struct ChatView: View, Themed {
                     isInputEnabled: $isInputEnabled,
                     isSendingMessage: $isSendingMessage,
                     alertType: $alertType,
-                    localization: localization,
                     onSend: onNewMessage
                 )
             }
         }
         .background(colors.background.default)
+        .onChange(of: typingAgent?.id) { newValue in
+            guard newValue != nil else {
+                return
+            }
+
+            if let name = typingAgent?.userName {
+                A11y.announce(A11y.Announcement.Conversation.TypingIndicator.started(name))
+            } else {
+                A11y.announce(A11y.Announcement.Conversation.TypingIndicator.Started.unknown)
+            }
+        }
     }
 }
 
@@ -135,77 +188,22 @@ struct ChatView: View, Themed {
 
 private extension ChatView {
 
-    @ViewBuilder
-    func contentContainer(proxy: ScrollViewProxy) -> some View {
-        if #unavailable(iOS 16) {
-            List {
-                content(proxy: proxy)
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            }
-            .listStyle(.plain)
-        } else {
-            ScrollView(showsIndicators: false) {
-                content(proxy: proxy)
-            }
-        }
-    }
-    
-    @ViewBuilder
-    func content(proxy: ScrollViewProxy) -> some View {
-        LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
-            Section {
-                ForEach(messageGroups) { group in
-                    MessageGroupView(
-                        group: group,
-                        isLast: messageGroups.last?.id == group.id,
-                        alertType: $alertType,
-                        onRichMessageElementSelected: onRichMessageElementSelected
-                    )
-                    .id(group.id)
-                }
-            } header: {
-                if let queuePosition {
-                    LivechatPositionInQueueView(position: queuePosition)
-                        .padding(.vertical, Constants.Padding.positionInQueueVertical)
-                        .padding(.horizontal, Constants.Padding.positionInQueueHorizontal)
-                }
-            }
-        }
-        .onChange(of: messageGroups) { _ in
-            DispatchQueue.main.async {
-                withAnimation {
-                    proxy.scrollTo(Constants.bottomID, anchor: .bottom)
-                }
-            }
-        }
-        .onAppear {
-            DispatchQueue.main.async {
-                proxy.scrollTo(messageGroups.last?.id, anchor: .bottom)
-            }
-        }
-        
-        if let typingAgent {
-            typingIndicator(agent: typingAgent, proxy: proxy)
-        }
-        
-        Spacer(minLength: Constants.Spacing.messageGroupsMinLength)
-            .id(Constants.bottomID)
-    }
-    
     func typingIndicator(agent: ChatUser?, proxy: ScrollViewProxy) -> some View {
         HStack {
             TypingIndicator(agent: agent)
                 .onAppear {
-                    withAnimation {
-                        proxy.scrollTo(Constants.bottomID)
+                    // Same iOS 16 timing quirk as the `.onChange` above: `.onAppear` runs
+                    // before the newly inserted indicator has laid out, so a synchronous
+                    // `scrollTo` targets the previous bottom. DE-175228.
+                    Task { @MainActor in
+                        withAnimation {
+                            proxy.scrollTo(Constants.bottomID)
+                        }
                     }
                 }
 
             Spacer()
         }
-        .padding(.leading, Constants.Padding.typingIndicatorLeading)
     }
     
     var archivedChatMessage: some View {
@@ -217,9 +215,9 @@ private extension ChatView {
                 Asset.Message.archiveFill
                 
                 Text(
-                    CXoneChat.shared.mode == .liveChat
-                        ? localization.chatMessageInputClosed
-                        : localization.chatMessageInputArchived
+                    isLiveChat
+                        ? L10n.Chat.MessageInput.closed
+                        : L10n.Chat.MessageInput.archived
                 )
             }
             .foregroundStyle(colors.content.tertiary)
@@ -238,21 +236,23 @@ private extension ChatView {
     ].groupMessages(interval: MessageGroup.defaultGroupingInterval)
     let alertType: ChatAlertType? = nil
 
-    ChatView(
-        messageGroups: .constant(messageGroups),
-        hasMoreMessagesToLoad: .constant(true),
-        typingAgent: .constant(MockData.agent),
-        isUserTyping: .constant(false),
-        isInputEnabled: .constant(true),
-        isThreadClosed: .constant(false),
-        alertType: .constant(alertType),
-        isSendingMessage: .constant(false),
-        attachmentRestrictions: MockData.attachmentRestrictions,
-        queuePosition: 3,
-        onNewMessage: { _, _ in },
-        loadMoreMessages: { },
-        onRichMessageElementSelected: { _ in }
-    )
-    .environmentObject(ChatLocalization())
+    NavigationStack {
+        ChatView(
+            messageGroups: .constant(messageGroups),
+            hasMoreMessagesToLoad: .constant(true),
+            typingAgent: .constant(MockData.agent),
+            isUserTyping: .constant(false),
+            isInputEnabled: .constant(true),
+            isThreadClosed: .constant(false),
+            isSendingMessage: .constant(false),
+            isLiveChat: false,
+            alertType: .constant(alertType),
+            attachmentRestrictions: MockData.attachmentRestrictions,
+            queuePosition: 3,
+            onNewMessage: { _, _ in },
+            loadMoreMessages: { },
+            onRichMessageElementSelected: { _ in }
+        )
+    }
     .environmentObject(ChatStyle())
 }

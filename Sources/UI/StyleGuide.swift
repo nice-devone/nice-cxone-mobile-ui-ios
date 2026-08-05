@@ -14,31 +14,42 @@
 //
 
 import SwiftUI
+import UIKit
 
 enum StyleGuide {
-    
+
+    /// Provides screen bounds for layout calculations. Override in tests via `MockScreenBoundsProvider`.
+    @MainActor static var screenBoundsProvider: any ScreenBoundsProviding = ScreenBoundsProvider()
+
     static let animationDuration: Double = 0.18
-    
+
     // MARK: - Sizing
-    
+
     enum Sizing {
-        
+
         static let buttonTinyDimension: CGFloat = 20
         static let buttonSmallDimension: CGFloat = 32
         static let buttonRegularDimension: CGFloat = 44
-        
+
         enum Attachment {
-            static let smallDimension: CGFloat = UIScreen.main.bounds.width / 5
-            static let regularDimension: CGFloat = UIScreen.main.bounds.width / 3
-            static let largeHeight: CGFloat = UIScreen.main.bounds.height / 4
-            static let largeWidth: CGFloat = UIScreen.main.bounds.width / 2.5
+            @MainActor
+            static var smallDimension: CGFloat { StyleGuide.screenBoundsProvider.screenBounds.width / 5 }
+            @MainActor
+            static var regularDimension: CGFloat { StyleGuide.screenBoundsProvider.screenBounds.width / 3 }
+            @MainActor
+            static var largeHeight: CGFloat { StyleGuide.screenBoundsProvider.screenBounds.height / 4 }
+            @MainActor
+            static var largeWidth: CGFloat { StyleGuide.screenBoundsProvider.screenBounds.width / 2.5 }
             static let cornerRadius: CGFloat = 10
             static let borderWidth: CGFloat = 1
         }
-        
+
         enum Message {
             static let cornerRadius: CGFloat = 20
-            static let messageCellWidth = (UIScreen.main.bounds.width / 2) * (UIDevice.isLandscape ? 0.4 : 0.9)
+            @MainActor
+            static var messageCellWidth: CGFloat {
+                (StyleGuide.screenBoundsProvider.screenBounds.width / 2) * (UIDevice.isLandscape ? 0.4 : 0.9)
+            }
         }
     }
     

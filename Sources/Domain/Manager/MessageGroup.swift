@@ -22,17 +22,16 @@ struct MessageGroup: Identifiable, Equatable {
 
     static let defaultGroupingInterval: TimeInterval = 120
 
+    let id: String
     let messages: [ChatMessage]
     let shouldShowHeader: Bool
     let shouldShowFooter: Bool
     let status: MessageStatus
-    
+
     // swiftlint:disable force_unwrapping
-    var id: String { messages.map(\.idString).hashValue.description }
     var date: Date { messages.first!.date }
     var sender: ChatUser? { messages.first!.user }
     var shouldShowAvatar: Bool { sender?.isAgent == true }
-    
     // swiftlint:enable force_unwrapping
 
     // MARK: - Initialization
@@ -42,6 +41,7 @@ struct MessageGroup: Identifiable, Equatable {
             return nil
         }
 
+        self.id = messages.lazy.map(\.id).joined(separator: ",")
         self.messages = messages
         self.shouldShowHeader = showHeader
         // swiftlint:disable:next force_unwrapping
@@ -50,12 +50,12 @@ struct MessageGroup: Identifiable, Equatable {
     }
 
     // MARK: - Methods
-    
+
     func position(of message: ChatMessage) -> MessageGroupPosition {
         guard messages.count > 1 else {
             return .single
         }
-        
+
         switch message {
         case messages.first:
             return .first
@@ -63,76 +63,6 @@ struct MessageGroup: Identifiable, Equatable {
             return .last
         default:
             return .inside
-        }
-    }
-}
-
-// MARK: - Array<ChatMessage> extensions
-
-extension Array where Element == ChatMessage {
-
-    // Main grouping function that orchestrates the process
-    func groupMessages(interval: TimeInterval) -> [MessageGroup] {
-        LogManager.time {
-            let groups = createInitialGroups(withInterval: interval)
-            let sortedGroups = sortMessageTypes(in: groups)
-            
-            return createMessageGroups(from: sortedGroups, originalGroups: groups, interval: interval)
-        }
-    }
-    
-    // Function to create initial groups based on message criteria
-    private func createInitialGroups(withInterval interval: TimeInterval) -> [[ChatMessage]] {
-        group { last, current in
-            shouldGroupMessages(last: last, current: current, interval: interval)
-        }
-    }
-    
-    // Determine if messages should be grouped
-    private func shouldGroupMessages(last: ChatMessage, current: ChatMessage, interval: TimeInterval) -> Bool {
-        !current.richContentMessages
-            && !last.richContentMessages
-            && current.user?.id == last.user?.id
-            && abs(last.date.timeIntervalSince(current.date)) <= interval
-    }
-    
-    // Create final MessageGroup objects
-    private func createMessageGroups(
-        from sortedGroups: [[ChatMessage]],
-        originalGroups: [[ChatMessage]],
-        interval: TimeInterval
-    ) -> [MessageGroup] {
-        sortedGroups.enumerated().compactMap { index, messages in
-            let showHeader = shouldShowHeader(for: index, in: originalGroups, interval: interval)
-            
-            return MessageGroup(
-                messages: messages,
-                showHeader: showHeader,
-                showFooter: originalGroups.count == index + 1
-            )
-        }
-    }
-    
-    // Determine if header should be shown
-    private func shouldShowHeader(for index: Int, in groups: [[ChatMessage]], interval: TimeInterval) -> Bool {
-        guard let previousGroupLastMessageDate = groups[safe: index - 1]?.last?.date,
-              let currentGroupFirstMessageDate = groups[safe: index]?.first?.date else {
-            return true
-        }
-        
-        return abs(previousGroupLastMessageDate.timeIntervalSince(currentGroupFirstMessageDate)) > interval
-    }
-    
-    // Sorts message types to ensure attachments appear before non-attachments in each message
-    private func sortMessageTypes(in groups: [[ChatMessage]]) -> [[ChatMessage]] {
-        groups.map { group in
-            group.map { message in
-                var sortedMessage = message
-                sortedMessage.types.sort { type1, type2 in
-                    type1.isAttachment && !type2.isAttachment
-                }
-                return sortedMessage
-            }
         }
     }
 }

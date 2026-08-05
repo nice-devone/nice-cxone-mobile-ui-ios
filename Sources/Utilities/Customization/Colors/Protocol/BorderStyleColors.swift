@@ -18,7 +18,7 @@ import SwiftUI
 /// Protocol defining the required color properties for border styles used in the chat UI.
 ///
 /// Conforming types provide colors for default and subtle border appearances.
-public protocol BorderStyleColors {
+public protocol BorderStyleColors: Sendable {
     /// The default border color.
     var `default`: Color { get }
     /// The subtle border color.
@@ -30,7 +30,7 @@ public protocol BorderStyleColors {
 /// Default implementation of `BorderStyleColors` providing concrete color values.
 ///
 /// Use this struct to specify the main border colors for light and dark themes.
-public struct BorderStyleColorsImpl: BorderStyleColors {
+public struct BorderStyleColorsImpl: BorderStyleColors, Sendable {
     
     // MARK: - Properties
     

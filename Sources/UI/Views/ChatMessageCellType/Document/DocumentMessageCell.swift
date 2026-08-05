@@ -31,7 +31,6 @@ struct DocumentMessageCell: View, Themed {
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
     
     @Environment(\.colorScheme) var scheme
 
@@ -52,15 +51,14 @@ struct DocumentMessageCell: View, Themed {
         message: ChatMessage,
         item: AttachmentItem,
         position: MessageGroupPosition? = nil,
-        alertType: Binding<ChatAlertType?>,
-        localization: ChatLocalization
+        alertType: Binding<ChatAlertType?>
     ) {
         self.messagePosition = position
         self.message = message
         self.item = item
         self._alertType = alertType
 
-        _pdfViewModel = StateObject(wrappedValue: PDFViewModel(attachmentItem: item, alertType: alertType, localization: localization))
+        _pdfViewModel = StateObject(wrappedValue: PDFViewModel(attachmentItem: item, alertType: alertType))
     }
     
     // MARK: - Builder
@@ -141,8 +139,7 @@ private extension DocumentMessageCell {
         DocumentCellDocumentThumbnailView(
             fileExtension: fileExtension,
             url: item.url,
-            alertType: $alertType,
-            localization: localization
+            alertType: $alertType
         )
         .messageChatStyle(message, position: position)
     }
@@ -150,8 +147,7 @@ private extension DocumentMessageCell {
         DocumentCellDocumentThumbnailView(
             fileExtension: fileExtension,
             url: item.url,
-            alertType: $alertType,
-            localization: localization
+            alertType: $alertType
         )
         .overlay {
             RoundedRectangle(cornerRadius: StyleGuide.Sizing.Attachment.cornerRadius)
@@ -164,24 +160,20 @@ private extension DocumentMessageCell {
 // MARK: - Previews
 
 #Preview("Document (single)") {
-    let localization = ChatLocalization()
-
     ScrollView {
         VStack {
             DocumentMessageCell(
                 message: MockData.documentMessage(user: MockData.agent),
                 item: MockData.docPreviewItem,
                 position: .single,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             
             DocumentMessageCell(
                 message: MockData.documentMessage(user: MockData.customer),
                 item: MockData.docPreviewItem,
                 position: .single,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             
             VStack(spacing: 2) {
@@ -189,24 +181,21 @@ private extension DocumentMessageCell {
                     message: MockData.documentMessage(user: MockData.agent),
                     item: MockData.docPreviewItem,
                     position: .first,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 DocumentMessageCell(
                     message: MockData.documentMessage(user: MockData.agent),
                     item: MockData.docPreviewItem,
                     position: .inside,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 DocumentMessageCell(
                     message: MockData.documentMessage(user: MockData.agent),
                     item: MockData.docPreviewItem,
                     position: .last,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
             
@@ -215,31 +204,27 @@ private extension DocumentMessageCell {
                     message: MockData.documentMessage(user: MockData.customer),
                     item: MockData.docPreviewItem,
                     position: .first,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 DocumentMessageCell(
                     message: MockData.documentMessage(user: MockData.customer),
                     item: MockData.docPreviewItem,
                     position: .inside,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 DocumentMessageCell(
                     message: MockData.documentMessage(user: MockData.customer),
                     item: MockData.docPreviewItem,
                     position: .last,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
         }
     }
     .padding(.horizontal, 12)
     .environmentObject(ChatStyle())
-    .environmentObject(localization)
 }
 
 @available(iOS 17.0, *)
@@ -247,22 +232,19 @@ private extension DocumentMessageCell {
     @Previewable @Environment(\.colorScheme) var scheme
     
     let style = ChatStyle()
-    let localization = ChatLocalization()
     
     VStack {
         HStack {
             DocumentMessageCell(
                 message: MockData.documentMessage(user: MockData.agent),
                 item: MockData.docPreviewItem,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             
             DocumentMessageCell(
                 message: MockData.documentMessage(user: MockData.agent),
                 item: MockData.docPreviewItem,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
         }
         .padding(12)
@@ -274,15 +256,13 @@ private extension DocumentMessageCell {
             DocumentMessageCell(
                 message: MockData.documentMessage(user: MockData.customer),
                 item: MockData.docPreviewItem,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             
             DocumentMessageCell(
                 message: MockData.documentMessage(user: MockData.customer),
                 item: MockData.docPreviewItem,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
         }
         .padding(12)
@@ -292,28 +272,23 @@ private extension DocumentMessageCell {
         )
     }
     .environmentObject(style)
-    .environmentObject(localization)
 }
 
 #Preview("PDF (single)") {
-    let localization = ChatLocalization()
-    
     ScrollView {
         VStack {
             DocumentMessageCell(
                 message: MockData.pdfMessage(user: MockData.agent),
                 item: MockData.pdfPreviewItem,
                 position: .single,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             
             DocumentMessageCell(
                 message: MockData.pdfMessage(user: MockData.customer),
                 item: MockData.pdfPreviewItem,
                 position: .single,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             
             VStack(spacing: 2) {
@@ -321,24 +296,21 @@ private extension DocumentMessageCell {
                     message: MockData.pdfMessage(user: MockData.agent),
                     item: MockData.pdfPreviewItem,
                     position: .first,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 DocumentMessageCell(
                     message: MockData.pdfMessage(user: MockData.agent),
                     item: MockData.pdfPreviewItem,
                     position: .inside,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 DocumentMessageCell(
                     message: MockData.pdfMessage(user: MockData.agent),
                     item: MockData.pdfPreviewItem,
                     position: .last,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
             
@@ -347,31 +319,27 @@ private extension DocumentMessageCell {
                     message: MockData.pdfMessage(user: MockData.customer),
                     item: MockData.pdfPreviewItem,
                     position: .first,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 DocumentMessageCell(
                     message: MockData.pdfMessage(user: MockData.customer),
                     item: MockData.pdfPreviewItem,
                     position: .inside,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 DocumentMessageCell(
                     message: MockData.pdfMessage(user: MockData.customer),
                     item: MockData.pdfPreviewItem,
                     position: .last,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
         }
     }
     .padding(.horizontal, 12)
     .environmentObject(ChatStyle())
-    .environmentObject(localization)
 }
 
 @available(iOS 17.0, *)
@@ -379,22 +347,19 @@ private extension DocumentMessageCell {
     @Previewable @Environment(\.colorScheme) var scheme
 
     let style = ChatStyle()
-    let localization = ChatLocalization()
     
     VStack {
         HStack {
             DocumentMessageCell(
                 message: MockData.pdfMessage(user: MockData.agent),
                 item: MockData.pdfPreviewItem,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             
             DocumentMessageCell(
                 message: MockData.pdfMessage(user: MockData.agent),
                 item: MockData.pdfPreviewItem,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
         }
         .padding(12)
@@ -406,15 +371,13 @@ private extension DocumentMessageCell {
             DocumentMessageCell(
                 message: MockData.pdfMessage(user: MockData.customer),
                 item: MockData.pdfPreviewItem,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             
             DocumentMessageCell(
                 message: MockData.pdfMessage(user: MockData.customer),
                 item: MockData.pdfPreviewItem,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
         }
         .padding(12)
@@ -424,5 +387,4 @@ private extension DocumentMessageCell {
         )
     }
     .environmentObject(style)
-    .environmentObject(localization)
 }

@@ -20,36 +20,19 @@ import Foundation
 /// This protocol is designed to standardize the representation of chat users,
 /// allowing you to create user objects with unique identifiers, usernames, profile images,
 /// and a sender flag to distinguish message senders within a chat interface.
-public struct ChatUser: Identifiable, Equatable {
-
-    // MARK: - Properties
+struct ChatUser: Identifiable, Equatable {
     
     /// A unique identifier for the chat user.
-    public let id: String
+    let id: String
     
     /// The display name or username of the chat user.
-    public var userName: String?
+    var userName: String?
 
     /// An optional URL for the user's avatar or profile picture.
-    public var avatarURL: URL?
+    var avatarURL: URL?
     
     /// A constant property indicating that the chat user is or not the chat agent.
-    public let isAgent: Bool
-    
-    // MARK: - Init
-    
-    /// Initialization of the ChatUser
-    ///
-    /// - Parameters:
-    ///   - id: A unique identifier for the chat user.
-    ///   - userName: The display name or username of the chat user.
-    ///   - avatarURL: An optional URL for the user's avatar or profile picture.
-    public init(id: String, userName: String?, avatarURL: URL?, isAgent: Bool) {
-        self.id = id
-        self.userName = userName
-        self.avatarURL = avatarURL
-        self.isAgent = isAgent
-    }
+    let isAgent: Bool
 }
 
 // MARK: - Helpers

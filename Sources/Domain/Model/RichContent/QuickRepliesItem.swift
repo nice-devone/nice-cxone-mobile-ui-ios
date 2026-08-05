@@ -31,30 +31,14 @@ import Foundation
 ///     ]
 /// )
 /// ```
-public struct QuickRepliesItem: Hashable, Equatable {
-    
-    // MARK: - Properties
+struct QuickRepliesItem: Hashable, Equatable {
     
     /// The title or label associated with the quick replies item.
-    public let title: String
+    let title: String
     
     /// An optional message or context providing additional information.
-    public let message: String?
+    let message: String?
     
     /// An array of `RichMessageButton` objects, representing the quick reply options.
-    public let options: [RichMessageButton]
-    
-    // MARK: - Init
-    
-    /// Initialization of the QuickRepliesItem
-    ///
-    /// - Parameters:
-    ///   - title: The title or label associated with the quick replies item.
-    ///   - message: An optional message or context providing additional information.
-    ///   - options: An array of `RichMessageButton` objects, representing the quick reply options.
-    public init(title: String, message: String?, options: [RichMessageButton]) {
-        self.title = title
-        self.message = message
-        self.options = options
-    }
+    let options: [RichMessageButton]
 }

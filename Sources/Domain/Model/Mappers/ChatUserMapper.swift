@@ -25,7 +25,7 @@ enum ChatUserMapper {
         
         return ChatUser(
             id: String(agent.id),
-            userName: agent.fullName,
+            userName: agent.nickname?.nilIfEmpty() ?? agent.fullName,
             avatarURL: agent.nonDefaultAvatarImageUrl,
             isAgent: true
         )
@@ -47,10 +47,14 @@ enum ChatUserMapper {
 
 // MARK: - Helpers
 
-private extension Agent {
-    
+extension Agent {
+
+    /// The agent's profile photo URL, excluding the backend's generic default-avatar placeholder.
+    ///
+    /// Returns `nil` when the image is missing, empty, or the default `/img/user*.png` placeholder,
+    /// so the UI can fall back to initials or the generic agent icon.
     var nonDefaultAvatarImageUrl: URL? {
-        guard imageUrl.range(of: "/img/user.*\\.png", options: .regularExpression) == nil else {
+        guard let imageUrl, imageUrl.range(of: "/img/user.*\\.png", options: .regularExpression) == nil else {
             return nil
         }
         

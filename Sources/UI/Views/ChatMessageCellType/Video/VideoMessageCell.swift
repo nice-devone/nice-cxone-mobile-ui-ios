@@ -33,7 +33,6 @@ struct VideoMessageCell: View, Themed {
     @StateObject private var viewModel: VideoMessageCellViewModel
 
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
 
     @Environment(\.colorScheme) var scheme
 
@@ -49,12 +48,11 @@ struct VideoMessageCell: View, Themed {
         message: ChatMessage,
         item: AttachmentItem,
         position: MessageGroupPosition? = nil,
-        alertType: Binding<ChatAlertType?>,
-        localization: ChatLocalization
+        alertType: Binding<ChatAlertType?>
     ) {
         self.message = message
         self.position = position
-        self._viewModel = StateObject(wrappedValue: VideoMessageCellViewModel(item: item, alertType: alertType, localization: localization))
+        self._viewModel = StateObject(wrappedValue: VideoMessageCellViewModel(item: item, alertType: alertType))
     }
     
     // MARK: - Builder
@@ -71,6 +69,10 @@ struct VideoMessageCell: View, Themed {
                 .sheet(isPresented: $isVideoSheetVisible) {
                     VideoPlayer(player: AVPlayer(url: url))
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityIdentifier(A11y.Conversation.MessageCell.Attachment.identifier(type: "video"))
+                .accessibilityLabel(A11y.Conversation.MessageCell.Attachment.Video.label(viewModel.item.fileName))
+                .accessibilityHint(A11y.Conversation.MessageCell.Attachment.Video.hint)
             case .failed:
                 Button {
                     Task { @MainActor in
@@ -82,11 +84,18 @@ struct VideoMessageCell: View, Themed {
                         height: displayMode.size.height
                     )
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityIdentifier(A11y.Conversation.MessageCell.Attachment.Video.Failed.identifier)
+                .accessibilityLabel(A11y.Conversation.MessageCell.Attachment.Video.Failed.label)
+                .accessibilityHint(A11y.Conversation.MessageCell.Attachment.Video.Failed.hint)
             default:
                 AttachmentLoadingView(
                     width: displayMode.size.width,
                     height: displayMode.size.height
                 )
+                .accessibilityElement(children: .ignore)
+                .accessibilityIdentifier(A11y.Conversation.MessageCell.Attachment.Video.Loading.identifier)
+                .accessibilityLabel(A11y.Conversation.MessageCell.Attachment.Video.Loading.label)
             }
         }
         .ifNotNil(position) { view, position in
@@ -100,24 +109,20 @@ struct VideoMessageCell: View, Themed {
 // MARK: - Preview
 
 #Preview("Single") {
-    let localization = ChatLocalization()
-    
     ScrollView {
         VStack(spacing: 4) {
             VideoMessageCell(
                 message: MockData.videoMessage(user: MockData.agent),
                 item: MockData.videoItem,
                 position: .single,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
 
             VideoMessageCell(
                 message: MockData.videoMessage(user: MockData.customer),
                 item: MockData.videoItem,
                 position: .single,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             
             VStack(spacing: 4) {
@@ -125,24 +130,21 @@ struct VideoMessageCell: View, Themed {
                     message: MockData.videoMessage(user: MockData.agent),
                     item: MockData.videoItem,
                     position: .first,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 VideoMessageCell(
                     message: MockData.videoMessage(user: MockData.agent),
                     item: MockData.videoItem,
                     position: .inside,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 VideoMessageCell(
                     message: MockData.videoMessage(user: MockData.agent),
                     item: MockData.videoItem,
                     position: .last,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
             
@@ -151,54 +153,48 @@ struct VideoMessageCell: View, Themed {
                     message: MockData.videoMessage(user: MockData.customer),
                     item: MockData.videoItem,
                     position: .first,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 VideoMessageCell(
                     message: MockData.videoMessage(user: MockData.customer),
                     item: MockData.videoItem,
                     position: .inside,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 VideoMessageCell(
                     message: MockData.videoMessage(user: MockData.customer),
                     item: MockData.videoItem,
                     position: .last,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
         }
         .padding(.horizontal, 16)
     }
     .environmentObject(ChatStyle())
-    .environmentObject(localization)
 }
 
 @available(iOS 17, *)
 #Preview("Multiple") {
     @Previewable @Environment(\.colorScheme) var scheme
-    
+
     let style = ChatStyle()
-    let localization = ChatLocalization()
+
     VStack {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
                 VideoMessageCell(
                     message: MockData.videoMessage(user: MockData.agent),
                     item: MockData.videoItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 VideoMessageCell(
                     message: MockData.videoMessage(user: MockData.agent),
                     item: MockData.videoItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
             
@@ -206,15 +202,13 @@ struct VideoMessageCell: View, Themed {
                 VideoMessageCell(
                     message: MockData.videoMessage(user: MockData.agent),
                     item: MockData.videoItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 VideoMessageCell(
                     message: MockData.videoMessage(user: MockData.agent),
                     item: MockData.videoItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
         }
@@ -229,15 +223,13 @@ struct VideoMessageCell: View, Themed {
                 VideoMessageCell(
                     message: MockData.videoMessage(user: MockData.customer),
                     item: MockData.videoItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 VideoMessageCell(
                     message: MockData.videoMessage(user: MockData.customer),
                     item: MockData.videoItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
             
@@ -245,15 +237,13 @@ struct VideoMessageCell: View, Themed {
                 VideoMessageCell(
                     message: MockData.videoMessage(user: MockData.customer),
                     item: MockData.videoItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
                 
                 VideoMessageCell(
                     message: MockData.videoMessage(user: MockData.customer),
                     item: MockData.videoItem,
-                    alertType: .constant(nil),
-                    localization: localization
+                    alertType: .constant(nil)
                 )
             }
         }
@@ -264,5 +254,4 @@ struct VideoMessageCell: View, Themed {
         )
     }
     .environmentObject(style)
-    .environmentObject(localization)
 }

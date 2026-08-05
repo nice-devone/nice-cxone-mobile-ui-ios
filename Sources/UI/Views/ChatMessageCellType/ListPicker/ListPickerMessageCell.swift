@@ -21,10 +21,11 @@ struct ListPickerMessageCell: View, Themed {
     
     private enum Constants {
         
+        @MainActor
         enum Spacing {
             static let elementsHorizontal: CGFloat = 0
             static let cellContent: CGFloat = 8
-            static let gapMinLength: CGFloat = UIScreen.main.bounds.size.width / 10
+            static let gapMinLength: CGFloat = UIScreen.currentBounds.width / 10
             static let cellContentTitleAndMessage: CGFloat = 2
             static let sfSymbolToText: CGFloat = 4
         }
@@ -40,19 +41,20 @@ struct ListPickerMessageCell: View, Themed {
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
     
     @Environment(\.colorScheme) var scheme
     
     @State private var isSheetVisible = false
     @State private var isOptionSelectedVisible = false
     
-    let item: ListPickerItem
-    let elementSelected: (RichMessageButton) -> Void
+    private let message: ChatMessage
+    private let item: ListPickerItem
+    private let elementSelected: (RichMessageButton) -> Void
     
     // MARK: - Init
     
-    init(item: ListPickerItem, elementSelected: @escaping (RichMessageButton) -> Void) {
+    init(message: ChatMessage, item: ListPickerItem, elementSelected: @escaping (RichMessageButton) -> Void) {
+        self.message = message
         self.item = item
         self.elementSelected = elementSelected
     }
@@ -61,9 +63,7 @@ struct ListPickerMessageCell: View, Themed {
     
     var body: some View {
         HStack(spacing: Constants.Spacing.elementsHorizontal) {
-            VStack(alignment: .leading, spacing: Constants.Spacing.cellContent) {
-                cellContent
-            }
+            cellContent
             
             Spacer(minLength: Constants.Spacing.gapMinLength)
         }
@@ -83,7 +83,6 @@ struct ListPickerMessageCell: View, Themed {
 
 private extension ListPickerMessageCell {
     
-    @ViewBuilder
     var cellContent: some View {
         Button {
             isSheetVisible = true
@@ -92,31 +91,28 @@ private extension ListPickerMessageCell {
                 Text(item.title)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(colors.content.primary)
-                
+                    .accessibilityIdentifier(A11y.Conversation.MessageCell.ListPicker.Title.identifier)
+
                 if let message = item.message {
                     Text(message)
                         .font(.footnote)
                         .foregroundStyle(colors.content.secondary)
+                        .accessibilityIdentifier(A11y.Conversation.MessageCell.ListPicker.Message.identifier)
                 }
-                
+
                 if isOptionSelectedVisible {
-                    HStack(spacing: Constants.Spacing.sfSymbolToText) {
-                        Asset.Message.RichContent.optionSelected
-                            .foregroundStyle(colors.brand.primary)
-                        
-                        Text(localization.chatMessageRichContentOptionSelected)
-                            .font(.caption)
-                            .foregroundStyle(colors.brand.primary)
-                    }
-                    .padding(.top, Constants.Padding.cellContentActionPromptTop)
+                    RichContentOptionSelected()
+                        .padding(.top, Constants.Padding.cellContentActionPromptTop)
                 } else {
                     HStack(spacing: Constants.Spacing.sfSymbolToText) {
                         Asset.handTap
                             .foregroundStyle(colors.brand.primary)
-                        
-                        Text(localization.chatMessageRichContentPressToOpen)
+                            .accessibilityHidden(true)
+
+                        Text(L10n.Chat.Message.RichContent.pressToOpen)
                             .font(.caption)
                             .foregroundStyle(colors.brand.primary)
+                            .accessibilityIdentifier(A11y.Conversation.MessageCell.PressToOpen.identifier)
                     }
                     .padding(.top, Constants.Padding.cellContentActionPromptTop)
                 }
@@ -125,8 +121,9 @@ private extension ListPickerMessageCell {
         }
         .padding(.vertical, Constants.Padding.cellContentVertical)
         .padding(.horizontal, Constants.Padding.cellContentHorizontal)
-        .background(colors.background.surface.default)
-        .cornerRadius(StyleGuide.Sizing.Message.cornerRadius, corners: .allCorners)
+        .messageChatStyle(message, position: .single)
+        .accessibilityIdentifier(A11y.Conversation.MessageCell.ListPicker.identifier)
+        .accessibilityHint(A11y.Conversation.MessageCell.ListPicker.hint)
     }
 }
 
@@ -141,7 +138,7 @@ private extension ListPickerMessageCell {
     
     VStack {
         ZStack(alignment: .bottomLeading) {
-            ListPickerMessageCell(item: MockData.listPickerItem) { option in
+            ListPickerMessageCell(message: MockData.listPickerMessage(), item: MockData.listPickerItem()) { option in
                 selectedOption = option
             }
             
@@ -152,7 +149,7 @@ private extension ListPickerMessageCell {
         
         if let selectedOption {
             HStack {
-                Spacer(minLength: UIScreen.main.bounds.size.width / 10)
+                Spacer(minLength: UIScreen.currentBounds.width / 10)
                 
                 Text(selectedOption.title)
                     .foregroundStyle(style.colors(for: scheme).brand
@@ -172,5 +169,4 @@ private extension ListPickerMessageCell {
     .padding(.leading, 16)
     .padding(.trailing, 4)
     .environmentObject(style)
-    .environmentObject(ChatLocalization())
 }

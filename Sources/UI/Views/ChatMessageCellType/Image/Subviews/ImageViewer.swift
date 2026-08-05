@@ -31,7 +31,7 @@ struct ImageViewer: View, Themed {
     // MARK: - Init
 
     init(image: UIImage, viewerShown: Binding<Bool>) {
-        self.image = Image(uiImage: image)
+        self.image = Image(uiImage: image) // swiftlint:disable:this accessibility_label_for_image
         self._viewerShown = viewerShown
     }
     
@@ -64,28 +64,36 @@ private extension ImageViewer {
     var closeButton: some View {
         HStack {
             Spacer()
-            
+
             Button {
                 viewerShown = false
             } label: {
                 Asset.close
+                    .accessibilityHidden(true)
             }
             .foregroundStyle(colors.brand.primary)
+            .accessibilityIdentifier(A11y.ImageViewer.ButtonClose.identifier)
+            .accessibilityLabel(A11y.ImageViewer.ButtonClose.label)
+            .accessibilityHint(A11y.ImageViewer.ButtonClose.hint)
         }
     }
-    
+
     var content: some View {
         image
             .resizable()
             .aspectRatio(contentMode: .fit)
             .pinchToZoom()
+            .accessibilityIdentifier(A11y.ImageViewer.Content.identifier)
+            .accessibilityLabel(A11y.ImageViewer.Content.label)
+            .accessibilityHint(A11y.ImageViewer.Content.hint)
     }
 }
 
 // MARK: - PinchZoomViewDelgate
 
+@MainActor
 private protocol PinchZoomViewDelgate: AnyObject {
-    
+
     func pinchZoomView(_ pinchZoomView: PinchZoomView, didChangePinching isPinching: Bool)
     func pinchZoomView(_ pinchZoomView: PinchZoomView, didChangeScale scale: CGFloat)
     func pinchZoomView(_ pinchZoomView: PinchZoomView, didChangeAnchor anchor: UnitPoint)
@@ -136,7 +144,7 @@ private class PinchZoomView: UIView {
     
     // MARK: - Methods
     
-    @objc private func pinch(gesture: UIPinchGestureRecognizer) {
+    @objc func pinch(gesture: UIPinchGestureRecognizer) {
         switch gesture.state {
         case .began:
             isPinching = true
@@ -242,15 +250,15 @@ private struct PinchZoom: UIViewRepresentable {
         func pinchZoomView(_ pinchZoomView: PinchZoomView, didChangePinching isPinching: Bool) {
             pinchZoom.isPinching = isPinching
         }
-        
+
         func pinchZoomView(_ pinchZoomView: PinchZoomView, didChangeScale scale: CGFloat) {
             pinchZoom.scale = scale
         }
-        
+
         func pinchZoomView(_ pinchZoomView: PinchZoomView, didChangeAnchor anchor: UnitPoint) {
             pinchZoom.anchor = anchor
         }
-        
+
         func pinchZoomView(_ pinchZoomView: PinchZoomView, didChangeOffset offset: CGSize) {
             pinchZoom.offset = offset
         }
@@ -259,12 +267,12 @@ private struct PinchZoom: UIViewRepresentable {
 
 // MARK: - Previews
 
+// swiftlint:disable hardcoded_strings
 @available(iOS 17.0, *)
 #Preview {
     @Previewable @StateObject var viewModel = ImageMessageCellViewModel(
         item: MockData.imageItem,
-        alertType: .constant(nil),
-        localization: ChatLocalization()
+        alertType: .constant(nil)
     )
     @Previewable @State var isVisible = true
     
@@ -278,3 +286,4 @@ private struct PinchZoom: UIViewRepresentable {
     }
     .environmentObject(ChatStyle())
 }
+// swiftlint:enable hardcoded_strings

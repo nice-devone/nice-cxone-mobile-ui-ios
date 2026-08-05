@@ -15,7 +15,8 @@
 
 import SwiftUI
 
-class VideoMessageCellViewModel: ObservableObject {
+@MainActor
+final class VideoMessageCellViewModel: ObservableObject {
     
     // MARK: - Properties
     
@@ -24,14 +25,12 @@ class VideoMessageCellViewModel: ObservableObject {
     @Published var loadingState: AttachmentLoadingState<URL> = .initial
     
     let item: AttachmentItem
-    let localization: ChatLocalization
     
     // MARK: - Init
     
-    init(item: AttachmentItem, alertType: Binding<ChatAlertType?>, localization: ChatLocalization) {
+    init(item: AttachmentItem, alertType: Binding<ChatAlertType?>) {
         self.item = item
         self._alertType = alertType
-        self.localization = localization
         
         Task { @MainActor [weak self] in
             await self?.cacheVideoFromURL()
@@ -51,20 +50,18 @@ class VideoMessageCellViewModel: ObservableObject {
         
         do {
             if !FileManager.default.fileExists(atPath: fileURL.path) {
-                await MainActor.run { loadingState = .loading }
-                
+                loadingState = .loading
+
                 let url = try await downloadVideo(url: item.url, fileURL: fileURL)
-                
-                await MainActor.run { loadingState = .loaded(url) }
+
+                loadingState = .loaded(url)
             } else {
-                await MainActor.run { loadingState = .loaded(fileURL) }
+                loadingState = .loaded(fileURL)
             }
         } catch {
             error.logError()
-            await MainActor.run {
-                alertType = .genericError(localization: localization)
-                loadingState = .failed
-            }
+            alertType = .genericError
+            loadingState = .failed
         }
     }
 }

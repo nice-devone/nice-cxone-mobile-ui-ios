@@ -51,7 +51,6 @@ struct ListPickerSheetView: View, Themed {
     
     // MARK: - Properties
     
-    @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     @Environment(\.dismiss) var dismiss
@@ -74,14 +73,16 @@ struct ListPickerSheetView: View, Themed {
     var body: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.elementsSpacing) {
             content
-            
+
             Spacer()
-            
+
             ColoredDivider(colors.border.default)
-            
+                .accessibilityHidden(true)
+
             controlButtons
         }
         .background(colors.background.default)
+        .accessibilityAddTraits(.isModal)
     }
 }
 
@@ -91,22 +92,33 @@ private extension ListPickerSheetView {
     
     var content: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.elementsSpacing) {
+            header
+
+            listOptions
+                .padding(.top, Constants.Padding.listOptionsTop)
+        }
+        .padding(.top, Constants.Padding.contentTop)
+    }
+
+    var header: some View {
+        VStack(alignment: .leading, spacing: Constants.Spacing.elementsSpacing) {
             Text(item.title)
                 .font(.title3.weight(.bold))
                 .foregroundStyle(colors.content.primary)
                 .padding(.horizontal, Constants.Padding.contentHorizontal)
-            
+                .accessibilityIdentifier(A11y.Conversation.MessageCell.ListPicker.Sheet.Title.identifier)
+                .accessibilityAddTraits(.isStaticText)
+
             if let message = item.message {
                 Text(message)
                     .font(.footnote)
                     .foregroundStyle(colors.content.secondary)
                     .padding(.horizontal, Constants.Padding.contentHorizontal)
+                    .accessibilityIdentifier(A11y.Conversation.MessageCell.ListPicker.Sheet.Message.identifier)
+                    .accessibilityAddTraits(.isStaticText)
             }
-            
-            listOptions
-                .padding(.top, Constants.Padding.listOptionsTop)
         }
-        .padding(.top, Constants.Padding.contentTop)
+        .accessibilityAddTraits(.isHeader)
     }
     
     var listOptions: some View {
@@ -119,9 +131,7 @@ private extension ListPickerSheetView {
                         Button {
                             withAnimation { selectedOption = isSelected ? nil : element }
                         } label: {
-                            labelForItemOption(element)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .contentShape(Rectangle())
+                            ListPickerSheetCell(element: element, selectedOption: $selectedOption)
                         }
                         .background(
                             isSelected
@@ -129,76 +139,39 @@ private extension ListPickerSheetView {
                                 : colors.background.default)
 
                         ColoredDivider(colors.border.default)
+                            .accessibilityHidden(true)
                     }
                 }
             }
-        }
-    }
-    
-    func labelForItemOption(_ element: RichMessageButton) -> some View {
-        VStack(alignment: .leading, spacing: Constants.Spacing.elementsSpacing) {
-            HStack(spacing: Constants.Spacing.elementsSpacing) {
-                if let url = element.iconUrl {
-                    KFImage(url)
-                        .placeholder {
-                            ProgressView()
-                        }
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: StyleGuide.Sizing.Attachment.smallDimension, height: StyleGuide.Sizing.Attachment.smallDimension)
-                        .clipShape(RoundedRectangle(cornerRadius: Constants.Sizing.optionImageCornerRadius))
-                        .padding(.trailing, Constants.Padding.optionImageTrailing)
-                }
-                
-                VStack(alignment: .leading, spacing: Constants.Spacing.elementsSpacing) {
-                    Text(element.title)
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(colors.content.primary)
-                        .lineLimit(Constants.LineLimit.optionTitle)
-                    
-                    if let description = element.description {
-                        Text(description)
-                            .font(.footnote)
-                            .foregroundStyle(colors.content.secondary)
-                            .lineLimit(Constants.LineLimit.optionDescription)
-                    }
-                }
-                .frame(minHeight: StyleGuide.Sizing.Attachment.smallDimension)
-                .multilineTextAlignment(.leading)
-                
-                Spacer()
-                
-                Asset.check
-                    .foregroundStyle(colors.brand.primary)
-                    .font(.title2)
-                    .if(selectedOption != element) { view in
-                        view.hidden()
-                    }
-            }
-            .padding(.vertical, Constants.Padding.optionTop)
-            .padding(.horizontal, Constants.Padding.contentHorizontal)
         }
     }
     
     var controlButtons: some View {
         HStack(spacing: Constants.Spacing.elementsSpacing) {
-            Button(localization.commonCancel, action: dismiss.callAsFunction)
+            Button(L10n.Common.cancel, action: dismiss.callAsFunction)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(colors.brand.primary)
-            
+                .accessibilityIdentifier(A11y.Form.ButtonCancel.identifier)
+                .accessibilityHint(A11y.Form.ButtonCancel.hint)
+
             Spacer()
-            
-            Button(localization.commonConfirm) {
+
+            Button(L10n.Common.confirm) {
                 guard let selectedOption else {
                     LogManager.error(.failed("Unable to get selected option"))
                     return
                 }
-                
+
                 onFinished(selectedOption)
             }
             .disabled(selectedOption == nil)
             .font(.subheadline.weight(.medium))
             .foregroundStyle(selectedOption == nil ? colors.content.tertiary : colors.brand.primary)
+            .accessibilityIdentifier(A11y.Form.ButtonConfirm.identifier)
+            .ifLet(selectedOption?.title) { view, title in
+                view.accessibilityValue(title)
+            }
+            .accessibilityHint(selectedOption == nil ? A11y.Form.ButtonConfirm.Invalid.hint : A11y.Form.ButtonConfirm.Valid.hint)
         }
         .padding(.top, Constants.Padding.controlButtonsTop)
         .padding(.bottom, Constants.Padding.controlButtonsBottom)
@@ -209,6 +182,7 @@ private extension ListPickerSheetView {
 
 // MARK: - Previews
 
+// swiftlint:disable hardcoded_strings
 @available(iOS 17.0, *)
 #Preview {
     @Previewable @State var selectedOption: RichMessageButton?
@@ -228,7 +202,7 @@ private extension ListPickerSheetView {
                     }
                     .resizable()
                     .scaledToFill()
-                    .frame(width: UIScreen.main.bounds.size.width / 1.5, height: UIScreen.main.bounds.size.width / 2)
+                    .frame(width: UIScreen.currentBounds.width / 1.5, height: UIScreen.currentBounds.width / 2)
                     .cornerRadius(20, corners: .allCorners)
             } else {
                 Text("No option selected")
@@ -236,11 +210,11 @@ private extension ListPickerSheetView {
         }
     }
     .sheet(isPresented: $isSheetVisible) {
-        ListPickerSheetView(item: MockData.listPickerItem) { option in
+        ListPickerSheetView(item: MockData.listPickerItem()) { option in
             selectedOption = option
             isSheetVisible = false
         }
     }
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }
+// swiftlint:enable hardcoded_strings

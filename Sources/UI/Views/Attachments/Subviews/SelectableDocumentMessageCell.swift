@@ -68,14 +68,13 @@ struct SelectableDocumentMessageCell: View, Themed {
         item: AttachmentItem,
         attachmentsViewModel: AttachmentsViewModel,
         inSelectionMode: Binding<Bool>,
-        alertType: Binding<ChatAlertType?>,
-        localization: ChatLocalization
+        alertType: Binding<ChatAlertType?>
     ) {
         self.attachment = attachment
         self.attachmentItem = item
-        self.pdfViewModel = PDFViewModel(attachmentItem: item, alertType: alertType, localization: localization)
+        self.pdfViewModel = PDFViewModel(attachmentItem: item, alertType: alertType)
         self.attachmentsViewModel = attachmentsViewModel
-        self.documentStateViewModel = DocumentStateViewModel(alertType: alertType, localization: localization)
+        self.documentStateViewModel = DocumentStateViewModel(alertType: alertType)
         self._inSelectionMode = inSelectionMode
     }
     
@@ -85,7 +84,14 @@ struct SelectableDocumentMessageCell: View, Themed {
         ZStack(alignment: .topTrailing) {
             Button {
                 if inSelectionMode {
+                    let willBeSelected = !attachment.isSelected
                     attachmentsViewModel.selectAttachment(with: attachment.id)
+
+                    A11y.announce(
+                        willBeSelected
+                            ? A11y.Announcement.AttachmentsView.selected(attachmentItem.fileName)
+                            : A11y.Announcement.AttachmentsView.deselected(attachmentItem.fileName)
+                    )
                 } else {
                     if case .loaded = documentStateViewModel.loadingState {
                         documentStateViewModel.isReadyToPresent = true
@@ -121,11 +127,41 @@ struct SelectableDocumentMessageCell: View, Themed {
                 }
             }
             .disabled(inSelectionMode)
-            
+
             if inSelectionMode {
                 SelectableCircle(isSelected: attachment.isSelected)
                     .padding([.top, .trailing], Constants.Padding.selectableCircleTopTrailing)
+                    .accessibilityHidden(true)
             }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(A11y.AttachmentsView.Item.Document.identifier)
+        .accessibilityLabel(A11y.AttachmentsView.Item.Document.label(attachmentItem.fileName))
+        .accessibilityHint(
+            inSelectionMode
+                ? A11y.AttachmentsView.Item.Document.Hint.select
+                : A11y.AttachmentsView.Item.Document.Hint.browse
+        )
+        .ifNotNil(cellAccessibilityValue) { view, value in
+            view.accessibilityValue(value)
+        }
+    }
+
+    // MARK: - Private Methods
+
+    private var cellAccessibilityValue: String? {
+        if inSelectionMode {
+            return attachment.isSelected
+                ? A11y.AttachmentsView.Item.Document.Value.selected
+                : A11y.AttachmentsView.Item.Document.Value.notSelected
+        }
+        switch documentStateViewModel.loadingState {
+        case .initial, .loading:
+            return A11y.AttachmentsView.Item.Value.loading
+        case .failed:
+            return A11y.AttachmentsView.Item.Value.failed
+        case .loaded:
+            return nil
         }
     }
 }
@@ -205,7 +241,6 @@ private extension String {
 #Preview("Document") {
     let item: AttachmentItem = MockData.docPreviewItem
     let viewModel = AttachmentsViewModel(messageTypes: [.documentPreview(item)])
-    let localization = ChatLocalization()
     
     HStack(spacing: 12) {
         SelectableDocumentMessageCell(
@@ -214,7 +249,6 @@ private extension String {
             attachmentsViewModel: viewModel,
             inSelectionMode: .constant(true),
             alertType: .constant(nil),
-            localization: localization
         )
         
         SelectableDocumentMessageCell(
@@ -223,17 +257,14 @@ private extension String {
             attachmentsViewModel: viewModel,
             inSelectionMode: .constant(false),
             alertType: .constant(nil),
-            localization: localization
         )
     }
     .environmentObject(ChatStyle())
-    .environmentObject(localization)
 }
 
 #Preview("PDF") {
     let item: AttachmentItem = MockData.pdfPreviewItem
     let viewModel = AttachmentsViewModel(messageTypes: [.documentPreview(item)])
-    let localization = ChatLocalization()
     
     HStack(spacing: 12) {
         SelectableDocumentMessageCell(
@@ -242,7 +273,6 @@ private extension String {
             attachmentsViewModel: viewModel,
             inSelectionMode: .constant(true),
             alertType: .constant(nil),
-            localization: localization
         )
         
         SelectableDocumentMessageCell(
@@ -251,9 +281,7 @@ private extension String {
             attachmentsViewModel: viewModel,
             inSelectionMode: .constant(false),
             alertType: .constant(nil),
-            localization: localization
         )
     }
     .environmentObject(ChatStyle())
-    .environmentObject(localization)
 }

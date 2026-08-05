@@ -1,0 +1,109 @@
+// swiftlint:disable all
+// Generated using SwiftGen — https://github.com/SwiftGen/SwiftGen
+
+{% if tables.count > 0 %}
+{% set accessModifier %}{% if param.publicAccess %}public{% else %}internal{% endif %}{% endset %}
+import Foundation
+
+// swiftlint:disable superfluous_disable_command file_length implicit_return prefer_self_in_static_references
+
+// MARK: - Strings
+
+{% macro parametersBlock types %}
+  {%- for type in types -%}
+    {%- if type == "String" -%}
+    _ p{{forloop.counter}}: Any
+    {%- else -%}
+    _ p{{forloop.counter}}: {{type}}
+    {%- endif -%}
+    {{ ", " if not forloop.last }}
+  {%- endfor -%}
+{% endmacro %}
+{% macro argumentsBlock types %}
+  {%- for type in types -%}
+    {%- if type == "String" -%}
+    String(describing: p{{forloop.counter}})
+    {%- elif type == "UnsafeRawPointer" -%}
+    Int(bitPattern: p{{forloop.counter}})
+    {%- else -%}
+    p{{forloop.counter}}
+    {%- endif -%}
+    {{ ", " if not forloop.last }}
+  {%- endfor -%}
+{% endmacro %}
+{% macro recursiveBlock table item %}
+  {% for string in item.strings %}
+  {% if not param.noComments %}
+  {% for line in string.comment|default:string.translation|split:"\n" %}
+  /// {{line}}
+  {% endfor %}
+  {% endif %}
+  {% set translation string.translation|replace:'"','\"'|replace:'	','\t' %}
+  {% if string.types %}
+  {{accessModifier}} static func {{string.name|swiftIdentifier:"pretty"|lowerFirstWord|escapeReservedKeywords}}({% call parametersBlock string.types %}) -> String {
+    return {{enumName}}.tr("{{table}}", "{{string.key}}", {%+ call argumentsBlock string.types %}, fallback: "{{translation}}")
+  }
+  {% elif param.lookupFunction %}
+  {{accessModifier}} static var {{string.name|swiftIdentifier:"pretty"|lowerFirstWord|escapeReservedKeywords}}: String { return {{enumName}}.tr("{{table}}", "{{string.key}}", fallback: "{{translation}}") }
+  {% else %}
+  {{accessModifier}} static let {{string.name|swiftIdentifier:"pretty"|lowerFirstWord|escapeReservedKeywords}} = {{enumName}}.tr("{{table}}", "{{string.key}}", fallback: "{{translation}}")
+  {% endif %}
+  {% endfor %}
+  {% for child in item.children %}
+  {{accessModifier}} enum {{child.name|swiftIdentifier:"pretty"|escapeReservedKeywords}} {
+    {% filter indent:2," ",true %}{% call recursiveBlock table child %}{% endfilter %}
+  }
+  {% endfor %}
+{% endmacro %}
+// swiftlint:disable explicit_type_interface function_parameter_count identifier_name line_length
+// swiftlint:disable nesting type_body_length type_name vertical_whitespace_opening_braces
+{% set enumName %}{{param.enumName|default:"L10n"}}{% endset %}
+{{accessModifier}} enum {{enumName}} {
+  {% if tables.count > 1 or param.forceFileNameEnum %}
+  {% for table in tables %}
+  {{accessModifier}} enum {{table.name|swiftIdentifier:"pretty"|escapeReservedKeywords}} {
+    {% filter indent:2," ",true %}{% call recursiveBlock table.name table.levels %}{% endfilter %}
+  }
+  {% endfor %}
+  {% else %}
+  {% call recursiveBlock tables.first.name tables.first.levels %}
+  {% endif %}
+}
+// swiftlint:enable explicit_type_interface function_parameter_count identifier_name line_length
+// swiftlint:enable nesting type_body_length type_name vertical_whitespace_opening_braces
+
+// MARK: - Implementation Details
+
+extension {{enumName}} {
+  internal static func tr(_ table: String, _ key: String, _ args: CVarArg..., fallback value: String) -> String {
+    // 1. Programmatic provider (highest priority)
+    if let override = {{enumName}}.overrideProvider?.localizationString(forKey: key) {
+      return String(format: override, locale: Locale.current, arguments: args)
+    }
+    // 2. Integrator's bundle (supports .lproj localization)
+    if let bundle = {{enumName}}.overrideBundle {
+      let fromBundle = bundle.localizedString(forKey: key, value: nil, table: table)
+      if fromBundle != key {
+        return String(format: fromBundle, locale: Locale.current, arguments: args)
+      }
+    }
+    // 3. SDK's own bundle (default behavior)
+    let format = BundleToken.bundle.localizedString(forKey: key, value: value, table: table)
+    return String(format: format, locale: Locale.current, arguments: args)
+  }
+}
+
+// swiftlint:disable convenience_type
+private final class BundleToken {
+  static let bundle: Bundle = {
+    #if SWIFT_PACKAGE
+    return Bundle.module
+    #else
+    return Bundle(for: BundleToken.self)
+    #endif
+  }()
+}
+// swiftlint:enable convenience_type
+{% else %}
+// No string found
+{% endif %}

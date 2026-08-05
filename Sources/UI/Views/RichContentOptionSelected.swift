@@ -28,7 +28,6 @@ struct RichContentOptionSelected: View, Themed {
     
     // MARK: - Properties
     
-    @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     @Environment(\.colorScheme) var scheme
@@ -38,12 +37,17 @@ struct RichContentOptionSelected: View, Themed {
     var body: some View {
         HStack(spacing: Constants.Spacing.iconToTextHorizontal) {
             Asset.check
-                .foregroundColor(colors.brand.primary)
-            
-            Text(localization.chatMessageRichContentOptionSelected)
+                .foregroundStyle(colors.brand.primary)
+                .accessibilityHidden(true)
+
+            Text(L10n.Chat.Message.RichContent.optionSelected)
                 .font(.caption)
-                .foregroundColor(colors.brand.primary)
+                .foregroundStyle(colors.brand.primary)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(A11y.Conversation.MessageCell.OptionSelected.identifier)
+        .accessibilityLabel(L10n.Chat.Message.RichContent.optionSelected)
+        .accessibilityHint(A11y.Conversation.MessageCell.OptionSelected.hint)
     }
 }
 
@@ -51,6 +55,5 @@ struct RichContentOptionSelected: View, Themed {
 
 #Preview {
     RichContentOptionSelected()
-        .environmentObject(ChatLocalization())
         .environmentObject(ChatStyle())
 }

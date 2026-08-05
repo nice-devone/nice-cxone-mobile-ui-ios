@@ -42,7 +42,6 @@ struct FormView<Content: View, FormType: Any>: View, Themed {
 
     // MARK: - Properties
 
-    @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     @SwiftUI.Environment(\.colorScheme) var scheme
@@ -56,16 +55,18 @@ struct FormView<Content: View, FormType: Any>: View, Themed {
     // MARK: - Content
 
     var body: some View {
+        // swiftlint:disable:next accessibility_trait_for_button
         VStack(alignment: .leading, spacing: Constants.Spacing.bodyVertical) {
             header
                 .padding(.horizontal, Constants.Padding.contentHorizontal)
-            
+
             ColoredDivider(colors.border.default)
-            
+                .accessibilityHidden(true)
+
             content()
                 .padding(.top, Constants.Padding.contentTop)
                 .padding(.horizontal, Constants.Padding.contentHorizontal)
-            
+
             controlButtons
         }
         .interactiveDismissDisabled()
@@ -73,7 +74,7 @@ struct FormView<Content: View, FormType: Any>: View, Themed {
         .padding(.top, Constants.Padding.bodyTop)
         .background(colors.background.default)
     }
-    
+
     @ViewBuilder
     private var header: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.headerVertical) {
@@ -81,25 +82,39 @@ struct FormView<Content: View, FormType: Any>: View, Themed {
                 .font(.title3)
                 .fontWeight(.bold)
                 .foregroundStyle(colors.content.primary)
-            
+                .accessibilityIdentifier(A11y.Form.Header.titleIdentifier)
+                .accessibilityAddTraits(.isStaticText)
+
             Text(subtitle)
                 .font(.subheadline)
                 .foregroundStyle(colors.content.secondary)
                 .padding(.bottom, Constants.Padding.headerBottom)
+                .accessibilityIdentifier(A11y.Form.Header.subtitleIdentifier)
+                .accessibilityAddTraits(.isStaticText)
         }
+        .accessibilityAddTraits(.isHeader)
     }
-    
+
     private var controlButtons: some View {
         VStack(spacing: Constants.Spacing.controlButtonsVertical) {
             ColoredDivider(colors.border.default)
-            
+                .accessibilityHidden(true)
+
             HStack {
-                Button(localization.commonCancel, action: viewModel.onCancel)
+                Button(L10n.Common.cancel, action: viewModel.onCancel)
+                    .accessibilityIdentifier(A11y.Form.ButtonCancel.identifier)
+                    .accessibilityHint(A11y.Form.ButtonCancel.hint)
 
                 Spacer()
 
-                Button(localization.commonSubmit, action: viewModel.onSubmit)
+                Button(L10n.Common.submit, action: viewModel.onSubmit)
                     .disabled(!viewModel.isFormValid)
+                    .accessibilityIdentifier(A11y.Form.ButtonConfirm.identifier)
+                    .accessibilityHint(
+                        viewModel.isFormValid
+                            ? A11y.Form.ButtonConfirm.Valid.hint
+                            : A11y.Form.ButtonConfirm.Invalid.hint
+                    )
             }
             .font(.body.weight(.medium))
             .tint(colors.brand.primary)
@@ -134,5 +149,4 @@ struct FormView<Content: View, FormType: Any>: View, Themed {
             }
         }
         .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
 }

@@ -18,15 +18,16 @@ import Foundation
 
 enum ChatMessageMapper {
     
-    static func map(_ message: Message, localization: ChatLocalization) -> ChatMessage {
+    @MainActor
+    static func map(_ message: Message) -> ChatMessage {
         let user = message.direction == .toClient
             ? ChatUserMapper.map(from: message.authorUser)
             : ChatUserMapper.map(from: message.authorEndUserIdentity)
-        
+
         return ChatMessage(
-            id: message.idString,
+            id: message.id,
             user: user,
-            types: ChatMessageTypeMapper.map(message, localization: localization),
+            types: ChatMessageTypeMapper.map(message),
             date: message.createdAt,
             status: message.status
         )

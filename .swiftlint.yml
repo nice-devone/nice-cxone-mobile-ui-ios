@@ -15,11 +15,38 @@
 
 custom_rules:
   implicit_init:
-    regex: "\\W\\.init\\("
+    included: ".*\\.swift"
+    name: "Implicit Init"
     message: "Don't use implicit init. Use explicit initializer of the object."
+    severity: warning
+    regex: "\\W\\.init\\("
+    
   no_uuid:
     message: "Do not create UUID() directly—prefer `LowercaseUUID` instead."
     regex: '(?:^|[^A-Za-z_])(UUID)'
+
+  accessibility_no_hardcoded_strings:
+    included: ".*\\.swift"
+    name: "Accessibility Hardcoded Strings"
+    message: "Avoid hardcoded strings in accessibility modifiers. Use constants or localization instead."
+    severity: warning
+    regex: '\.accessibility\w*\(\s*"(.*?)"\s*\)'
+  
+  hardcoded_strings:
+    included: ".*\\.swift"
+    name: "Hardcoded Strings"
+    regex: '(Link|Label|Text|Button)\(\s*"(.*?)"\s*'
+    message: "Avoid hardcoded strings. Use localization instead."
+    severity: warning
+
+  sf_symbol_key_in_image:
+    included: ".*\\.swift"
+    name: "SFSymbol's key in Image(systemName:)"
+    regex: 'Image\s*\(\s*systemName\s*:\s*".*"\s*\)'
+    message: "Do not use SFSymbol key access directly in Image. Store & use Asset enum instead."
+    severity: warning
+    excluded: 
+    - 'Sources/UI/Extensions/Asset\+Extensions.swift'
 
 disabled_rules: # rule identifiers to exclude from running
   - nesting
@@ -44,12 +71,14 @@ opt_in_rules: # some rules are only opt-in
   - sorted_imports
   - file_header
   - missing_docs
+  - accessibility_label_for_image
+  - accessibility_trait_for_button
 
 included: # paths to include during linting. `--path` is ignored if present.
   - Sources
 excluded:
   - Sources/Utilities/Lorem.swift
-  - Sources/Resources/Generated/*.swift
+  - Sources/Resources/Generated
 
 force_unwrapping:
   severity: error
@@ -100,3 +129,4 @@ file_header:
                     \/\/ OR IMPLIED, INCLUDING \(WITHOUT LIMITATION\) WARRANTIES OF MERCHANTABILITY,
                     \/\/ FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
                     \/\/
+                    

@@ -15,7 +15,7 @@
 
 import Foundation
 
-struct SelectableAttachment: Hashable {
+struct SelectableAttachment: Hashable, Sendable {
     
     let id: String
     

@@ -74,6 +74,7 @@ struct BottomSheetView: View, Themed {
 
 // MARK: - Previews
 
+// swiftlint:disable hardcoded_strings sf_symbol_key_in_image
 private struct TestContentView: View {
     
     var body: some View {
@@ -121,7 +122,7 @@ private struct TestContentView: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         TestContentView()
     }
     .fullScreenCover(isPresented: .constant(true)) {
@@ -165,3 +166,4 @@ private struct TestContentView: View {
     }
     .environmentObject(ChatStyle())
 }
+// swiftlint:enable hardcoded_strings sf_symbol_key_in_image

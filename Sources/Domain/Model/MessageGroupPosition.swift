@@ -16,7 +16,7 @@
 import Foundation
 
 /// Enumerates different positions of a message within a message group
-public enum MessageGroupPosition {
+enum MessageGroupPosition {
 
     /// Indicates that the message group contains only a single message
     case single

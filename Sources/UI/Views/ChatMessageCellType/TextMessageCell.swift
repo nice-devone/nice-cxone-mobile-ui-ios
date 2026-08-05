@@ -70,45 +70,37 @@ struct TextMessageCell: View {
 private extension String {
     
     var attributed: AttributedString {
-        var result = AttributedString(self)
-        
+        // Build via NSMutableAttributedString to leverage NSDataDetector for link and phone
+        // number detection, then convert to AttributedString for SwiftUI compatibility.
+        let mutable = NSMutableAttributedString(string: self)
+
         guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType(arrayLiteral: .link, .phoneNumber).rawValue) else {
             LogManager.error(.failed("Unable to initialize DataDetector to highling link/phone number"))
-            return result
+            return AttributedString(self)
         }
-        
-        let attributes = AttributeContainer([
-            NSAttributedString.Key.underlineStyle: NSUnderlineStyle.single.rawValue
-        ])
-        
+
         for match in detector.matches(in: self, options: [], range: NSRange(location: 0, length: utf16.count)) {
-            guard let range = Range(match.range, in: result) else {
-                continue
-            }
-            
-            result[range].setAttributes(attributes)
-            
             switch match.resultType {
             case .phoneNumber:
                 guard let phoneNumber = match.phoneNumber, let url = URL(string: "tel://\(phoneNumber)") else {
                     LogManager.error(.failed("Unable to get the phone number"))
                     break
                 }
-                
-                result[range].link = url
+
+                mutable.addAttributes([.link: url, .underlineStyle: NSUnderlineStyle.single.rawValue], range: match.range)
             case .link:
                 guard let url = match.url else {
                     LogManager.error(.failed("Unable to get the URL"))
                     break
                 }
-                
-                result[range].link = url
+
+                mutable.addAttributes([.link: url, .underlineStyle: NSUnderlineStyle.single.rawValue], range: match.range)
             default:
                 break
             }
         }
-        
-        return result
+
+        return AttributedString(mutable)
     }
 }
 

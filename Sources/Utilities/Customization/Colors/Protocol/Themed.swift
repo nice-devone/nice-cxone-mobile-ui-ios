@@ -15,6 +15,7 @@
 
 import SwiftUI
 
+@MainActor
 protocol Themed {
     var scheme: ColorScheme { get }
     var style: ChatStyle { get }
@@ -43,7 +44,6 @@ extension Themed where Self: ViewModifier {
     }
 }
 
-@available(iOS 16.0, *)
 extension Themed where Self: DisclosureGroupStyle {
 
     var colors: StyleColors {

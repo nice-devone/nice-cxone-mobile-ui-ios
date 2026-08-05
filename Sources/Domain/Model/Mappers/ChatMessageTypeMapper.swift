@@ -18,8 +18,9 @@ import Foundation
 
 enum ChatMessageTypeMapper {
     
-    static func map(_ entity: Message, localization: ChatLocalization) -> [ChatMessageType] {
-        let message = entity.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: false)
+    @MainActor
+    static func map(_ entity: Message) -> [ChatMessageType] {
+        let message = entity.getLocalizedContentOrFallbackText(useFallback: false)
         
         if !entity.attachments.isEmpty {
             var result = [ChatMessageType]()

@@ -24,7 +24,7 @@
 
 import Foundation
 
-public final class Lorem {
+final class Lorem {
     
     private static let wordList = [
         "alias", "consequatur", "aut", "😎", "perferendis", "sit", "voluptatem",
@@ -71,7 +71,7 @@ public final class Lorem {
      
      - returns: Returns a random word.
      */
-    public class func word() -> String {
+    class func word() -> String {
         return wordList.randomElement() ?? ""
     }
     
@@ -82,7 +82,7 @@ public final class Lorem {
      
      - returns: Returns an array of `count` words.
      */
-    public class func words(nbWords: Int = 3) -> [String] {
+    class func words(nbWords: Int = 3) -> [String] {
         return wordList.random(nbWords)
     }
     
@@ -93,7 +93,7 @@ public final class Lorem {
      
      - returns: Returns a string of `count` words.
      */
-    public class func words(nbWords: Int = 3) -> String {
+    class func words(nbWords: Int = 3) -> String {
         return words(nbWords: nbWords).joined(separator: " ")
     }
     
@@ -104,7 +104,7 @@ public final class Lorem {
      +/- 40% of `nbWords`.
      - returns:
      */
-    public class func sentence(nbWords: Int = 6, variable: Bool = true) -> String {
+    class func sentence(nbWords: Int = 6, variable: Bool = true) -> String {
         if nbWords <= 0 {
             return ""
         }
@@ -120,7 +120,7 @@ public final class Lorem {
      
      - returns: Returns an array of random sentences.
      */
-    public class func sentences(nbSentences: Int = 3) -> [String] {
+    class func sentences(nbSentences: Int = 3) -> [String] {
         return (0..<nbSentences).map { _ in sentence() }
     }
     
@@ -132,7 +132,7 @@ public final class Lorem {
      between +/- 40% of `nbSentences`.
      - returns: Returns a paragraph with `nbSentences` random sentences.
      */
-    public class func paragraph(nbSentences: Int = 3, variable: Bool = true) -> String {
+    class func paragraph(nbSentences: Int = 3, variable: Bool = true) -> String {
         if nbSentences <= 0 {
             return ""
         }
@@ -145,7 +145,7 @@ public final class Lorem {
      - parameter nbParagraphs: The number of paragraphs to generate.
      - returns: Returns an array of `nbParagraphs` paragraphs.
      */
-    public class func paragraphs(nbParagraphs: Int = 3) -> [String] {
+    class func paragraphs(nbParagraphs: Int = 3) -> [String] {
         return (0..<nbParagraphs).map { _ in paragraph() }
     }
     
@@ -154,7 +154,7 @@ public final class Lorem {
      - parameter nbParagraphs: The number of paragraphs to generate.
      - returns: Returns a string of random paragraphs.
      */
-    public class func paragraphs(nbParagraphs: Int = 3) -> String {
+    class func paragraphs(nbParagraphs: Int = 3) -> String {
         return paragraphs(nbParagraphs: nbParagraphs).joined(separator: "\n\n")
     }
     
@@ -164,7 +164,7 @@ public final class Lorem {
      should contain.
      - returns: Returns a string of at most `maxNbChars` characters.
      */
-    public class func text(maxNbChars: Int = 200) -> String {
+    class func text(maxNbChars: Int = 200) -> String {
         var result: [String] = []
         
         if maxNbChars < 5 {
@@ -219,7 +219,7 @@ extension String {
     }
 }
 
-public extension Array {
+extension Array {
     /**
      Shuffle the array in-place using the Fisher-Yates algorithm.
      */
@@ -265,7 +265,7 @@ public extension Array {
 }
 
 extension Int {
-    public func randomize(variation: Int) -> Int {
+    func randomize(variation: Int) -> Int {
         let multiplier = Double(Int.random(in: (100 - variation)...(100 + variation))) / 100
         let randomized = Double(self) * multiplier
         

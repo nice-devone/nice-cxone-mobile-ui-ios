@@ -59,12 +59,12 @@ struct AudioMessageCell: View, Themed {
     
     // MARK: - Init
 
-    init(message: ChatMessage, item: AttachmentItem, position: MessageGroupPosition, alertType: Binding<ChatAlertType?>, localization: ChatLocalization) {
+    init(message: ChatMessage, item: AttachmentItem, position: MessageGroupPosition, alertType: Binding<ChatAlertType?>) {
         self.message = message
         self.item = item
         self.position = position
         
-        _audioPlayer = StateObject(wrappedValue: AudioPlayer(url: item.url, fileName: item.fileName, alertType: alertType, chatLocalization: localization))
+        _audioPlayer = StateObject(wrappedValue: AudioPlayer(url: item.url, fileName: item.fileName, alertType: alertType))
     }
 
     // MARK: - Builder
@@ -82,6 +82,7 @@ struct AudioMessageCell: View, Themed {
             .messageChatStyle(message, position: position)
             .shareable(message, attachments: [item], spacerLength: Constants.Spacing.shareButtonMinLength)
         }
+        .accessibilityElement(children: .contain)
         .task {
             #if !targetEnvironment(simulator)
             await audioPlayer.prepare()
@@ -103,7 +104,8 @@ private extension AudioMessageCell {
                         ? colors.content.primary
                         : colors.brand.onPrimary
                 )
-            
+                .accessibilityHidden(true)
+
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule()
@@ -113,7 +115,7 @@ private extension AudioMessageCell {
                                 : colors.brand.onPrimary
                         )
                         .opacity(Constants.Colors.progressBarOpacity)
-                    
+
                     if proxy.size.width.isFinite && proxy.size.width > 0 {
                         Capsule()
                             .fill(message.isUserAgent ? colors.content.primary : colors.brand.onPrimary)
@@ -125,7 +127,8 @@ private extension AudioMessageCell {
                 }
             }
             .frame(height: Constants.Sizing.progressBarHeight)
-            
+            .accessibilityHidden(true)
+
             Text(audioPlayer.formattedDuration)
                 .font(.caption)
                 .foregroundStyle(
@@ -133,7 +136,19 @@ private extension AudioMessageCell {
                         ? colors.content.primary
                         : colors.brand.onPrimary
                 )
+                .accessibilityHidden(true)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(A11y.Conversation.MessageCell.Audio.SeekBar.identifier)
+        .accessibilityLabel(A11y.Conversation.MessageCell.Audio.SeekBar.label)
+        .accessibilityValue(
+            A11y.Conversation.MessageCell.Audio.SeekBar.value(
+                String.formattedAudioLengthForA11y(audioPlayer.currentTimeInSeconds),
+                String.formattedAudioLengthForA11y(audioPlayer.duration)
+            )
+        )
+        .accessibilityHint(A11y.Conversation.MessageCell.Audio.SeekBar.hint)
+        .accessibilityAddTraits(.updatesFrequently)
     }
 
     var controlButtons: some View {
@@ -143,6 +158,7 @@ private extension AudioMessageCell {
             } label: {
                 Asset.Attachment.rewind
                     .font(.title)
+                    .accessibilityHidden(true)
             }
             .foregroundStyle(
                 message.isUserAgent
@@ -150,6 +166,9 @@ private extension AudioMessageCell {
                     : colors.brand.onPrimary
             )
             .adjustForA11y()
+            .accessibilityIdentifier(A11y.Conversation.MessageCell.Audio.ButtonRewind.identifier)
+            .accessibilityLabel(A11y.Conversation.MessageCell.Audio.ButtonRewind.label)
+            .accessibilityHint(A11y.Conversation.MessageCell.Audio.ButtonRewind.hint(Constants.seekValue))
 
             Button {
                 if audioPlayer.isPlaying {
@@ -160,6 +179,7 @@ private extension AudioMessageCell {
             } label: {
                 (audioPlayer.isPlaying ? Asset.Attachment.pause : Asset.Attachment.play)
                     .font(.title)
+                    .accessibilityHidden(true)
             }
             .foregroundStyle(
                 message.isUserAgent
@@ -167,12 +187,28 @@ private extension AudioMessageCell {
                     : colors.brand.onPrimary
             )
             .adjustForA11y()
+            .accessibilityIdentifier(
+                audioPlayer.isPlaying
+                    ? A11y.Conversation.MessageCell.Audio.ButtonPause.identifier
+                    : A11y.Conversation.MessageCell.Audio.ButtonPlay.identifier
+            )
+            .accessibilityLabel(
+                audioPlayer.isPlaying
+                    ? A11y.Conversation.MessageCell.Audio.ButtonPause.label
+                    : A11y.Conversation.MessageCell.Audio.ButtonPlay.label
+            )
+            .accessibilityHint(
+                audioPlayer.isPlaying
+                    ? A11y.Conversation.MessageCell.Audio.ButtonPause.hint
+                    : A11y.Conversation.MessageCell.Audio.ButtonPlay.hint
+            )
 
             Button {
                 audioPlayer.seek(Constants.seekValue)
             } label: {
                 Asset.Attachment.advance
                     .font(.title)
+                    .accessibilityHidden(true)
             }
             .foregroundStyle(
                 message.isUserAgent
@@ -180,6 +216,9 @@ private extension AudioMessageCell {
                     : colors.brand.onPrimary
             )
             .adjustForA11y()
+            .accessibilityIdentifier(A11y.Conversation.MessageCell.Audio.ButtonAdvance.identifier)
+            .accessibilityLabel(A11y.Conversation.MessageCell.Audio.ButtonAdvance.label)
+            .accessibilityHint(A11y.Conversation.MessageCell.Audio.ButtonAdvance.hint(Constants.seekValue))
         }
     }
 }
@@ -216,23 +255,19 @@ private extension AudioMessageCell {
 // MARK: - Previews
 
 #Preview {
-    let localization = ChatLocalization()
-
     VStack(spacing: 4) {
         AudioMessageCell(
             message: MockData.audioMessage(user: MockData.customer),
             item: MockData.audioItem,
             position: .single,
-            alertType: .constant(nil),
-            localization: localization
+            alertType: .constant(nil)
         )
         
         AudioMessageCell(
             message: MockData.audioMessage(user: MockData.agent),
             item: MockData.audioItem,
             position: .single,
-            alertType: .constant(nil),
-            localization: localization
+            alertType: .constant(nil)
         )
     }
     .padding(.horizontal, 10)

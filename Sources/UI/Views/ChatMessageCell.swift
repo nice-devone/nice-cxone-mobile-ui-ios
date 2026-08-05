@@ -18,8 +18,6 @@ import SwiftUI
 struct ChatMessageCell: View {
 
     // MARK: - Properties
-
-    @EnvironmentObject private var localization: ChatLocalization
     
     @Binding private var alertType: ChatAlertType?
     @Binding private var isLast: Bool
@@ -81,41 +79,37 @@ private extension ChatMessageCell {
                     message: message,
                     item: item,
                     position: messageGroupPosition,
-                    alertType: $alertType,
-                    localization: localization
+                    alertType: $alertType
                 )
             case .image(let item):
                 ImageMessageCell(
                     message: message,
                     item: item,
                     position: messageGroupPosition,
-                    alertType: $alertType,
-                    localization: localization
+                    alertType: $alertType
                 )
             case .audio(let item):
                 AudioMessageCell(
                     message: message,
                     item: item,
                     position: messageGroupPosition,
-                    alertType: $alertType,
-                    localization: localization
+                    alertType: $alertType
                 )
             case .documentPreview(let item):
                 DocumentMessageCell(
                     message: message,
                     item: item,
                     position: messageGroupPosition,
-                    alertType: $alertType,
-                    localization: localization
+                    alertType: $alertType
                 )
             case .richContent(let content):
                 switch content {
                 case .quickReplies(let item):
-                    QuickRepliesMessageCell(item: item, isLast: $isLast) { option in
+                    QuickRepliesMessageCell(message: message, item: item, isLast: $isLast) { option in
                         onRichMessageElementTapped(.button(option))
                     }
                 case .listPicker(let item):
-                    ListPickerMessageCell(item: item) { option in
+                    ListPickerMessageCell(message: message, item: item) { option in
                         onRichMessageElementTapped(.button(option))
                     }
                 case .richLink(let item):
@@ -146,15 +140,21 @@ private extension ChatMessageCell {
                 ) { _ in }
                 
                 ChatMessageCell(
+                    message: MockData.unsupportedMessage(),
+                    messageGroupPosition: .inside,
+                    isLast: .constant(false),
+                    alertType: .constant(nil)) { _ in }
+                
+                ChatMessageCell(
                     message: MockData.textMessage(user: MockData.agent),
-                    messageGroupPosition: .last,
+                    messageGroupPosition: .inside,
                     isLast: .constant(false),
                     alertType: .constant(nil)
                 ) { _ in }
                 
                 ChatMessageCell(
                     message: MockData.imageMessage(user: MockData.agent, elementsCount: 1),
-                    messageGroupPosition: .first,
+                    messageGroupPosition: .inside,
                     isLast: .constant(false),
                     alertType: .constant(nil)
                 ) { _ in }
@@ -193,5 +193,4 @@ private extension ChatMessageCell {
     }
     .padding(.horizontal, 12)
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }

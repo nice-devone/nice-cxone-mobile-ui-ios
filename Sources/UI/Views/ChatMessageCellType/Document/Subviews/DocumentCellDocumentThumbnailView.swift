@@ -44,22 +44,15 @@ struct DocumentCellDocumentThumbnailView: View, Themed {
     
     let fileExtension: String
     let url: URL
-    let localization: ChatLocalization
     
     private let displayMode: AttachmentThumbnailDisplayMode = .regular
     
     // MARK: - Init
     
-    init(
-        fileExtension: String,
-        url: URL,
-        alertType: Binding<ChatAlertType?>,
-        localization: ChatLocalization
-    ) {
-        self.viewModel = DocumentStateViewModel(alertType: alertType, localization: localization)
+    init(fileExtension: String, url: URL, alertType: Binding<ChatAlertType?>) {
+        self.viewModel = DocumentStateViewModel(alertType: alertType)
         self.fileExtension = fileExtension
         self.url = url
-        self.localization = localization
     }
     
     // MARK: - Builder
@@ -82,6 +75,10 @@ struct DocumentCellDocumentThumbnailView: View, Themed {
                 QuickLookPreview(url: url, isPresented: $viewModel.isReadyToPresent)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(A11y.Conversation.MessageCell.Attachment.identifier(type: "document"))
+        .accessibilityLabel(A11y.Conversation.MessageCell.Attachment.Document.label(url.lastPathComponent))
+        .accessibilityHint(A11y.Conversation.MessageCell.Attachment.Document.hint)
     }
 }
 
@@ -130,14 +127,11 @@ private extension DocumentCellDocumentThumbnailView {
 // MARK: - Preview
 
 #Preview("Single") {
-    let localization = ChatLocalization()
-
     VStack {
         DocumentCellDocumentThumbnailView(
             fileExtension: "ppt",
             url: MockData.docPreviewURL,
-            alertType: .constant(nil),
-            localization: localization
+            alertType: .constant(nil)
         )
         .messageChatStyle(MockData.documentMessage(user: MockData.agent), position: .single)
         .shareable(MockData.documentMessage(user: MockData.agent), attachments: [], spacerLength: 0)
@@ -145,8 +139,7 @@ private extension DocumentCellDocumentThumbnailView {
         DocumentCellDocumentThumbnailView(
             fileExtension: "ppt",
             url: MockData.docPreviewURL,
-            alertType: .constant(nil),
-            localization: localization
+            alertType: .constant(nil)
         )
         .messageChatStyle(MockData.documentMessage(user: MockData.customer), position: .single)
         .shareable(MockData.documentMessage(user: MockData.customer), attachments: [], spacerLength: 0)
@@ -155,8 +148,7 @@ private extension DocumentCellDocumentThumbnailView {
             DocumentCellDocumentThumbnailView(
                 fileExtension: "ppt",
                 url: MockData.docPreviewURL,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             .messageChatStyle(MockData.documentMessage(user: MockData.agent), position: .first)
             .shareable(MockData.documentMessage(user: MockData.agent), attachments: [], spacerLength: 0)
@@ -164,8 +156,7 @@ private extension DocumentCellDocumentThumbnailView {
             DocumentCellDocumentThumbnailView(
                 fileExtension: "ppt",
                 url: MockData.docPreviewURL,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             .messageChatStyle(MockData.documentMessage(user: MockData.agent), position: .inside)
             .shareable(MockData.documentMessage(user: MockData.agent), attachments: [], spacerLength: 0)
@@ -173,8 +164,7 @@ private extension DocumentCellDocumentThumbnailView {
             DocumentCellDocumentThumbnailView(
                 fileExtension: "ppt",
                 url: MockData.docPreviewURL,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             .messageChatStyle(MockData.documentMessage(user: MockData.agent), position: .last)
             .shareable(MockData.documentMessage(user: MockData.agent), attachments: [], spacerLength: 0)
@@ -188,7 +178,6 @@ private extension DocumentCellDocumentThumbnailView {
 #Preview("Multiple attachments container") {
     @Previewable @Environment(\.colorScheme) var scheme
     
-    let localization = ChatLocalization()
     let style = ChatStyle()
     
     VStack {
@@ -196,15 +185,13 @@ private extension DocumentCellDocumentThumbnailView {
             DocumentCellDocumentThumbnailView(
                 fileExtension: "ppt",
                 url: MockData.docPreviewURL,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             
             DocumentCellDocumentThumbnailView(
                 fileExtension: "ppt",
                 url: MockData.docPreviewURL,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
         }
         .background(
@@ -216,15 +203,13 @@ private extension DocumentCellDocumentThumbnailView {
             DocumentCellDocumentThumbnailView(
                 fileExtension: "ppt",
                 url: MockData.docPreviewURL,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
             
             DocumentCellDocumentThumbnailView(
                 fileExtension: "ppt",
                 url: MockData.docPreviewURL,
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             )
         }
         .background(

@@ -20,11 +20,12 @@ enum ChatThreadMapper {
     
     static func map(from thread: CXoneChatSDK.ChatThread) -> CXoneChatUI.ChatThread {
         CXoneChatUI.ChatThread(
-            id: thread.idString,
+            id: thread.id,
             name: thread.name,
             messages: thread.messages,
             assignedAgent: thread.assignedAgent,
             lastAssignedAgent: thread.lastAssignedAgent,
+            ownerAssignee: thread.ownerAssignee,
             scrollToken: thread.scrollToken,
             state: thread.state,
             positionInQueue: thread.positionInQueue

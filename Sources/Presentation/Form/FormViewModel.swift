@@ -16,12 +16,14 @@
 import CXoneChatSDK
 import SwiftUI
 
+@MainActor
 open class FormViewModel<T>: ObservableObject {
     
     // MARK: - Properties
     
     @Published var isFormValid = false
-    
+    @Published var firstInvalidFieldID: ObjectIdentifier?
+
     var onFinished: (T) -> Void
     var onCancel: () -> Void
     

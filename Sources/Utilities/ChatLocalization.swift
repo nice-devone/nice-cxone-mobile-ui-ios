@@ -16,197 +16,211 @@
 
 import CXoneChatSDK
 import Foundation
+import SwiftUI
 
 public class ChatLocalization: ObservableObject {
 
     // MARK: - Properties
-    
-    var bundle: Bundle
-    var tableName: String
+
+    let bundle: Bundle
+    let tableName: String
+
+    /// An optional provider for fine-grained programmatic localization string overrides.
+    ///
+    /// When non-nil, this is consulted first — before the bundle lookup and before the SDK default.
+    /// Return `nil` from ``LocalizationStringProvider/localizationString(forKey:)`` for any key
+    /// you do not want to override.
+    public let provider: (any LocalizationStringProvider)?
 
     // MARK: - Common
-    
-    /// "OK"
-    public lazy var commonOk = lookup(key: "chatui_common_ok")
+
+    /// "Ok"
+    public lazy var commonOk = lookup(key: "common.ok")
     /// "Cancel"
-    public lazy var commonCancel = lookup(key: "chatui_common_cancel")
+    public lazy var commonCancel = lookup(key: "common.cancel")
     /// "Confirm"
-    public lazy var commonConfirm = lookup(key: "chatui_common_confirm")
+    public lazy var commonConfirm = lookup(key: "common.confirm")
     /// "Submit"
-    public lazy var commonSubmit = lookup(key: "chatui_common_submit")
+    public lazy var commonSubmit = lookup(key: "common.submit")
     /// "Required"
-    public lazy var commonRequired = lookup(key: "chatui_common_required")
+    public lazy var commonRequired = lookup(key: "common.required")
     /// "No selection"
-    public lazy var commonNoSelection = lookup(key: "chatui_common_noSelection")
+    public lazy var commonNoSelection = lookup(key: "common.no_selection")
     /// "Invalid email"
-    public lazy var commonInvalidEmail = lookup(key: "chatui_common_invalidEmail")
+    public lazy var commonInvalidEmail = lookup(key: "common.invalid_email")
     /// "Invalid number"
-    public lazy var commonInvalidNumber = lookup(key: "chatui_common_invalidNumber")
+    public lazy var commonInvalidNumber = lookup(key: "common.invalid_number")
     /// "Fields do not match"
-    public lazy var commonFieldsDontMatch = lookup(key: "chatui_common_fieldsDontMatch")
+    public lazy var commonFieldsDontMatch = lookup(key: "common.fields_dont_match")
     /// "Select"
-    public lazy var commonSelect = lookup(key: "chatui_common_select")
+    public lazy var commonSelect = lookup(key: "common.select")
     /// "Attachments"
-    public lazy var commonAttachments = lookup(key: "chatui_common_attachments")
+    public lazy var commonAttachments = lookup(key: "common.attachments")
     /// "Copy"
-    public lazy var commonCopy = lookup(key: "chatui_common_copy")
+    public lazy var commonCopy = lookup(key: "common.copy")
     /// "Share"
-    public lazy var commonShare = lookup(key: "chatui_common_share")
+    public lazy var commonShare = lookup(key: "common.share")
     /// "Attention"
-    public lazy var commonAttention = lookup(key: "chatui_common_attention")
+    public lazy var commonAttention = lookup(key: "common.attention")
     /// "No Agent"
-    public lazy var commonUnassignedAgent = lookup(key: "chatui_common_unassigned_agent")
+    public lazy var commonUnassignedAgent = lookup(key: "common.unassigned_agent")
+    /// "Agent"
+    public lazy var commonAgent = lookup(key: "common.agent")
+    /// "AI Assistant"
+    public lazy var commonAiAssistant = lookup(key: "common.ai_assistant")
     /// "Connecting..."
     @available(*, deprecated, message: "No longer used. Will be removed in a future release")
-    public lazy var commonConnecting = lookup(key: "chatui_common_connecting")
+    public lazy var commonConnecting = lookup(key: "common.connecting")
     /// "Loading..."
-    public lazy var commonLoading = lookup(key: "chatui_common_loading")
+    public lazy var commonLoading = lookup(key: "common.loading")
     /// "Try again"
-    public lazy var commonTryAgain = lookup(key: "chatui_common_try_again")
+    public lazy var commonTryAgain = lookup(key: "common.try_again")
     /// "Error"
-    public lazy var commonError = lookup(key: "chatui_common_error")
+    public lazy var commonError = lookup(key: "common.error")
     /// "Settings"
-    public lazy var commonSettings = lookup(key: "chatui_common_settings")
+    public lazy var commonSettings = lookup(key: "common.settings")
     /// "Close chat"
-    public lazy var commonCloseChat = lookup(key: "chatui_common_closeChat")
-    
+    public lazy var commonCloseChat = lookup(key: "common.close_chat")
+
     // MARK: - Alert
-    
-    /// "Disconnect"
-    public lazy var alertDisconnectConfirm = lookup(key: "chatui_alert_disconnect_confirm")
+
     /// "Rename Conversation"
-    public lazy var alertUpdateThreadNameTitle = lookup(key: "chatui_alert_updateThreadName_title")
+    public lazy var alertUpdateThreadNameTitle = lookup(key: "alert.update_thread_name.title")
     /// "Conversation name"
-    public lazy var alertUpdateThreadNamePlaceholder = lookup(key: "chatui_alert_updateThreadName_placeholder")
+    public lazy var alertUpdateThreadNamePlaceholder = lookup(key: "alert.update_thread_name.placeholder")
     /// "Edit Pre-chat Form"
-    public lazy var alertEditPrechatCustomFieldsTitle = lookup(key: "chatui_alert_editPrechatCustomFields_title")
+    public lazy var alertEditPrechatCustomFieldsTitle = lookup(key: "alert.edit_prechat_custom_fields.title")
     /// "Something went wrong. Please, try again later."
-    public lazy var alertGenericErrorMessage = lookup(key: "chatui_alert_genericError_message")
+    public lazy var alertGenericErrorMessage = lookup(key: "alert.generic_error.message")
     /// "Oops! The chat encountered an issue and will disconnect. Please try again later."
-    public lazy var alertDisconnectErrorMessage = lookup(key: "chatui_alert_disconnectError_message")
+    public lazy var alertDisconnectErrorMessage = lookup(key: "alert.disconnect_error.message")
+    /// "The chat is not available because the '%1$@' feature is not implemented. Check the documentation for more information."
+    public lazy var alertFeatureUnavailableMessage = lookup(key: "alert.feature_unavailable.message")
     /// "Are you sure you want to end this conversation?"
-    public lazy var alertEndConversationMessage = lookup(key: "chatui_alert_endConverastion_message")
+    public lazy var alertEndConversationMessage = lookup(key: "alert.end_conversation.message")
+    /// "Disconnect"
+    @available(*, deprecated, message: "Replaced with `commonCloseChat`. Will be removed in a future major version.")
+    public lazy var alertDisconnectConfirm = lookup(key: "alert.disconnect.confirm")
     /// "Camera access is required to take photos. Please allow camera access in Settings."
-    public lazy var alertCameraPermissionMessage = lookup(key: "chatui_alert_cameraPermission_message")
+    public lazy var alertCameraPermissionMessage = lookup(key: "alert.camera_permission.message")
     /// "Microphone access is required to record a voice message. Please allow microphone access in Settings."
-    public lazy var alertMicrophonePermissionMessage = lookup(key: "chatui_alert_microphonePermission_message")
+    public lazy var alertMicrophonePermissionMessage = lookup(key: "alert.microphone_permission.message")
     /// "Oops!"
-    public lazy var alertFileValidationTitle = lookup(key: "chatui_alert_fileValidation_title")
+    public lazy var alertFileValidationTitle = lookup(key: "alert.file_validation.title")
     /// "Unable to upload attachment(s) due to invalid file type."
-    public lazy var alertInvalidFileTypeMessage = lookup(key: "chatui_alert_invalidFileType_message")
+    public lazy var alertInvalidFileTypeMessage = lookup(key: "alert.invalid_file_type.message")
     /// "Unable to upload attachment(s). Attachment(s) size higher than %1$d MB"
-    public lazy var alertInvalidFileSizeMessage = lookup(key: "chatui_alert_invalidFileSize_message")
+    public lazy var alertInvalidFileSizeMessage = lookup(key: "alert.invalid_file_size.message")
     /// "Send Transcript"
-    public lazy var alertSendTranscriptTitle = lookup(key: "chatui_alert_sendTranscript_title")
+    public lazy var alertSendTranscriptTitle = lookup(key: "alert.send_transcript.title")
     /// "Chat transcript successfully sent"
-    public lazy var alertSendTranscriptSuccessMessage = lookup(key: "chatui_alert_sendTranscript_success")
+    public lazy var alertSendTranscriptSuccessMessage = lookup(key: "alert.send_transcript.success")
     /// "Unable to send transcript. Please try again later."
-    public lazy var alertSendTranscriptFailMessage = lookup(key: "chatui_alert_sendTranscript_error_message")
-    
+    public lazy var alertSendTranscriptFailMessage = lookup(key: "alert.send_transcript.error_message")
+
     // MARK: - Overlay
-    
+
     /// "The operation is taking longer than expected."
-    public lazy var overlayLoadingDelayTitle = lookup(key: "chatui_overlay_loading_delay_title")
-    
+    public lazy var overlayLoadingDelayTitle = lookup(key: "overlay.loading_delay.title")
+
     // MARK: - ChatListView
-    
+
     /// "Conversations"
-    public lazy var chatListTitle = lookup(key: "chatui_chatList_title")
+    public lazy var chatListTitle = lookup(key: "chat_list.title")
     /// "No conversations"
-    public lazy var chatListEmpty = lookup(key: "chatui_chatList_empty")
-    /// "Current"
-    public lazy var chatListThreadStatusArchived = lookup(key: "chatui_chatList_threadStatus_archived")
+    public lazy var chatListEmpty = lookup(key: "chat_list.empty")
     /// "Archived"
-    public lazy var chatListThreadStatusCurrent = lookup(key: "chatui_chatList_threadStatus_current")
-    /// "New converstation"
-    public lazy var chatListNewThread = lookup(key: "chatui_chatList_newThread")
+    public lazy var chatListThreadStatusArchived = lookup(key: "chat_list.thread_status.archived")
+    /// "Current"
+    public lazy var chatListThreadStatusCurrent = lookup(key: "chat_list.thread_status.current")
+    /// "New conversation"
+    public lazy var chatListNewThread = lookup(key: "chat_list.new_thread")
     /// "Rename"
-    public lazy var chatThreadContextMenuRename = lookup(key: "chatui_chatThread_contextMenu_rename")
+    public lazy var chatThreadContextMenuRename = lookup(key: "chat_thread.context_menu.rename")
     /// "Archive"
-    public lazy var chatThreadContextMenuArchive = lookup(key: "chatui_chatThread_contextMenu_archive")
+    public lazy var chatThreadContextMenuArchive = lookup(key: "chat_thread.context_menu.archive")
 
     // MARK: - Chat - Fallback Message
-    
-    /// "%1$d attachment(s)"
-    public lazy var chatFallbackMessageAttachments = lookup(key: "chatui_chat_fallbackMessage_attachments")
-    /// "Rich link message"
-    public lazy var chatFallbackMessageTORMRichlink = lookup(key: "chatui_chat_fallbackMessage_torm_richLink")
-    /// "Quick replies message"
-    public lazy var chatFallbackMessageTORMQuickReplies = lookup(key: "chatui_chat_fallbackMessage_torm_quickReplies")
-    /// "List picker message"
-    public lazy var chatFallbackMessageTORMListPicker = lookup(key: "chatui_chat_fallbackMessage_torm_listPicker")
     /// "Time picker message"
-    public lazy var chatFallbackMessageTORMTimePicker = lookup(key: "chatui_chat_fallbackMessage_torm_timePicker")
-    /// "Unknown message"
-    public lazy var chatFallbackMessageUnknown = lookup(key: "chatui_chat_fallbackMessage_unknown")
-    /// "Why do I see this"
-    public lazy var chatFallbackMessageUnknownTooltipText = lookup(key: "chatui_chat_fallbackMessage_unknown_tooltip_text")
-    /// "This message could not be displayed in the chat as it uses a format that is currently unsupported."
-    public lazy var chatFallbackMessageUnknownTooltipContent = lookup(key: "chatui_chat_fallbackMessage_unknown_tooltip_content")
-    /// "No name"
-    public lazy var chatFallbackMessageNoName = lookup(key: "chatui_chat_fallbackMessage_noName")
+    public lazy var chatFallbackMessageTORMTimePicker = lookup(key: "chat.fallback_message.torm.time_picker")
 
-    // MARK: - Chat - Messsage Input Bar
-    
+    /// "%1$d attachment(s)"
+    public lazy var chatFallbackMessageAttachments = lookup(key: "chat.fallback_message.attachments")
+    /// "Rich link message"
+    public lazy var chatFallbackMessageTORMRichlink = lookup(key: "chat.fallback_message.torm.rich_link")
+    /// "Quick replies message"
+    public lazy var chatFallbackMessageTORMQuickReplies = lookup(key: "chat.fallback_message.torm.quick_replies")
+    /// "List picker message"
+    public lazy var chatFallbackMessageTORMListPicker = lookup(key: "chat.fallback_message.torm.list_picker")
+    /// "Unknown message"
+    public lazy var chatFallbackMessageUnknown = lookup(key: "chat.fallback_message.unknown")
+    /// "Why do I see this"
+    public lazy var chatFallbackMessageUnknownTooltipText = lookup(key: "chat.fallback_message.unknown_tooltip.text")
+    /// "This message could not be displayed in the chat as it uses a format that is currently unsupported."
+    public lazy var chatFallbackMessageUnknownTooltipContent = lookup(key: "chat.fallback_message.unknown_tooltip.content")
+    /// "No name"
+    public lazy var chatFallbackMessageNoName = lookup(key: "chat.fallback_message.no_name")
+
+    // MARK: - Chat - Message Input Bar
+
     /// This conversation was archived
-    public lazy var chatMessageInputArchived = lookup(key: "chatui_chat_messageInput_archived")
+    public lazy var chatMessageInputArchived = lookup(key: "chat.message_input.archived")
     /// This conversation was closed
-    public lazy var chatMessageInputClosed = lookup(key: "chatui_chat_messageInput_closed")
+    public lazy var chatMessageInputClosed = lookup(key: "chat.message_input.closed")
     /// "Aa"
-    public lazy var chatMessageInputPlaceholder = lookup(key: "chatui_chat_messageInput_placeholder")
+    public lazy var chatMessageInputPlaceholder = lookup(key: "chat.message_input.placeholder")
     /// "Attachment source"
-    public lazy var chatMessageInputAttachmentsOptionTitle = lookup(key: "chatui_chat_messageInput_attachmentsOption_title")
+    public lazy var chatMessageInputAttachmentsOptionTitle = lookup(key: "chat.message_input.attachments_option.title")
     /// "Camera"
-    public lazy var chatMessageInputAttachmentsOptionCamera = lookup(key: "chatui_chat_messageInput_attachmentsOption_camera")
+    public lazy var chatMessageInputAttachmentsOptionCamera = lookup(key: "chat.message_input.attachments_option.camera")
     /// "Photo library"
-    public lazy var chatMessageInputAttachmentsOptionPhotos = lookup(key: "chatui_chat_messageInput_attachmentsOption_photos")
+    public lazy var chatMessageInputAttachmentsOptionPhotos = lookup(key: "chat.message_input.attachments_option.photos")
     /// "File manager"
-    public lazy var chatMessageInputAttachmentsOptionFiles = lookup(key: "chatui_chat_messageInput_attachmentsOption_files")
+    public lazy var chatMessageInputAttachmentsOptionFiles = lookup(key: "chat.message_input.attachments_option.files")
     /// "Recording"
-    public lazy var chatMessageInputAudioRecorderRecording = lookup(key: "chatui_chat_messageInput_audioRecorder_recording")
+    public lazy var chatMessageInputAudioRecorderRecording = lookup(key: "chat.message_input.audio_recorder.recording")
     /// "Audio message"
-    public lazy var chatMessageInputAudioRecorderRecorded = lookup(key: "chatui_chat_messageInput_audioRecorder_recorded")
+    public lazy var chatMessageInputAudioRecorderRecorded = lookup(key: "chat.message_input.audio_recorder.recorded")
     /// "Playing"
-    public lazy var chatMessageInputAudioRecorderPlaying = lookup(key: "chatui_chat_messageInput_audioRecorder_playing")
+    public lazy var chatMessageInputAudioRecorderPlaying = lookup(key: "chat.message_input.audio_recorder.playing")
 
     // MARK: - Chat - Attachments
-    
+
     /// "All"
-    public lazy var chatAttachmentsSelectionAll = lookup(key: "chatui_chat_attachments_selection_all")
+    public lazy var chatAttachmentsSelectionAll = lookup(key: "chat.attachments.selection.all")
     /// "None"
-    public lazy var chatAttachmentsDeselect = lookup(key: "chatui_chat_attachments_deselect")
+    public lazy var chatAttachmentsDeselect = lookup(key: "chat.attachments.deselect")
     /// "Select items"
-    public lazy var chatAttachmentsSelectionMode = lookup(key: "chatui_chat_attachments_selectionMode")
+    public lazy var chatAttachmentsSelectionMode = lookup(key: "chat.attachments.selection_mode")
     /// "%1$d item(s) selected"
-    public lazy var chatAttachmentsSelectedCount = lookup(key: "chatui_chat_attachments_selectedCount_message")
+    public lazy var chatAttachmentsSelectedCount = lookup(key: "chat.attachments.selected_count.message")
     /// "Uploading..."
-    public lazy var chatAttachmentsUpload = lookup(key: "chatui_chat_attachments_upload")
+    public lazy var chatAttachmentsUpload = lookup(key: "chat.attachments.upload")
     /// "Loading document.."
     @available(*, deprecated, message: "No longer used. Will be removed in a future major version.")
-    public lazy var loadingDoc = lookup(key: "chatui_chat_attachments_loading_document")
+    public lazy var loadingDoc = lookup(key: "chat.attachments.loading.document")
     /// "Loading video..."
     @available(*, deprecated, message: "No longer used. Will be removed in a future major version.")
-    public lazy var loadingVideo = lookup(key: "chatui_chat_attachments_loading_video")
+    public lazy var loadingVideo = lookup(key: "chat.attachments.loading.video")
     /// "Loading document failed"
-    public lazy var loadingDocError = lookup(key: "chatui_chat_attachments_loading_document_error")
+    public lazy var loadingDocError = lookup(key: "chat.attachments.loading.document_error")
     /// "Downloading document failed"
-    public lazy var downloadingDocumentFailed = lookup(key: "chatui_chat_attachments_download_document_error")
-    
+    public lazy var downloadingDocumentFailed = lookup(key: "chat.attachments.download.document_error")
+
     // MARK: - Chat - Menu Actions
-    
     /// "Rename Conversation"
-    public lazy var chatMenuOptionUpdateName = lookup(key: "chatui_chat_menuOption_updateName")
+    public lazy var chatMenuOptionUpdateName = lookup(key: "chat.menu_option.update_name")
     /// "End Conversation"
-    public lazy var chatMenuOptionEndConversation = lookup(key: "chatui_chat_menuOption_endConversation")
+    public lazy var chatMenuOptionEndConversation = lookup(key: "chat.menu_option.end_conversation")
     /// "Send Transcript"
-    public lazy var chatMenuOptionSendTranscript = lookup(key: "chatui_chat_menuOption_sendTranscript")
-    
+    public lazy var chatMenuOptionSendTranscript = lookup(key: "chat.menu_option.send_transcript")
+
     // MARK: - Chat - TORM
-    
+
     /// "Option selected"
-    public lazy var chatMessageRichContentOptionSelected = lookup(key: "chatui_chat_message_richContent_optionSelected")
+    public lazy var chatMessageRichContentOptionSelected = lookup(key: "chat.message.rich_content.option_selected")
     /// "Already answered or no longer available"
-    public lazy var chatMessageRichContentOptionsDisabled = lookup(key: "chatui_chat_message_richContent_optionsDisabled")
+    public lazy var chatMessageRichContentOptionsDisabled = lookup(key: "chat.message.rich_content.options_disabled")
     /// "These options are no longer visible because you've already responded or the message is no longer the most recent."
     public lazy var chatMessageRichContentOptionsDisabledTooltip = lookup(key: "chatui_chat_message_richContent_optionsDisabled_tooltip")
     /// "Done"
@@ -218,106 +232,165 @@ public class ChatLocalization: ObservableObject {
     /// "Press to open"
     public lazy var chatMessageRichContentPressToOpen = lookup(key: "chatui_chat_message_richContent_pressToOpen")
     /// "Select one option below"
-    public lazy var chatMessageQuickRepliesSelectOneOption = lookup(key: "chatui_chat_message_quickReplies_selectOneOption")
+    public lazy var chatMessageQuickRepliesSelectOneOption = lookup(key: "chat.message.quick_replies.select_one_option")
+    /// "%@, %@ min"
+    public lazy var chatMessageTimePickerFormatted = lookup(key: "chat.message.time_picker.formatted")
     
     // MARK: - LiveChat - Offline
-    
+
     /// "We are offline"
-    public lazy var liveChatOfflineTitle = lookup(key: "chatui_liveChat_offline_title")
+    public lazy var liveChatOfflineTitle = lookup(key: "live_chat.offline.title")
     /// "Try again later"
-    public lazy var liveChatOfflineMessage = lookup(key: "chatui_liveChat_offline_message")
+    public lazy var liveChatOfflineMessage = lookup(key: "live_chat.offline.message")
 
     // MARK: - LiveChat - Queue
-    
+
     /// "You are number %1$d in the queue"
-    public lazy var liveChatQueueTitle = lookup(key: "chatui_liveChat_queue_title")
+    public lazy var liveChatQueueTitle = lookup(key: "live_chat.queue.title")
     /// "All agents are currently busy"
-    public lazy var liveChatQueueSubtitle = lookup(key: "chatui_liveChat_queue_subtitle")
-    
+    public lazy var liveChatQueueSubtitle = lookup(key: "live_chat.queue.subtitle")
+
     // MARK: - LiveChat - End Conversation
-    
+
     /// "You chatted with"
-    public lazy var liveChatEndConversationAssignedAgent = lookup(key: "chatui_liveChat_endConverastion_assignedAgent")
+    public lazy var liveChatEndConversationAssignedAgent = lookup(key: "live_chat.end_conversation.assigned_agent")
     /// "Start a new chat"
-    public lazy var liveChatEndConversationNew = lookup(key: "chatui_liveChat_endConverastion_new")
+    public lazy var liveChatEndConversationNew = lookup(key: "live_chat.end_conversation.new")
     /// "Back to conversation"
-    public lazy var liveChatEndConversationBack = lookup(key: "chatui_liveChat_endConverastion_back")
+    public lazy var liveChatEndConversationBack = lookup(key: "live_chat.end_conversation.back")
     /// "This conversation was closed"
-    public lazy var liveChatEndConversationDefaultTitle = lookup(key: "chatui_liveChat_endConversation_default_title")
-    
+    public lazy var liveChatEndConversationDefaultTitle = lookup(key: "live_chat.end_conversation.default_title")
+
     // MARK: - LiveChat - Inactivity Popup
-    
+
     /// "Time is up"
-    public lazy var liveChatInactivityTimeoutTitle = lookup(key: "chatui_liveChat_inactivityPopup_sessionTimeout_title")
+    public lazy var liveChatInactivityTimeoutTitle = lookup(key: "live_chat.inactivity_popup.session_timeout.title")
     /// "This conversation will now end due to inactivity"
-    public lazy var liveChatInactivityTimeoutText = lookup(key: "chatui_liveChat_inactivityPopup_sessionTimeout_text")
-    
+    public lazy var liveChatInactivityTimeoutText = lookup(key: "live_chat.inactivity_popup.session_timeout.text")
+
     // MARK: - Form
-    
+
     /// "%@ *"
-    public lazy var formRequiredLabel = lookup(key: "chatui_form_requiredLabel")
-    
+    public lazy var formRequiredLabel = lookup(key: "form.required_label")
+
     // MARK: - Form - Pre-contact Survey
-    
+
     /// "Please fill out all fields and submit the form."
-    public lazy var prechatSurveySubtitle = lookup(key: "chatui_preChatSurvey_subtitle")
-	
+    public lazy var prechatSurveySubtitle = lookup(key: "pre_chat_survey.subtitle")
+
     // MARK: - Form - Send Transcript
-    
+
     /// "Chat Transcript"
-    public lazy var sendTranscriptTitle = lookup(key: "chatui_sendTranscript_title")
+    public lazy var sendTranscriptTitle = lookup(key: "send_transcript.title")
     /// "We do not share submitted emails with any 3rd party affiliate marketing or offer programs"
-    public lazy var sendTranscriptSubtitle = lookup(key: "chatui_sendTranscript_subtitle")
+    public lazy var sendTranscriptSubtitle = lookup(key: "send_transcript.subtitle")
     /// "E-mail"
-    public lazy var sendTranscriptEmailLabel = lookup(key: "chatui_sendTranscript_email_label")
+    public lazy var sendTranscriptEmailLabel = lookup(key: "send_transcript.email.label")
     /// "Enter your email address"
-    public lazy var sendTranscriptEmailPlaceholder = lookup(key: "chatui_sendTranscript_email_placeholder")
+    public lazy var sendTranscriptEmailPlaceholder = lookup(key: "send_transcript.email.placeholder")
     /// "Confirm e-mail"
-    public lazy var sendTranscriptConfirmEmailLabel = lookup(key: "chatui_sendTranscript_confirmEmail_label")
+    public lazy var sendTranscriptConfirmEmailLabel = lookup(key: "send_transcript.confirm_email.label")
     /// "Confirm your email address"
-    public lazy var sendTranscriptConfirmEmailPlaceholder = lookup(key: "chatui_sendTranscript_confirmEmail_placeholder")
-    
+    public lazy var sendTranscriptConfirmEmailPlaceholder = lookup(key: "send_transcript.confirm_email.placeholder")
+
     // MARK: - Form - Time Picker
     
     /// "Please select a preferred time slot"
-    public lazy var formTimePickerSubtitle = lookup(key: "chatui_form_timePicker_subtitle")
+    public lazy var formTimePickerSubtitle = lookup(key: "form.time_picker.subtitle")
     /// "%d min"
-    public lazy var formTimePickerTimeSlotDuration = lookup(key: "chatui_form_timePicker_timeSlot_duration")
-    
-    // MARK: - Message
-    
-    /// "%@, %@ min"
-    public lazy var messageTimePickerFormatted = lookup(key: "chatui_message_timePicker_formatted")
+    public lazy var formTimePickerTimeSlotDuration = lookup(key: "form.time_picker.time_slot.duration")
     
     // MARK: - Init
 
-    public init(bundle: Bundle = .main, tablename: String = "CXOneChatUI") {
+    /// Creates a new `ChatLocalization` instance.
+    ///
+    /// - Parameters:
+    ///   - bundle: The bundle to search for `CXOneChatUI.strings` overrides. Defaults to `Bundle.main`.
+    ///   - tablename: The name of the strings table in the bundle. Defaults to `"CXOneChatUI"`.
+    ///   - provider: An optional ``LocalizationStringProvider`` for programmatic overrides. Defaults to `nil`.
+    public init(bundle: Bundle = .main, tablename: String = "CXOneChatUI", provider: (any LocalizationStringProvider)? = nil) {
         self.bundle = bundle
         self.tableName = tablename
+        self.provider = provider
     }
 
     // MARK: - Methods
 
     func lookup(key: String) -> String {
-        let value = NSLocalizedString(key, tableName: tableName, bundle: bundle, comment: "")
-
-        return value != key
-            ? value 
-            : NSLocalizedString(key, tableName: "CXOneChatUI", bundle: Bundle.module, comment: "")
-    }
-}
-
-// MARK: - Helpers
-
-extension ChatLocalization {
-    
-    func string(for status: ThreadStatusType) -> String {
-        switch status {
-        case .current:
-            return chatListThreadStatusCurrent
-        case .archived:
-            return chatListThreadStatusArchived
+        // 1. Programmatic provider (highest priority)
+        if let override = provider?.localizationString(forKey: key) {
+            return override
         }
+        // 2. Integrator's bundle
+        let value = NSLocalizedString(key, tableName: tableName, bundle: bundle, comment: "")
+        if value != key {
+            return value
+        }
+        // 3. SDK's own bundle (default behavior)
+        return NSLocalizedString(key, tableName: "CXOneChatUI", bundle: Bundle.module, comment: "")
     }
 }
 // swiftlint:enable identifier_name
+
+// MARK: - Preview
+
+// swiftlint:disable hardcoded_strings
+/// A demo provider that overrides a handful of strings to illustrate the programmatic approach.
+private struct DemoLocalizationProvider: LocalizationStringProvider {
+
+    func localizationString(forKey key: String) -> String? {
+        switch key {
+        case "common.confirm":   return "Got it!"
+        case "common.cancel":    return "Never mind"
+        case "chat_list.title":  return "My Chats"
+        default:                 return nil
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+#Preview("ChatLocalization") {
+    let sdkDefault = ChatLocalization()
+    let withProvider = ChatLocalization(provider: DemoLocalizationProvider())
+
+    List {
+        Section("Option 1 — SDK Defaults") {
+            LabeledContent("common.confirm", value: sdkDefault.commonConfirm)
+            LabeledContent("common.cancel", value: sdkDefault.commonCancel)
+            LabeledContent("chat_list.title", value: sdkDefault.chatListTitle)
+        }
+
+        Section("Option 2 — Programmatic Provider") {
+            LabeledContent("common.confirm", value: withProvider.commonConfirm)
+            LabeledContent("common.cancel", value: withProvider.commonCancel)
+            LabeledContent("chat_list.title", value: withProvider.chatListTitle)
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+#Preview("L10n with Provider Override") {
+    // ChatCoordinator sets L10n.overrideProvider before presenting the chat UI.
+    // Setting it here mirrors that behaviour exactly, so all L10n calls below resolve
+    // through DemoLocalizationProvider first, then fall back to the SDK bundle for
+    // any key the provider returns nil for.
+    L10n.overrideProvider = DemoLocalizationProvider()
+
+    return List {
+        Section("Overridden keys") {
+            LabeledContent("common.confirm", value: L10n.Common.confirm)
+            LabeledContent("common.cancel", value: L10n.Common.cancel)
+            LabeledContent("chat_list.title", value: L10n.ChatList.title)
+        }
+        
+        Section {
+            LabeledContent("common.ok", value: L10n.Common.ok)
+            LabeledContent("common.submit", value: L10n.Common.submit)
+        } header: {
+            Text("Unhandled keys — fall back to SDK defaults")
+        } footer: {
+            Text("`common.ok` and `common.submit` are not overridden, as they do not exist in the DemoLocalizationProvider")
+        }
+    }
+}
+// swiftlint:enable hardcoded_strings

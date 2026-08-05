@@ -22,8 +22,9 @@ struct RichLinkMessageCell: View, Themed {
     
     private enum Constants {
         
+        @MainActor
         enum Spacing {
-            static let gapMinLength: CGFloat = UIScreen.main.bounds.width / 3
+            static let gapMinLength: CGFloat = UIScreen.currentBounds.width / 3
             static let linkHorizontal: CGFloat = 2
             static let buttonContentVertical: CGFloat = 8
             static let titleAndHostVertical: CGFloat = 6
@@ -37,7 +38,6 @@ struct RichLinkMessageCell: View, Themed {
     
     // MARK: - Properties
     
-    @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     @Environment(\.colorScheme) var scheme
@@ -45,12 +45,13 @@ struct RichLinkMessageCell: View, Themed {
     @Environment(\.openURL) private var openURL
 
     @State private var isShareSheetVisible = false
+    @State private var imageAccessibilityLabel: String?
 
     let message: ChatMessage
     let item: RichLinkItem
-    
+
     // MARK: - Builder
-    
+
     var body: some View {
         HStack {
             Button {
@@ -63,7 +64,8 @@ struct RichLinkMessageCell: View, Themed {
             .contextMenu {
                 contextMenuContent
             }
-            
+            .accessibilityHint(A11y.Conversation.MessageCell.RichLink.hint)
+
             Spacer(minLength: Constants.Spacing.gapMinLength)
         }
         .sheet(isPresented: $isShareSheetVisible) {
@@ -83,25 +85,37 @@ private extension RichLinkMessageCell {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 }
+                .onSuccess { result in
+                    self.imageAccessibilityLabel = result.image.accessibilityLabel
+                }
                 .resizable()
                 .scaledToFill()
                 .frame(maxHeight: StyleGuide.Sizing.Attachment.regularDimension)
                 .clipped()
-            
+                .ifLet(imageAccessibilityLabel) { view, a11yLabel in
+                    view.accessibilityLabel(a11yLabel)
+                } else: { view in
+                    view.accessibilityHidden(true)
+                }
+
             VStack(alignment: .leading, spacing: Constants.Spacing.titleAndHostVertical) {
                 Text(item.title)
                     .font(.caption)
                     .bold()
                     .foregroundStyle(colors.content.primary)
-                
+                    .accessibilityIdentifier(A11y.Conversation.MessageCell.RichLink.Title.identifier)
+
                 if let host = item.url.host {
                     HStack(spacing: Constants.Spacing.linkHorizontal) {
                         Text(host)
-                        
+
                         Asset.Message.RichContent.link
                     }
                     .font(.caption2)
                     .foregroundStyle(colors.brand.primary)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityIdentifier(A11y.Conversation.MessageCell.RichLink.Host.identifier)
+                    .accessibilityLabel(host)
                 }
             }
             .multilineTextAlignment(.leading)
@@ -109,32 +123,41 @@ private extension RichLinkMessageCell {
         }
         .padding(.bottom, Constants.Padding.buttonContentBottom)
     }
-    
+
     @ViewBuilder
     var contextMenuContent: some View {
         Button {
             isShareSheetVisible = true
         } label: {
-            Text(localization.commonShare)
+            Text(L10n.Common.share)
 
             Asset.share
         }
-        
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(A11y.Conversation.MessageCell.RichLink.ContextMenu.ButtonShare.identifier)
+        .accessibilityLabel(L10n.Common.share)
+        .accessibilityValue(item.url.absoluteString)
+        .accessibilityHint(A11y.Conversation.MessageCell.RichLink.ContextMenu.ButtonShare.hint)
+
         Button {
             UIPasteboard.general.url = item.url
             UIPasteboard.general.string = item.url.absoluteString
         } label: {
-            Text(localization.commonCopy)
-            
+            Text(L10n.Common.copy)
+
             Asset.copy
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(A11y.Conversation.MessageCell.RichLink.ContextMenu.ButtonCopy.identifier)
+        .accessibilityLabel(L10n.Common.copy)
+        .accessibilityValue(item.url.absoluteString)
+        .accessibilityHint(A11y.Conversation.MessageCell.RichLink.ContextMenu.ButtonCopy.hint)
     }
 }
 
 // MARK: - Preview
 
 #Preview {
-    RichLinkMessageCell(message: MockData.richLinkMessage(), item: MockData.richLinkItem)
+    RichLinkMessageCell(message: MockData.richLinkMessage(), item: MockData.richLinkItem())
         .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
 }

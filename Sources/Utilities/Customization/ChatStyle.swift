@@ -19,6 +19,7 @@ import SwiftUI
 ///
 /// This class is designed to define the visual style and appearance settings for a chat  interface,
 /// allowing customization of colors, fonts, and logo elements to create a unique chat experience.
+@MainActor
 public class ChatStyle: ObservableObject {
     
     // MARK: - Properties

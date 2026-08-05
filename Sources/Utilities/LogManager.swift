@@ -23,7 +23,15 @@ public enum LogManager: StaticLogger {
 
     // MARK: - StaticLogger implementation
 
-    nonisolated(unsafe) public static var instance: LogWriter? = PrintLogWriter()
+    private static let _instance = SafeAccessContainer<LogWriter?>(PrintLogWriter())
+    public static var instance: LogWriter? {
+        get { _instance.content }
+        set {
+            _instance.mutate {
+                $0 = newValue
+            }
+        }
+    }
     public static let category: String? = "UI"
 
     // MARK: - Methods

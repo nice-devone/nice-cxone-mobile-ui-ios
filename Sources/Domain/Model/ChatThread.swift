@@ -37,7 +37,13 @@ struct ChatThread: Identifiable {
     ///
     /// This attribute can be used to get the previously assigned agent back to the thread after unassignment.
     let lastAssignedAgent: Agent?
-    
+
+    /// The agent that owns the case — the last agent it was actually assigned to.
+    ///
+    /// Persists across unassignment and is used to determine that the customer has already been engaged by
+    /// an agent (and is therefore no longer in the queue), notably after a thread recover.
+    let ownerAssignee: Agent?
+
     /// The token for the scroll position used to load more messages.
     let scrollToken: String
     
@@ -52,19 +58,48 @@ struct ChatThread: Identifiable {
         !messages.isEmpty && !scrollToken.isEmpty
     }
     
-    // MARK: - Computed properties
-    
-    var titleForConversation: String? {
-        // The thread name has higher priority in multi-thread scenarios because it's set by the customer
-        name?.nilIfEmpty()
-            // If the thread name is not set, or it's a single-thread or live chat, use the assigned agent's nickname
-            ?? assignedAgent?.nickname?.nilIfEmpty()
-            // If the thread name is not set, or it's a single-thread or live chat, use the assigned agent's full name
-            ?? assignedAgent?.fullName.nilIfEmpty()
-            // If no agent is currently assigned, but one was previously, use the last assigned agent's nickname
-            ?? lastAssignedAgent?.nickname?.nilIfEmpty()
-            // If no agent is currently assigned, but one was previously, use the last assigned agent's full name
-            ?? lastAssignedAgent?.fullName.nilIfEmpty()
+    // MARK: - Computed Properties
+
+    /// Determines the conversation title.
+    ///
+    /// Uses the following priority:
+    /// 1. Explicit thread name (customer-provided in multi-thread scenarios)
+    /// 2. Assigned agent: nickname, then full name, then a generic agent fallback
+    /// 3. Last assigned agent: nickname, then full name, then a generic agent fallback
+    /// 4. Owner assignee: nickname, then full name, then a generic agent fallback
+    ///    (e.g. on recover, where only the owner assignee is known)
+    /// 5. If no agent information is available: unassigned agent fallback
+    ///
+    /// - Returns: The best available title string.
+    var titleForConversation: String {
+        if let explicitName = name?.nilIfEmpty() {
+            return explicitName
+        } else if let assignedAgent {
+            return assignedAgent.nickname?.nilIfEmpty()
+                ?? assignedAgent.fullName
+                ?? L10n.Common.agent
+        } else if let lastAssignedAgent {
+            return lastAssignedAgent.nickname?.nilIfEmpty()
+                ?? lastAssignedAgent.fullName
+                ?? L10n.Common.agent
+        } else if let ownerAssignee {
+            return ownerAssignee.nickname?.nilIfEmpty()
+                ?? ownerAssignee.fullName
+                ?? L10n.Common.agent
+        }
+
+        // No assigned or previous agent available.
+        return L10n.Common.unassignedAgent
+    }
+
+    /// Whether the conversation is currently being handled by an AI assistant.
+    ///
+    /// `true` when the most recent agent (outbound) message is AI-generated; turns `false` once a human agent replies.
+    /// Used to drive the "AI Assistant" authorship indicator in the chat navigation bar.
+    var isAiAssistant: Bool {
+        messages.last { message in
+            message.direction == .toClient
+        }?.isAiGenerated ?? false
     }
 }
 
@@ -78,6 +113,7 @@ extension ChatThread: Equatable {
             && lhs.messages == rhs.messages
             && lhs.assignedAgent == rhs.assignedAgent
             && lhs.lastAssignedAgent == rhs.lastAssignedAgent
+            && lhs.ownerAssignee == rhs.ownerAssignee
             && lhs.scrollToken == rhs.scrollToken
             && lhs.state == rhs.state
             && lhs.positionInQueue == rhs.positionInQueue

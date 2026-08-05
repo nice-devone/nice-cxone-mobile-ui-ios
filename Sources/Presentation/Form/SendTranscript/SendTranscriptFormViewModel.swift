@@ -24,30 +24,30 @@ class SendTranscriptFormViewModel: FormViewModel<Bool>, Overlayable {
     @Published var confirmationEntity: TextFieldEntity
     
     @Binding var overlay: (() -> AnyView)?
-    
-    let chatLocalization: ChatLocalization
+
+    let chatProvider: ChatProvider
     let chatThread: ChatThread
-    
+
     // MARK: - Init
-    
+
     init(
         chatThread: ChatThread,
+        chatProvider: ChatProvider,
         overlay: Binding<(() -> AnyView)?>,
-        chatLocalization: ChatLocalization,
         onFinished: @escaping (Bool) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.chatThread = chatThread
+        self.chatProvider = chatProvider
         self._overlay = overlay
-        self.chatLocalization = chatLocalization
         self.emailEntity = TextFieldEntity(
-            label: chatLocalization.sendTranscriptEmailLabel,
+            label: L10n.SendTranscript.Email.label,
             isRequired: true,
             ident: "email",
             isEmail: true
         )
         self.confirmationEntity = TextFieldEntity(
-            label: chatLocalization.sendTranscriptConfirmEmailLabel,
+            label: L10n.SendTranscript.ConfirmEmail.label,
             isRequired: true,
             ident: "confirm_email",
             isEmail: true
@@ -84,8 +84,22 @@ class SendTranscriptFormViewModel: FormViewModel<Bool>, Overlayable {
         let isEmailValid = !emailEntity.value.isEmpty && emailEntity.value.isValidEmail
         let isConfirmationEmailValid = !confirmationEntity.value.isEmpty && confirmationEntity.value.isValidEmail
         let isConfirmed = emailEntity.value == confirmationEntity.value
-        
+
         isFormValid = isEmailValid && isConfirmationEmailValid && isConfirmed
+
+        if isFormValid == false {
+            switch false {
+            case isEmailValid:
+                // E-mail field value is not valid
+                firstInvalidFieldID = emailEntity.id
+            case isConfirmationEmailValid:
+                // E-mail confirmation field value is not valid
+                firstInvalidFieldID = confirmationEntity.id
+            default:
+                // Confirmation field does not match e-mail field
+                firstInvalidFieldID = confirmationEntity.id
+            }
+        }
     }
 }
 
@@ -95,12 +109,12 @@ private extension SendTranscriptFormViewModel {
     
     @MainActor
     func sendTranscript() async -> Bool {
-        await self.showLoading(message: chatLocalization.commonLoading)
+        await self.showLoading()
         
         var isSuccessful = true
         
         do {
-            let provider = try CXoneChat.shared.threads.provider(for: chatThread.id)
+            let provider = try chatProvider.threads.provider(for: chatThread.id)
             try await provider.sendTranscript(to: emailEntity.value)
             
             LogManager.trace("Chat transcript successfully sent")
@@ -116,14 +130,12 @@ private extension SendTranscriptFormViewModel {
     }
     
     @MainActor
-    func showLoading(message: String, action: (() async -> Void)? = nil, file: StaticString = #file, line: UInt = #line) async {
+    func showLoading(file: StaticString = #file, line: UInt = #line) async {
         LogManager.trace("Showing loading overlay", file: file, line: line)
         
         await showOverlay({
-            ChatLoadingOverlay(text: message) {
-                Task { @MainActor in
-                    await action?()
-                }
+            ChatLoadingOverlay(text: L10n.Common.loading) {
+                // Nothing do to here
             }
         }, file: file, line: line)
     }

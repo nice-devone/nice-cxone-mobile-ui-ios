@@ -22,8 +22,8 @@ protocol AudioPlayerProviding: AnyObject {
     // MARK: - Properties
 
     var currentTime: TimeInterval { get }
-    var onFinishPlaying: ((Bool) -> Void)? { get set }
-    var onDecodeError: ((Error?) -> Void)? { get set }
+    var onFinishPlaying: (@Sendable (Bool) -> Void)? { get set }
+    var onDecodeError: (@Sendable (Error?) -> Void)? { get set }
 
     // MARK: - Methods
 
@@ -44,8 +44,8 @@ class DefaultAudioPlayerProvider: NSObject, AudioPlayerProviding {
         avAudioPlayer?.currentTime ?? 0
     }
 
-    var onFinishPlaying: ((Bool) -> Void)?
-    var onDecodeError: ((Error?) -> Void)?
+    var onFinishPlaying: (@Sendable (Bool) -> Void)?
+    var onDecodeError: (@Sendable (Error?) -> Void)?
 
     // MARK: - Methods
 

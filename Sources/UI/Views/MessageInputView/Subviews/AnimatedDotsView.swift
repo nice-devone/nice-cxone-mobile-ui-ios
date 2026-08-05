@@ -56,9 +56,7 @@ struct AnimatedDotsView: View, Themed {
 // MARK: - Previews
 
 #Preview {
-    let localization = ChatLocalization()
     
-    AnimatedDotsView(text: localization.chatMessageInputAudioRecorderRecording)
-        .environmentObject(localization)
+    AnimatedDotsView(text: L10n.Chat.MessageInput.AudioRecorder.recording)
         .environmentObject(ChatStyle())
 }

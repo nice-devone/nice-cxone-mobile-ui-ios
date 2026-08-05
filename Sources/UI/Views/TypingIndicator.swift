@@ -69,6 +69,7 @@ struct TypingIndicator: View, Themed {
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             content
+                .accessibilityHidden(true)
             
             if let agent {
                 AvatarView(imageUrl: agent.avatarURL, initials: agent.initials)
@@ -76,6 +77,14 @@ struct TypingIndicator: View, Themed {
                     .offset(x: -Constants.Spacing.avatarOffset, y: Constants.Spacing.avatarOffset)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(A11y.Conversation.TypingIndicator.identifier)
+        .accessibilityLabel(
+            agent?.userName != nil
+                ? A11y.Conversation.TypingIndicator.label(agent?.userName ?? "")
+                : A11y.Conversation.TypingIndicator.Label.unknown
+        )
+        .accessibilityAddTraits(.updatesFrequently)
         .task {
             await AnimationSequence(style: .easeInOut, duration: Constants.animationTime)
                 .append {

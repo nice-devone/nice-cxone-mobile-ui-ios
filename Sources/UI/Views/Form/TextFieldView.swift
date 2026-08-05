@@ -20,55 +20,85 @@ struct TextFieldView: View {
     // MARK: - Properties
     
     @ObservedObject private var entity: FormCustomFieldType
-    
-    @EnvironmentObject private var localization: ChatLocalization
 
     @Binding private var compareWith: String
-    
+
+    @State private var currentError: String?
+
     private let placeholder: String?
     private let onChange: () -> Void
-    
+
     private var isEmail: Bool {
         (entity as? TextFieldEntity)?.isEmail ?? false
     }
-    
+
+    private var fieldTitle: String {
+        entity.isRequired
+            ? L10n.Form.requiredLabel(entity.label)
+            : entity.label
+    }
+
+    private var fieldValidator: (String) -> String? {
+        allOf(
+            entity.isRequired ? required : any,
+            isEmail ? email : any,
+            !compareWith.isEmpty ? compare(compareWith) : any
+        )
+    }
+
     // MARK: - Init
-    
+
     init(entity: FormCustomFieldType, placeholder: String? = nil, compareWith: Binding<String>? = nil, onChange: @escaping () -> Void) {
         self.entity = entity
         self.placeholder = placeholder
         self._compareWith = compareWith ?? .constant("")
         self.onChange = onChange
     }
-    
+
     // MARK: - Content
-    
+
     var body: some View {
         ValidatedTextField(
-            entity.isRequired
-                ? String(format: localization.formRequiredLabel, entity.label)
-                : entity.label,
+            fieldTitle,
             text: $entity.value,
             placeholder: placeholder,
-            validator: allOf(
-                entity.isRequired ? required(localization) : any,
-                isEmail ? email(localization) : any,
-                !compareWith.isEmpty ? compare(compareWith, localization) : any
-            )
+            validator: fieldValidator,
+            // Apply the field-level identifier to the inner, editable `TextField` itself.
+            // A wrapping `.accessibilityElement(children: .combine)` here would collapse the
+            // subtree into a single `XCUIElementTypeOther`, which is not typeable (breaking
+            // UI automation `sendKeys`) and strips the editable text-field trait from VoiceOver.
+            accessibilityIdentifier: A11y.Form.TextFieldView.identifier(entity.label)
         )
         .if(isEmail) { view in
             view
                 .textContentType(.emailAddress)
                 .keyboardType(.emailAddress)
         }
-        .onChange(of: entity.value) { _ in
+        .onChange(of: entity.value) { newValue in
             onChange()
+
+            // Validate and track error state for accessibility announcements
+            let newError = fieldValidator(newValue)
+
+            // Only announce when error state changes
+            if newError != currentError {
+                currentError = newError
+                // Announce immediately when error appears
+                if let error = newError {
+                    A11y.announce("\(fieldTitle), \(error)")
+                }
+            }
+        }
+        .onAppear {
+            // Run validator initially to set correct state for required fields
+            currentError = fieldValidator(entity.value)
         }
     }
 }
 
 // MARK: - Previews
 
+// swiftlint:disable hardcoded_strings sf_symbol_key_in_image
 @available(iOS 17.0, *)
 #Preview {
     @Previewable @State var firstNameEntity = TextFieldEntity(label: "First Name", isRequired: true, ident: "firstName", isEmail: false)
@@ -109,5 +139,5 @@ struct TextFieldView: View {
     }
     .padding(.horizontal, 16)
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }
+// swiftlint:enable hardcoded_strings sf_symbol_key_in_image

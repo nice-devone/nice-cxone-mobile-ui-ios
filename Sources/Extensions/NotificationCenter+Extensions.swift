@@ -38,7 +38,7 @@ public extension NotificationCenter {
 
 extension NotificationCenter {
 
-    func threadDeeplinkObserver(_ action: @escaping (Notification) -> Void) -> NSObjectProtocol {
+    func threadDeeplinkObserver(_ action: @escaping @Sendable (Notification) -> Void) -> NSObjectProtocol {
         addObserver(
             forName: Notification.Name(Self.threadDeeplinkNotificationName),
             object: nil,

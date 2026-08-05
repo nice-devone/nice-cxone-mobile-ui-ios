@@ -30,7 +30,6 @@ struct PrechatSurveyFormView: View, Themed {
     
     // MARK: - Properties
 
-    @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     @SwiftUI.Environment(\.colorScheme) var scheme
@@ -49,21 +48,34 @@ struct PrechatSurveyFormView: View, Themed {
     // MARK: - Content
 
     var body: some View {
-        FormView(viewModel: viewModel, title: title, subtitle: localization.prechatSurveySubtitle) {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: Constants.Spacing.contentVertical) {
-                    ForEach(viewModel.customFields) { entity in
-                        switch entity {
-                        case let entity as TreeFieldEntity:
-                            TreeFieldView(entity: entity, onChange: viewModel.validateForm)
-                        case let entity as ListFieldEntity:
-                            ListFieldView(entity: entity, onChange: viewModel.validateForm)
-                        default:
-                            TextFieldView(entity: entity, onChange: viewModel.validateForm)
+        FormView(viewModel: viewModel, title: title, subtitle: L10n.PreChatSurvey.subtitle) {
+            ScrollViewReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: Constants.Spacing.contentVertical) {
+                        ForEach(viewModel.customFields) { entity in
+                            switch entity {
+                            case let entity as TreeFieldEntity:
+                                TreeFieldView(entity: entity, onChange: viewModel.validateForm)
+                            case let entity as ListFieldEntity:
+                                ListFieldView(entity: entity, onChange: viewModel.validateForm)
+                            default:
+                                TextFieldView(entity: entity, onChange: viewModel.validateForm)
+                            }
                         }
+
+                        Spacer(minLength: Constants.Spacing.contentMinGap)
                     }
-                    
-                    Spacer(minLength: Constants.Spacing.contentMinGap)
+                }
+                .onChange(of: viewModel.firstInvalidFieldID) { target in
+                    guard let target else {
+                        return
+                    }
+
+                    withAnimation {
+                        proxy.scrollTo(target, anchor: .center)
+                    }
+
+                    A11y.announce(A11y.Announcement.Form.Validation.Invalid.argument)
                 }
             }
         }
@@ -90,5 +102,4 @@ struct PrechatSurveyFormView: View, Themed {
             PrechatSurveyFormView(viewModel: viewModel, title: "Pre-chat survey")
         }
         .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
 }

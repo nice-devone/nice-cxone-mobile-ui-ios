@@ -2,6 +2,33 @@
 # [Unreleased]
 
 
+<a name="4.0.0"></a>
+# [4.0.0] - 2026-08-05
+
+## Breaking Changes
+- Raised `swift-tools-version` from 5.7 to 6.0 (requires Xcode 16 or later)
+- Raised minimum supported platform to iOS 16.0 (previously iOS 15.0)
+- `ChatCoordinator.init` now requires a `chatProvider: ChatProvider` parameter. The UI module no longer reads `CXoneChat.shared` internally — construct a `CXoneChat()` instance in your app and pass it: `ChatCoordinator(chatProvider: chatProvider, …)`. `ChatCoordinator` subclasses must accept `chatProvider` in their own init and forward it via `super.init(chatProvider:…)`. See the [SDK Migration Guide](https://github.com/nice-devone/nice-cxone-mobile-sdk-ios/blob/main/docs/migration-from-singleton.md) for the full pattern.
+- `ChatStyle`, `ChatLocalization`, `ChatCoordinator`, and `FormViewModel` are now `@MainActor`. Integrators accessing these types from non-`@MainActor` contexts must annotate those sites with `@MainActor` or wrap access in `await MainActor.run { }`.
+- Removed the `ChatDelegate` protocol and `ChatCoordinator.delegate`. Implicit OAuth token refresh is now handled by the SDK — register `CustomerProvider.setTokenDelegateListener(_:)` (required for the implicit flow) instead of implementing `onConnectionTokenExpired()`.
+- `RichMessageTimeSlot.formattedDescription(localization:)` is now `@MainActor`. Calls from non-`@MainActor` contexts require `await MainActor.run { }`.
+- Localization string keys have been renamed from the flat `chatui_` prefix format (e.g. `chatui_common_ok`) to dot-notation (e.g. `common.ok`). If you supply a custom `CXOneChatUI.strings` file, you must migrate your keys to the new format — otherwise strings will silently fall back to SDK defaults. See the [Localization migration table](docs/cs-localization.md#deprecated-approaches) for a full key mapping.
+
+## Features
+- Add VoiceOver and accessibility support across all UI components
+- Allow customization of accessibility labels and hints via `ChatAccessibility`
+- Allow customization of localization strings via a `LocalizationStringProvider` protocol
+- Adopt Swift strict-concurrency (internal refactor; no public API change)
+- Show an "AI Assistant" indicator in the chat navigation bar while the conversation is handled by an AI agent; it disappears once a human agent takes over. The label is localizable via the `common.ai_assistant` key.
+- Add localized fallbacks when an agent's personal information is hidden by the backend: the conversation title and the end-of-conversation header fall back to a generic "Agent" label, and the agent avatar falls back to initials or a placeholder icon
+
+## Fixes
+- On iOS 16, the chat log now scrolls to reveal newly arriving messages and the agent typing indicator, instead of leaving them hidden behind the message input bar. iOS 17+ was unaffected.
+- On iOS 16, the chat and thread-list navigation bars now keep their themed background visible at all times. Previously the bar turned transparent when the chat log or thread list was scrolled to the top, so message content showed through behind the title and toolbar buttons.
+- The position-in-queue overlay now stays hidden once the customer has been engaged by an agent, including after the agent unassigns and the contact waits for a new one, and when a thread is recovered with an existing case owner. This aligns the behavior with the Web Chat SDK.
+- When a connection attempt fails with `CXoneChatError.featureUnavailable(_:)`, the chat now presents a targeted alert identifying the unavailable feature (for example, "The chat is not available because the 'Explicit OAuth' feature is not implemented. Check the documentation for more information.") and closes the chat when the alert is dismissed. Previously the failure surfaced as the generic disconnect alert.
+
+
 <a name="3.3.1"></a>
 # [3.3.1] - 2026-06-24
 
@@ -480,7 +507,8 @@
   - typing start/end
 
 
-[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.3.1...HEAD
+[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/4.0.0...HEAD
+[4.0.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.3.1...4.0.0
 [3.3.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.3.0...3.3.1
 [3.3.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.2.0...3.3.0
 [3.2.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.1.3...3.2.0
