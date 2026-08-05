@@ -18,7 +18,7 @@ import SwiftUI
 /// Protocol defining the required color properties for background styles used in the chat UI.
 ///
 /// Conforming types provide colors for default, inverse, and surface backgrounds.
-public protocol BackgroundStyleColors {
+public protocol BackgroundStyleColors: Sendable {
     /// The default background color.
     var `default`: Color { get }
     /// The inverse background color (typically used for contrast).
@@ -32,7 +32,7 @@ public protocol BackgroundStyleColors {
 /// Default implementation of `BackgroundStyleColors` providing concrete color values.
 ///
 /// Use this struct to specify the main background, inverse, and surface colors for light and dark themes.
-public struct BackgroundStyleColorsImpl: BackgroundStyleColors {
+public struct BackgroundStyleColorsImpl: BackgroundStyleColors, Sendable {
     
     // MARK: - Properties
     

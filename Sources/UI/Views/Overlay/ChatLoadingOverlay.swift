@@ -36,7 +36,6 @@ struct ChatLoadingOverlay: View, Themed {
     // MARK: - Properties
 
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
     
     @Environment(\.colorScheme) var scheme
 
@@ -51,36 +50,37 @@ struct ChatLoadingOverlay: View, Themed {
         ZStack {
             VisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
                 .ignoresSafeArea(.all)
-            
+                .accessibilityHidden(true)
+
             VStack(spacing: Constants.Spacing.contentVertical) {
                 VStack(spacing: Constants.Spacing.progressTextVertical) {
                     ProgressView()
                         .scaleEffect(Constants.Sizing.progressScaleEffect)
                         .tint(colors.content.secondary)
-                    
+
                     Text(text)
                         .font(.title3)
                         .foregroundStyle(colors.content.secondary)
                 }
-                
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(A11y.ChatOverlay.Loading.ProgressView.label)
+
                 if isCancelVisible {
-                    Text(localization.overlayLoadingDelayTitle)
+                    Text(L10n.Overlay.LoadingDelay.title)
                         .foregroundStyle(colors.content.secondary)
-                    
-                    Button(localization.commonCloseChat, action: onCancel)
+
+                    Button(L10n.Common.closeChat, action: onCancel)
                         .buttonStyle(.destructive)
+                        .accessibilityIdentifier(A11y.ChatOverlay.Loading.ButtonDelay.identifier)
+                        .accessibilityHint(A11y.ChatOverlay.Loading.ButtonDelay.hint)
                 }
             }
         }
-        .task {
-            // Reveal the cancel button after the delay. `.task` ties the work to the
-            // view's identity and cancels automatically when the overlay leaves the
-            // hierarchy, so – unlike a DispatchWorkItem stored in @State – it cannot
-            // form a retain cycle that keeps the overlay (and its closure) alive.
+        .task { @MainActor in
             await Task.sleep(seconds: Constants.cancelDelay)
 
-            // `Task.sleep(seconds:)` swallows cancellation, so bail out explicitly
-            // when the overlay was dismissed before the delay elapsed.
+            // The project's `Task.sleep(seconds:)` swallows `CancellationError`, so we have to
+            // re-check cancellation explicitly before mutating state on a disappearing view.
             guard !Task.isCancelled else {
                 return
             }
@@ -88,6 +88,7 @@ struct ChatLoadingOverlay: View, Themed {
             isCancelVisible = true
         }
         .animation(.easeIn, value: isCancelVisible)
+        .accessibilityAddTraits(.updatesFrequently)
     }
 }
 
@@ -144,7 +145,7 @@ private struct TestContentView: View {
     @Previewable @State var isPresented: Bool = true
     
     ZStack {
-        NavigationView {
+        NavigationStack {
             TestContentView()
         }
         
@@ -155,5 +156,4 @@ private struct TestContentView: View {
         }
     }
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }

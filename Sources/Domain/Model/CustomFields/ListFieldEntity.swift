@@ -31,15 +31,15 @@ import Foundation
 ///     ...
 /// }
 /// ```
-public class ListFieldEntity: FormCustomFieldType {
+class ListFieldEntity: FormCustomFieldType {
     
     // MARK: - Properties
     
     /// A dictionary that holds a set of options where the keys represent option values and the values represent option labels.
-    public let options: [String: String]
+    let options: [String: String]
 
     /// The current value associated with the field
-    public var selectedOption: String {
+    var selectedOption: String {
         options[value] ?? ""
     }
     
@@ -53,7 +53,7 @@ public class ListFieldEntity: FormCustomFieldType {
     ///   - ident: A unique identifier or key for this field.
     ///   - options: A dictionary that holds a set of options where the keys represent option values and the values represent option labels.
     ///   - value: The current value associated with the field, which can be updated and observed using the `@Published` property wrapper.
-    public init(label: String, isRequired: Bool, ident: String, options: [String: String], value: String? = nil) {
+    init(label: String, isRequired: Bool, ident: String, options: [String: String], value: String? = nil) {
         self.options = options
         
         super.init(label: label, isRequired: isRequired, ident: ident, value: value ?? "")

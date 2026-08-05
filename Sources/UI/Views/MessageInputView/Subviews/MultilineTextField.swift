@@ -15,48 +15,52 @@
 
 import SwiftUI
 
-@available(iOS 16.0, *)
 struct MultilineTextField: View, Themed {
-    
+
     // MARK: - Constants
-    
+
     private enum Constants {
         static let editingTimerInternalDelay: TimeInterval = 1.0
         static let typingTimeoutThreshold = 3
-        
+
         enum Sizing {
             static let lineLimit = 6
         }
-        
+
         enum Padding {
             static let content: CGFloat = 8
         }
     }
-    
+
     // MARK: - Properties
-    
+
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject private var localization: ChatLocalization
-    
+
     @Environment(\.colorScheme) var scheme
-    
+
     @Binding var text: String
     @Binding var isEditing: Bool
-    
+
+    var isFocused: FocusState<Bool>.Binding
+
     @State private var timer: Timer?
     @State private var textInputWaitTime = 0
-    
+
     // MARK: - Builder
-    
+
     var body: some View {
         TextField(text: $text, axis: .vertical) {
-            Text(localization.chatMessageInputPlaceholder)
+            Text(L10n.Chat.MessageInput.placeholder)
                 .font(.body)
                 .foregroundStyle(colors.content.tertiary)
         }
         .foregroundStyle(colors.content.primary)
         .lineLimit(Constants.Sizing.lineLimit)
         .padding(Constants.Padding.content)
+        .focused(isFocused)
+        .accessibilityIdentifier(A11y.MessageInput.TextField.identifier)
+        .accessibilityLabel(A11y.MessageInput.TextField.label)
+        .accessibilityHint(A11y.MessageInput.TextField.hint)
         .onChange(of: text) { _ in
             if timer != nil {
                 if textInputWaitTime > .zero {
@@ -64,16 +68,18 @@ struct MultilineTextField: View, Themed {
                 }
             } else {
                 isEditing = true
-                
+
                 self.timer = Timer.scheduledTimer(withTimeInterval: Constants.editingTimerInternalDelay, repeats: true) { _ in
-                    textInputWaitTime += 1
-                    
-                    if self.textInputWaitTime >= Constants.typingTimeoutThreshold {
-                        self.timer?.invalidate()
-                        self.timer = nil
-                        
-                        self.isEditing = false
-                        self.textInputWaitTime = .zero
+                    Task { @MainActor in
+                        textInputWaitTime += 1
+
+                        if textInputWaitTime >= Constants.typingTimeoutThreshold {
+                            self.timer?.invalidate()
+                            self.timer = nil
+
+                            isEditing = false
+                            textInputWaitTime = .zero
+                        }
                     }
                 }
             }
@@ -87,13 +93,13 @@ struct MultilineTextField: View, Themed {
 #Preview {
     @Previewable @State var message = ""
     @Previewable @State var isEditing = false
-    
+    @Previewable @FocusState var isFocused: Bool
+
     VStack {
         Spacer()
-        
-        MultilineTextField(text: $message, isEditing: $isEditing)
+
+        MultilineTextField(text: $message, isEditing: $isEditing, isFocused: $isFocused)
             .padding(20)
             .environmentObject(ChatStyle())
-            .environmentObject(ChatLocalization())
     }
 }

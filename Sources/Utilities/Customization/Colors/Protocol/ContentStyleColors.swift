@@ -18,7 +18,7 @@ import SwiftUI
 /// Protocol defining the required color properties for content styles used in the chat UI.
 ///
 /// Conforming types provide colors for primary, secondary, tertiary, and inverse content.
-public protocol ContentStyleColors {
+public protocol ContentStyleColors: Sendable {
     /// The primary content color.
     var primary: Color { get }
     /// The secondary content color.
@@ -34,7 +34,7 @@ public protocol ContentStyleColors {
 /// Default implementation of `ContentStyleColors` providing concrete color values.
 ///
 /// Use this struct to specify the main content colors for light and dark themes.
-public struct ContentStyleColorsImpl: ContentStyleColors {
+public struct ContentStyleColorsImpl: ContentStyleColors, Sendable {
     
     // MARK: - Properties
     

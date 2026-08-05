@@ -30,7 +30,6 @@ struct SendTranscriptFormView: View, Themed {
     
     // MARK: - Properties
 
-    @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     @SwiftUI.Environment(\.colorScheme) var scheme
@@ -46,18 +45,18 @@ struct SendTranscriptFormView: View, Themed {
     // MARK: - Content
 
     var body: some View {
-        FormView(viewModel: viewModel, title: localization.sendTranscriptTitle, subtitle: localization.sendTranscriptSubtitle) {
+        FormView(viewModel: viewModel, title: L10n.SendTranscript.title, subtitle: L10n.SendTranscript.subtitle) {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: Constants.Spacing.contentVertical) {
                     TextFieldView(
                         entity: viewModel.emailEntity,
-                        placeholder: localization.sendTranscriptEmailPlaceholder,
+                        placeholder: L10n.SendTranscript.Email.placeholder,
                         onChange: viewModel.validateForm
                     )
                     
                     TextFieldView(
                         entity: viewModel.confirmationEntity,
-                        placeholder: localization.sendTranscriptConfirmEmailPlaceholder,
+                        placeholder: L10n.SendTranscript.ConfirmEmail.placeholder,
                         compareWith: $viewModel.emailEntity.value,
                         onChange: viewModel.validateForm
                     )
@@ -66,14 +65,23 @@ struct SendTranscriptFormView: View, Themed {
                 }
             }
         }
+        .fullScreenCover(isPresented: viewModel.isOverlayDisplayed) {
+            viewModel.overlay?()
+                .presentationWithBackgroundColor(.clear)
+        }
+        .onChange(of: viewModel.firstInvalidFieldID) { target in
+            guard target != nil else {
+                return
+            }
+
+            A11y.announce(A11y.Announcement.Form.Validation.Invalid.argument)
+        }
     }
 }
 
 // MARK: - Preview
 
 #Preview {
-    let localization = ChatLocalization()
-        
     let viewModel = SendTranscriptFormViewModel(
         chatThread: ChatThread(
             id: LowercaseUUID().uuidString,
@@ -81,12 +89,13 @@ struct SendTranscriptFormView: View, Themed {
             messages: [],
             assignedAgent: nil,
             lastAssignedAgent: nil,
+            ownerAssignee: nil,
             scrollToken: "",
             state: .ready,
             positionInQueue: nil
         ),
+        chatProvider: MockChatProvider(),
         overlay: .constant(nil),
-        chatLocalization: localization,
         onFinished: { email in
             print("E-mail: \(email)")
         },
@@ -100,5 +109,4 @@ struct SendTranscriptFormView: View, Themed {
             SendTranscriptFormView(viewModel: viewModel)
         }
         .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
 }

@@ -17,14 +17,13 @@ import CXoneChatSDK
 import SwiftUI
 import UIKit
 
-struct ChatContainerView: View, Themed, Alertable {
+struct ChatContainerView: View, Themed {
 
     // MARK: - Properties
 
     @ObservedObject var viewModel: ChatContainerViewModel
     
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
     
     @SwiftUI.Environment(\.colorScheme) var scheme
     
@@ -41,7 +40,7 @@ struct ChatContainerView: View, Themed, Alertable {
     var body: some View {
         ZStack {
             contentWrapper
-                .alert(item: $viewModel.alertType, content: alertContent)
+                .alertable(isPresented: viewModel.showAlert, presenting: viewModel.alertType)
                 .sheet(isPresented: viewModel.isSheetDisplayed) {
                     viewModel.sheet?()
                 }
@@ -79,7 +78,6 @@ struct ChatContainerView: View, Themed, Alertable {
 
                 self.overlayManager.show {
                     overlay()
-                        .environmentObject(localization)
                         .environmentObject(style)
                 }
             } else {
@@ -96,7 +94,7 @@ private extension ChatContainerView {
     @ViewBuilder
     var contentWrapper: some View {
         if viewModel.presentModally {
-            NavigationView {
+            NavigationStack {
                 content
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) {
@@ -108,10 +106,12 @@ private extension ChatContainerView {
                                 Asset.down
                                     .foregroundStyle(colors.brand.primary)
                             }
+                            .accessibilityIdentifier(A11y.ChatContainer.NavigationBar.ButtonClose.identifier)
+                            .accessibilityLabel(A11y.ChatContainer.NavigationBar.ButtonClose.label)
+                            .accessibilityHint(A11y.ChatContainer.NavigationBar.ButtonClose.hint)
                         }
                     }
             }
-            .navigationViewStyle(StackNavigationViewStyle())
         } else {
             content
         }

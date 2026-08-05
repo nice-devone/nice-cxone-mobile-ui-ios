@@ -43,6 +43,21 @@ extension String {
     func nilIfEmpty() -> String? {
         isEmpty ? nil : self
     }
+    
+    // MARK: - Static methods
+    
+    static func formattedAudioLengthForA11y(_ length: Double) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.minute, .second]
+        formatter.unitsStyle = .full
+        
+        guard let formatted = formatter.string(from: length) else {
+            LogManager.error("Failed to format audio length for A11y. Returning raw value.")
+            return length.description
+        }
+        
+        return formatted
+    }
 }
 
 // MARK: - Helpers

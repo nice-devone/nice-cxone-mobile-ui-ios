@@ -40,7 +40,6 @@ struct OfflineView: View, Themed {
     
     @Environment(\.colorScheme) var scheme
     
-    @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     let onButtonTap: () -> Void
@@ -58,15 +57,18 @@ struct OfflineView: View, Themed {
                     .resizable()
                     .scaledToFit()
                     .frame(width: proxy.size.width / Constants.Sizing.imageWidthScale)
-                
+                    .accessibilityHidden(true)
+
                 Spacer()
-                
+
                 Button(role: .destructive, action: onButtonTap) {
-                    Text(localization.commonCloseChat)
+                    Text(L10n.Common.closeChat)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.destructive)
                 .padding(.horizontal, Constants.Padding.buttonHorizontal)
+                .accessibilityIdentifier(A11y.OfflineView.ButtonClose.identifier)
+                .accessibilityHint(A11y.OfflineView.ButtonClose.hint)
             }
             .padding(Constants.Padding.content)
             .background(colors.background.default)
@@ -89,13 +91,14 @@ private extension OfflineView {
                     Circle()
                         .fill(colors.status.error)
                 }
-            
+                .accessibilityHidden(true)
+
             VStack(alignment: .leading) {
-                Text(localization.liveChatOfflineTitle)
+                Text(L10n.LiveChat.Offline.title)
                     .fontWeight(.medium)
                     .foregroundStyle(colors.content.primary)
                 
-                Text(localization.liveChatOfflineMessage)
+                Text(L10n.LiveChat.Offline.message)
                     .font(.subheadline)
                     .foregroundStyle(colors.content.secondary)
             }
@@ -119,11 +122,9 @@ private extension OfflineView {
         }
         .interactiveDismissDisabled()
         .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
 }
 
 #Preview("Full-screen") {
     OfflineView { }
         .environmentObject(ChatStyle())
-        .environmentObject(ChatLocalization())
 }

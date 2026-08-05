@@ -40,8 +40,7 @@ struct LivechatPositionInQueueView: View, Themed {
     // MARK: - Properties
     
     @Environment(\.colorScheme) var scheme
-    
-    @EnvironmentObject private var localization: ChatLocalization
+
     @EnvironmentObject var style: ChatStyle
     
     let positionInQueue: Int
@@ -57,17 +56,19 @@ struct LivechatPositionInQueueView: View, Themed {
     var body: some View {
         HStack(spacing: Constants.Spacing.contentHorizontal) {
             hourglassAnimation
-            
+
             VStack(alignment: .leading, spacing: Constants.Spacing.titleMessageVertical) {
                 if positionInQueue > .zero {
-                    Text(String(format: localization.liveChatQueueTitle, positionInQueue))
+                    Text(L10n.LiveChat.Queue.title(positionInQueue))
                         .fontWeight(.medium)
                         .foregroundStyle(colors.content.primary)
+                        .accessibilityAddTraits(.isStaticText)
                 }
-                
-                Text(localization.liveChatQueueSubtitle)
+
+                Text(L10n.LiveChat.Queue.subtitle)
                     .font(.subheadline)
                     .foregroundStyle(colors.content.secondary)
+                    .accessibilityAddTraits(.isStaticText)
             }
             .multilineTextAlignment(.leading)
         }
@@ -76,6 +77,11 @@ struct LivechatPositionInQueueView: View, Themed {
             RoundedRectangle(cornerRadius: Constants.Sizing.cornerRadius)
                 .fill(colors.background.surface.emphasis)
         )
+        .animation(.default, value: positionInQueue)
+        .onAppear {
+            announcePositionForA11y(positionInQueue)
+        }
+        .onChange(of: positionInQueue, perform: announcePositionForA11y)
     }
 }
 
@@ -96,15 +102,29 @@ private extension LivechatPositionInQueueView {
                 Circle()
                     .fill(colors.brand.primary)
             }
+            .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Private methods
+
+private extension LivechatPositionInQueueView {
+
+    func announcePositionForA11y(_ position: Int) {
+        LogManager.trace("Announcing queue position for VoiceOver")
+
+        if position > .zero {
+            A11y.announce(L10n.LiveChat.Queue.title(position))
+        } else {
+            A11y.announce(L10n.LiveChat.Queue.subtitle)
+        }
     }
 }
 
 // MARK: - Previews
 
 #Preview {
-    let localization = ChatLocalization()
-    
-    NavigationView {
+    NavigationStack {
         VStack {
             LivechatPositionInQueueView(position: 1)
                 .padding(.horizontal, 16)
@@ -116,8 +136,7 @@ private extension LivechatPositionInQueueView {
                 isEditing: .constant(false),
                 isInputEnabled: .constant(true),
                 isSendingMessage: .constant(false),
-                alertType: .constant(nil),
-                localization: localization
+                alertType: .constant(nil)
             ) { _, _ in
                 // Do nothing
             }
@@ -125,5 +144,4 @@ private extension LivechatPositionInQueueView {
         .navigationTitle("No Agent")
     }
     .environmentObject(ChatStyle())
-    .environmentObject(localization)
 }

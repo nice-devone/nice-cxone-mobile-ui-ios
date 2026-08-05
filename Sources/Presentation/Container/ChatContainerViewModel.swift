@@ -17,7 +17,8 @@
 import CXoneChatSDK
 import SwiftUI
 
-class ChatContainerViewModel: ObservableObject, Overlayable {
+@MainActor
+class ChatContainerViewModel: ObservableObject, Overlayable, AlertableViewModel {
 
     // MARK: - Properties
 
@@ -28,8 +29,6 @@ class ChatContainerViewModel: ObservableObject, Overlayable {
     @Published var isRecoveringThread = false
     
     let chatProvider: ChatProvider
-    let chatLocalization: ChatLocalization
-    let chatStyle: ChatStyle
     let chatConfiguration: ChatConfiguration
     let presentModally: Bool
     let onDismiss: (() -> Void)?
@@ -41,8 +40,6 @@ class ChatContainerViewModel: ObservableObject, Overlayable {
     var disconnecting = false
     var processingDeeplink = false
 
-    weak var delegate: ChatDelegate?
-    
     private weak var cachedListViewModel: ThreadListViewModel?
     private(set) weak var cachedThreadViewModel: ThreadViewModel?
 
@@ -50,24 +47,19 @@ class ChatContainerViewModel: ObservableObject, Overlayable {
     private var directNavigationToken: NSObjectProtocol?
     // To be able to handle receiving new messages from different thread, it is necessary to cache current thread list
     private var cachedThreadMessageCount = [String: Int]()
-    private var isProcessingChatUpdate = false
-    private var pendingChatUpdateTasks = [() -> Void]()
+    private var eventTask: Task<Void, Never>?
     
     // MARK: - Init
 
     init(
         chatProvider: ChatProvider,
         threadToOpen: String? = nil,
-        chatLocalization: ChatLocalization,
-        chatStyle: ChatStyle,
         chatConfiguration: ChatConfiguration,
         presentModally: Bool,
         onDismiss: (() -> Void)? = nil
     ) {
         self.chatProvider = chatProvider
         self.threadToOpen = threadToOpen
-        self.chatLocalization = chatLocalization
-        self.chatStyle = chatStyle
         self.chatConfiguration = chatConfiguration
         self.presentModally = presentModally
         self.onDismiss = onDismiss
@@ -77,14 +69,13 @@ class ChatContainerViewModel: ObservableObject, Overlayable {
                 LogManager.error("Unable to retrieve threadId from notification")
                 return
             }
-            
-            LogManager.trace("ChatContainerViewModel received notification to navigate directly to thread: \(threadId)")
-            
-            if self?.chatProvider.state.isChatAvailable == false {
-                self?.threadToOpen = threadId
-            } else {
-                // Navigate directly to the thread
-                Task { @MainActor in
+
+            Task { @MainActor in
+                LogManager.trace("ChatContainerViewModel received notification to navigate directly to thread: \(threadId)")
+
+                if self?.chatProvider.state.isChatAvailable == false {
+                    self?.threadToOpen = threadId
+                } else {
                     await self?.navigateDirectlyToThread(threadId)
                 }
             }
@@ -137,10 +128,10 @@ class ChatContainerViewModel: ObservableObject, Overlayable {
             LogManager.warning("Chat is in incorrect state (= .\(chatProvider.state)) -> unable to trigger connect")
             return
         }
-        
-        chatProvider.add(delegate: self)
 
-        Task { @MainActor [weak self] in
+        startObservingEvents()
+
+        Task { [weak self] in
             // Force dismiss any existing overlays to start clean
             await self?.hideOverlay()
 
@@ -154,8 +145,8 @@ class ChatContainerViewModel: ObservableObject, Overlayable {
         LogManager.trace("View did disappear")
         
         // Force dismiss any overlays when view disappears
-        Task { @MainActor [weak self] in
-            await self?.hideOverlay()
+        Task { @MainActor in
+            await self.hideOverlay()
         }
         
         // Do not continue if chat services are not available
@@ -171,16 +162,16 @@ class ChatContainerViewModel: ObservableObject, Overlayable {
         
         cachedThreadViewModel?.isShowingInactivityPopup = false
         disconnecting = true
-        
-        chatProvider.remove(delegate: self)
-        
+
+        stopObservingEvents()
+
         chatProvider.connection.disconnect()
-        
+
         // Remove notification tap observer
         if let directNavigationToken {
             NotificationCenter.default.removeObserver(directNavigationToken)
         }
-        
+
         onDismiss?()
     }
 }
@@ -202,31 +193,21 @@ extension ChatContainerViewModel {
 
         do {
             try await chatProvider.connection.connect()
-        } catch CXoneChatError.transactionTokenExpired {
-            LogManager.trace("Transaction token is expired -> re-trigger OAuth flow and try to reconnect")
-            
-            await delegate?.onConnectionTokenExpired()
-            
-            do {
-                // Retrigger connection
-                try await chatProvider.connection.connect()
-            } catch {
-                error.logError()
-                
-                await hideOverlay()
-                
-                alertType = .connectionErrorAlert(localization: self.chatLocalization) {
+        } catch {
+            error.logError()
+
+            await hideOverlay()
+
+            if case CXoneChatError.featureUnavailable(let feature) = error {
+                alertType = .featureUnavailableAlert(featureName: feature) {
                     Task { [weak self] in
                         await self?.disconnect()
                     }
                 }
+                return
             }
-        } catch {
-            error.logError()
-            
-            await hideOverlay()
-            
-            alertType = .connectionErrorAlert(localization: self.chatLocalization) {
+
+            alertType = .connectionErrorAlert {
                 Task { [weak self] in
                     await self?.disconnect()
                 }
@@ -241,15 +222,17 @@ extension ChatContainerViewModel {
         await hideOverlay()
         
         disconnecting = true
-        
-        chatProvider.remove(delegate: self)
-        
+
+        stopObservingEvents()
+
         chatProvider.connection.disconnect()
 
         // Add a small delay to ensure any sheet dismissal completes before calling onDismiss
         // This prevents a race condition where the chat view remains visible after form cancellation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.onDismiss?()
+        Task { @MainActor in
+            await Task.sleep(seconds: 0.1)
+
+            self.onDismiss?()
         }
     }
 
@@ -269,6 +252,8 @@ extension ChatContainerViewModel {
         // Hide overlay so a pre-chat form or empty thread can be presented
         await hideOverlay()
         
+        cachedThreadViewModel?.resetStaleState()
+
         // Check if a pre-chat survey is available
         if let preChatSurvey = chatProvider.threads.preChatSurvey {
             LogManager.trace("Present pre-chat form before thread creation")
@@ -311,11 +296,11 @@ extension ChatContainerViewModel {
             LogManager.trace("Skipping thread refresh on foreground - no active thread")
         }
         
-        Task { @MainActor [weak self] in
-            await self?.connect()
+        Task { @MainActor in
+            await self.connect()
         }
     }
-    
+
     // periphery:ignore:parameters output - for inline usage in the view
     func didEnterBackground(_ output: NotificationCenter.Publisher.Output) {
         LogManager.trace("Enter background")
@@ -323,11 +308,11 @@ extension ChatContainerViewModel {
         // Stop inactivity popup if any is being shown to be able to present it again next time
         cachedThreadViewModel?.isShowingInactivityPopup = false
         
-        Task { @MainActor [weak self] in
-            await self?.hideOverlay()
+        Task { @MainActor in
+            await self.hideOverlay()
         }
-        
-        CXoneChat.shared.connection.disconnect()
+
+        chatProvider.connection.disconnect()
     }
 }
 
@@ -369,7 +354,11 @@ extension ChatContainerViewModel {
                 self?.overlay = newValue
             }
 
-            let sendTranscriptViewModel = SendTranscriptFormViewModel(chatThread: thread, overlay: binding, chatLocalization: chatLocalization) { result in
+            let sendTranscriptViewModel = SendTranscriptFormViewModel(
+                chatThread: thread,
+                chatProvider: chatProvider,
+                overlay: binding
+            ) { result in
                 Task { @MainActor [weak self] in
                     await self?.hideSheet()
                     
@@ -399,17 +388,13 @@ extension ChatContainerViewModel {
 extension ChatContainerViewModel {
 
     @MainActor
-    func showLoading(message: String, action: (() async -> Void)? = nil, file: StaticString = #file, line: UInt = #line) async {
-        LogManager.trace("Showing loading overlay with status message: \(message)", file: file, line: line)
+    func showLoading(file: StaticString = #file, line: UInt = #line) async {
+        LogManager.trace("Showing loading overlay", file: file, line: line)
 
         await showOverlay({
-            ChatLoadingOverlay(text: message) {
+            ChatLoadingOverlay(text: L10n.Common.loading) {
                 Task { @MainActor [weak self] in
-                    if let action {
-                        await action()
-                    } else {
-                        await self?.disconnect()
-                    }
+                    await self?.disconnect()
                 }
             }
         }, file: file, line: line)
@@ -461,139 +446,48 @@ extension ChatContainerViewModel {
     }
 }
 
-// MARK: - CXoneChatDelegate
+// MARK: - Event Handling
 
-extension ChatContainerViewModel: CXoneChatDelegate {
-    
-    func onChatUpdated(_ chatState: ChatState, mode: ChatMode) {
-        LogManager.trace("Chat state updated to \(chatState) in mode \(mode)")
-        
-        // Check if the viewModel is currently processing a chat update
-        if isProcessingChatUpdate {
-            LogManager.trace("Already processing chat update, queueing the task")
-            
-            // If a chat update is already in progress, queue the task for later execution
-            let futureTask = {
-                self.onChatUpdated(chatState, mode: mode)
-            }
-            self.pendingChatUpdateTasks.append(futureTask)
-        } else {
-            LogManager.trace("Processing chat update now")
-            
-            // No chat update is currently being processed, so we can handle it immediately
-            isProcessingChatUpdate = true
-            
-            Task { @MainActor [weak self] in
-                guard let self else {
-                    return
-                }
-                
-                // Handle the chat update immediately
-                await self.handleChatUpdate(chatState, mode: mode)
-                // Once the chat update is handled, reset the processing flag
-                self.isProcessingChatUpdate = false
-                
-                // If there are any pending tasks, execute the last one
-                if let pendingTask = self.pendingChatUpdateTasks.first {
-                    self.pendingChatUpdateTasks.removeFirst()
-                    
-                    pendingTask()
-                }
-            }
-        }
-    }
-    
-    func onThreadUpdated(_ chatThread: CXoneChatSDK.ChatThread) {
-        guard chatProvider.mode == .multithread else {
-            // Skip local notification handling for singlethread and livechat mode because it's supported
-            return
-        }
-        guard cachedListViewModel?.threadToShow != nil || cachedListViewModel?.hiddenThreadToShow != nil else {
-            // No active ThreadViewModel -> the chat is in ThreadList so we don't want to present local notification
+private extension ChatContainerViewModel {
+
+    func startObservingEvents() {
+        guard eventTask == nil else {
             return
         }
         
-        // Handle a local notification if the thread is not the one currently displayed one
-        if cachedThreadViewModel?.thread?.id == chatThread.idString {
-            LogManager.trace("The thread is the currently one so it will be handled in the ThreadViewModel, just update the cache")
-            
-            chatProvider.threads.get().forEach { [weak self] thread in
-                self?.cachedThreadMessageCount[thread.idString] = thread.messages.count
-            }
-        } else if !processingDeeplink {
-            LogManager.trace("The thread is not the currently displayed one = try to schedule a local notification")
-            
-            guard chatThread.messages.last?.customerStatistics?.seenAt == nil else {
-                LogManager.trace("The message is already seen by a customer")
-                return
-            }
-            
-            // Store the previous message count before updating the cache
-            let cachedThreadMessageCount = self.cachedThreadMessageCount
-            // Update the cache for future thread updates
-            chatProvider.threads.get().forEach { [weak self] thread in
-                self?.cachedThreadMessageCount[thread.idString] = thread.messages.count
-            }
-            
-            // Check if count of threads has been changed (=> new message for different thread)
-            guard let count = cachedThreadMessageCount[chatThread.idString], count != chatThread.messages.count else {
-                // Thread has been updated but no new messages are same = no interaction needed
-                LogManager.info("Thread has been updated but no new messages")
-                return
-            }
-            
-            Task { [weak self] in
-                await self?.createNotificationForInactiveThreadMessage(chatThread)
-            }
-        } else {
-            // Scenario: user left thread A and tapped a notification for thread B.
-            // While processing the deeplink, we switched to thread B, making thread A hidden.
-            // This can cause thread A's messages to appear new, which might incorrectly trigger a notification.
-            // To avoid this, we reset the deeplink flag and skip notification handling.
-            processingDeeplink = false
-        }
-    }
-    
-    func onUnexpectedDisconnect() {
-        guard !disconnecting else {
-            return
-        }
-        
-        LogManager.trace("Disconnected unexpectedly")
-        
-        Task { @MainActor [weak self] in
+        eventTask = Task { [weak self] in
             guard let self else {
                 return
             }
             
-            await self.hideOverlay()
-            
-            self.alertType = .connectionErrorAlert(localization: self.chatLocalization) {
-                Task { @MainActor in
-                    await self.disconnect()
-                }
+            for await event in chatProvider.events() {
+                await self.handle(event: event)
             }
         }
     }
-    
-    func onProactiveActionReceived(of type: ProactiveActionType) {
-        switch type {
-        case .inactivityPopup(let entity):
-            guard cachedThreadViewModel?.isShowingInactivityPopup == false else {
-                LogManager.trace("Inactivity popup is already being shown, ignoring new one")
-                return
-            }
-            
-            cachedThreadViewModel?.isShowingInactivityPopup = true
-            
-            Task { @MainActor [weak self] in
-                // Hide any existing overlays before showing the inactivity popup
-                await self?.hideOverlay()
-                
-                await self?.showInactivityPopup(popup: entity)
-            }
-        case .customPopupBox:
-            LogManager.warning("Custom popup box is not supported in the Chat UI")
+
+    func stopObservingEvents() {
+        eventTask?.cancel()
+        eventTask = nil
+    }
+
+    @MainActor
+    func handle(event: ChatEvent) async {
+        switch event {
+        case .chatUpdated(let state, let mode):
+            await handleChatUpdate(state, mode: mode)
+
+        case .threadUpdated(let thread):
+            handleThreadUpdated(thread)
+
+        case .unexpectedDisconnect:
+            await handleUnexpectedDisconnect()
+
+        case .proactiveActionReceived(let type):
+            await handleProactiveActionTypeReceived(type)
+
+        default:
+            break
         }
     }
 }
@@ -608,7 +502,7 @@ private extension ChatContainerViewModel {
         
         switch chatState {
         case .connecting:
-            await self.showLoading(message: self.chatLocalization.commonLoading)
+            await self.showLoading()
         case .connected:
             do {
                 LogManager.trace("Reporting chat window open event")
@@ -629,7 +523,7 @@ private extension ChatContainerViewModel {
         case .ready:
             // Cache to be able to handle local notifications
             chatProvider.threads.get().forEach { thread in
-                self.cachedThreadMessageCount[thread.idString] = thread.messages.count
+                self.cachedThreadMessageCount[thread.id] = thread.messages.count
             }
             
             if cachedThreadViewModel == nil {
@@ -651,7 +545,89 @@ private extension ChatContainerViewModel {
             LogManager.trace("ChatCoordinatorViewModel: ignoring \(chatState)")
         }
     }
-    
+
+    func handleThreadUpdated(_ chatThread: CXoneChatSDK.ChatThread) {
+        guard chatProvider.mode == .multithread else {
+            // Skip local notification handling for singlethread and livechat mode because it's not supported
+            return
+        }
+        guard cachedListViewModel?.currentThread != nil else {
+            // No active ThreadViewModel -> the chat is in ThreadList so we don't want to present local notification
+            return
+        }
+        
+        // Handle a local notification if the thread is not the one currently displayed one
+        if cachedThreadViewModel?.thread?.id == chatThread.id {
+            LogManager.trace("The thread is the currently one so it will be handled in the ThreadViewModel, just update the cache")
+            
+            chatProvider.threads.get().forEach { thread in
+                self.cachedThreadMessageCount[thread.id] = thread.messages.count
+            }
+        } else if !processingDeeplink {
+            LogManager.trace("The thread is not the currently displayed one = try to schedule a local notification")
+            
+            guard chatThread.messages.last?.customerStatistics?.seenAt == nil else {
+                LogManager.trace("The message is already seen by a customer")
+                return
+            }
+            
+            // Store the previous message count before updating the cache
+            let cachedThreadMessageCount = self.cachedThreadMessageCount
+            // Update the cache for future thread updates
+            chatProvider.threads.get().forEach { thread in
+                self.cachedThreadMessageCount[thread.id] = thread.messages.count
+            }
+            
+            // Check if count of threads has been changed (=> new message for different thread)
+            guard let count = cachedThreadMessageCount[chatThread.id], count != chatThread.messages.count else {
+                // Thread has been updated but no new messages are same = no interaction needed
+                LogManager.info("Thread has been updated but no new messages")
+                return
+            }
+            
+            Task { [weak self] in
+                await self?.createNotificationForInactiveThreadMessage(chatThread)
+            }
+        } else {
+            // Scenario: user left thread A and tapped a notification for thread B.
+            // While processing the deeplink, we switched to thread B, making thread A hidden.
+            // This can cause thread A's messages to appear new, which might incorrectly trigger a notification.
+            // To avoid this, we reset the deeplink flag and skip notification handling.
+            processingDeeplink = false
+        }
+    }
+
+    func handleUnexpectedDisconnect() async {
+        guard !disconnecting else {
+            return
+        }
+
+        LogManager.trace("Disconnected unexpectedly")
+
+        await hideOverlay()
+
+        alertType = .connectionErrorAlert {
+            Task { @MainActor in
+                await self.disconnect()
+            }
+        }
+    }
+
+    func handleProactiveActionTypeReceived(_ type: ProactiveActionType) async {
+        switch type {
+        case .inactivityPopup(let entity):
+            guard cachedThreadViewModel?.isShowingInactivityPopup == false else {
+                LogManager.trace("Inactivity popup is already being shown, ignoring new one")
+                return
+            }
+
+            cachedThreadViewModel?.isShowingInactivityPopup = true
+
+            await hideOverlay()
+            await showInactivityPopup(popup: entity)
+        }
+    }
+
     @MainActor
     func createNewThread(with customFields: [String: String]? = nil) async throws -> ChatThreadProvider {
         LogManager.trace("Creating new thread")
@@ -679,13 +655,7 @@ private extension ChatContainerViewModel {
         } catch {
             error.logError()
 
-            _ = await MainActor.run { [weak self] in
-                guard let self else {
-                    return
-                }
-                
-                self.alertType = .genericError(localization: self.chatLocalization)
-            }
+            alertType = .genericError
         }
     }
 
@@ -702,16 +672,16 @@ private extension ChatContainerViewModel {
     
     func createNotificationForInactiveThreadMessage(_ updatedThread: CXoneChatSDK.ChatThread) async {
         guard let lastMessage = updatedThread.messages.last else {
-            LogManager.error("Unable to get last message for thread \(updatedThread.idString)")
+            LogManager.error("Unable to get last message for thread \(updatedThread.id)")
             return
         }
         
-        LogManager.trace("Creating notification for inactive thread: \(updatedThread.idString)")
+        LogManager.trace("Creating notification for inactive thread: \(updatedThread.id)")
         
         do {
             try await UNUserNotificationCenter
                 .current()
-                .scheduleThreadNotification(lastMessage: lastMessage, chatLocalization: chatLocalization)
+                .scheduleThreadNotification(lastMessage: lastMessage)
             
             LogManager.trace("Notification scheduled successfully")
         } catch {
@@ -727,7 +697,7 @@ private extension ChatContainerViewModel {
         
         let threads = chatProvider.threads.get()
         
-        guard let thread = threads.first(where: { $0.idString == threadId }) else {
+        guard let thread = threads.first(where: { $0.id == threadId }) else {
             LogManager.error("Could not find thread with ID: \(threadId)")
             processingDeeplink = false
             return
@@ -746,16 +716,13 @@ private extension ChatContainerViewModel {
         let mappedThread = ChatThreadMapper.map(from: thread)
         
         cachedThreadViewModel = viewModel(for: mappedThread)
-        
-        await MainActor.run {
-            if cachedListViewModel?.threadToShow != nil {
-                cachedListViewModel?.hiddenThreadToShow = mappedThread
-                cachedListViewModel?.threadToShow = nil
-            } else {
-                cachedListViewModel?.threadToShow = mappedThread
-                cachedListViewModel?.hiddenThreadToShow = nil
-            }
-        }
+
+        // `ThreadListView`'s `.navigationDestination` keys off `currentThread.id` (via `.id(...)`),
+        // so reassigning here is sufficient to force `ThreadView` recreation when the user is already
+        // viewing a different thread — no need to clear-then-set across separate storage.
+        cachedListViewModel?.currentThread = mappedThread
         processingDeeplink = false
     }
 }
+
+// swiftlint:enable file_length

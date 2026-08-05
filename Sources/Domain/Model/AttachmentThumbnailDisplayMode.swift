@@ -41,6 +41,7 @@ enum AttachmentThumbnailDisplayMode {
         }
     }
     
+    @MainActor
     var size: CGSize {
         switch self {
         case .small:

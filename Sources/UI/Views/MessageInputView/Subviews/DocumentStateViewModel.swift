@@ -16,35 +16,34 @@
 import Foundation
 import SwiftUI
 
-class DocumentStateViewModel: ObservableObject {
-    
+@MainActor
+final class DocumentStateViewModel: ObservableObject {
+
     // MARK: - Properties
-    
+
     @Published var loadingState: AttachmentLoadingState<URL> = .initial
     @Published var isReadyToPresent = false
 
     @Binding var alertType: ChatAlertType?
 
-    let localization: ChatLocalization
-
     // MARK: - Init
 
-    init(alertType: Binding<ChatAlertType?>, localization: ChatLocalization) {
+    init(alertType: Binding<ChatAlertType?>) {
         self._alertType = alertType
-        self.localization = localization
     }
 
     // MARK: Methods
-    
+
     func downloadAndSaveFile(url: URL) async {
         guard loadingState.isInitial || loadingState.isFailed else {
             return
         }
 
-        await MainActor.run {
-            loadingState = .loading
-        }
-        
+        loadingState = .loading
+
+        // Hoisted so the catch block cleans up the same path used by the success path.
+        var originalFileName = url.lastPathComponent
+
         do {
             let (tempLocalUrl, response) = try await URLSession.shared.download(from: url)
 
@@ -54,9 +53,9 @@ class DocumentStateViewModel: ObservableObject {
             }
 
             // Extract filename before detached task to avoid capturing non-Sendable response
-            let originalFileName = (response as? HTTPURLResponse)?.suggestedFilename ?? url.lastPathComponent
+            originalFileName = (response as? HTTPURLResponse)?.suggestedFilename ?? url.lastPathComponent
 
-            let destinationURL = try await Task.detached(priority: .utility) {
+            let destinationURL = try await Task.detached(priority: .utility) { [originalFileName] in
                 let cachesPath = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
                 let destinationURL = cachesPath.appendingPathComponent(originalFileName)
 
@@ -69,21 +68,16 @@ class DocumentStateViewModel: ObservableObject {
                 return destinationURL
             }.value
 
-            await MainActor.run { [weak self] in
-                self?.isReadyToPresent = true
-                self?.loadingState = .loaded(destinationURL)
-            }
+            isReadyToPresent = true
+            loadingState = .loaded(destinationURL)
         } catch {
             error.logError()
-            
-            await MainActor.run { [weak self] in
-                guard let self else {
-                    return
-                }
-                
-                self.alertType = .genericError(localization: self.localization)
-                self.loadingState = .failed
-            }
+
+            let cachesPath = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            try? FileManager.default.removeItem(at: cachesPath.appendingPathComponent(originalFileName))
+
+            self.alertType = .genericError
+            self.loadingState = .failed
         }
     }
 }

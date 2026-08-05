@@ -1,4 +1,4 @@
-// swift-tools-version: 5.7
+// swift-tools-version: 6.0
 //
 // Copyright (c) 2021-2026. NICE Ltd. All rights reserved.
 //
@@ -19,7 +19,9 @@ import PackageDescription
 let package = Package(
     name: "CXoneChatUI",
     defaultLocalization: "en",
-    platforms: [.iOS(.v15)],
+    platforms: [
+        .iOS(.v16)
+    ],
     products: [
         .library(
             name: "CXoneChatUI",
@@ -30,8 +32,8 @@ let package = Package(
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
         .package(url: "https://github.com/airbnb/lottie-spm.git", from: "4.5.2"),
         .package(url: "https://github.com/Kolos65/Mockable", from: "0.0.11"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "3.3.1"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios.git", from: "3.3.1")
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "4.0.0"),
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios.git", from: "4.0.0")
     ],
     targets: [
         .target(
@@ -46,7 +48,7 @@ let package = Package(
             path: "Sources",
             resources: [
                 .copy("../PrivacyInfo.xcprivacy"),
-                .copy("Resources/images.xcassets")
+                .process("Resources/Images.xcassets")
             ],
             swiftSettings: [
                 .define("MOCKING", .when(configuration: .debug))

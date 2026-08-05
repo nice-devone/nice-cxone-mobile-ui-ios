@@ -58,13 +58,17 @@ private struct ChatTextStyleModifier: ViewModifier, Themed {
     func body(content: Content) -> some View {
         content
             .font(font)
-            .background(background)
-            .foregroundColor(message.isUserAgent ? colors.content.primary : colors.brand.onPrimary)
+            .foregroundStyle(message.isUserAgent ? colors.content.primary : colors.brand.onPrimary)
             .tint(message.isUserAgent ? colors.content.primary : colors.brand.onPrimary)
-            .cornerRadius(position.topLeftCornerRadius(isUserAgent: message.isUserAgent), corners: .topLeft)
-            .cornerRadius(position.topRightCornerRadius(isUserAgent: message.isUserAgent), corners: .topRight)
-            .cornerRadius(position.bottomLeftCornerRadius(isUserAgent: message.isUserAgent), corners: .bottomLeft)
-            .cornerRadius(position.bottomRightCornerRadius(isUserAgent: message.isUserAgent), corners: .bottomRight)
+            .background(
+                UnevenRoundedRectangle(
+                    topLeft: position.topLeftCornerRadius(isUserAgent: message.isUserAgent),
+                    topRight: position.topRightCornerRadius(isUserAgent: message.isUserAgent),
+                    bottomLeft: position.bottomLeftCornerRadius(isUserAgent: message.isUserAgent),
+                    bottomRight: position.bottomRightCornerRadius(isUserAgent: message.isUserAgent)
+                )
+                .fill(backgroundColor)
+            )
     }
 }
 
@@ -72,8 +76,7 @@ private struct ChatTextStyleModifier: ViewModifier, Themed {
 
 private extension ChatTextStyleModifier {
     
-    @ViewBuilder
-    var background: some View {
+    var backgroundColor: Color {
         if text?.isLargeEmoji == true {
             Color.clear
         } else {

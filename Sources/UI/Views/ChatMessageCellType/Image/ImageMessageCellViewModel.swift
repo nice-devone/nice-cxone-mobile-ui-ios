@@ -17,7 +17,8 @@ import Kingfisher
 import SwiftUI
 import UIKit
 
-class ImageMessageCellViewModel: ObservableObject {
+@MainActor
+final class ImageMessageCellViewModel: ObservableObject {
     
     // MARK: - Properties
     
@@ -26,7 +27,6 @@ class ImageMessageCellViewModel: ObservableObject {
     @Binding var alertType: ChatAlertType?
 
     let item: AttachmentItem
-    let localization: ChatLocalization
 
     private lazy var kingfisherManager = KingfisherManager(
         downloader: ImageDownloader(name: ChatView.packageIdentifier),
@@ -35,10 +35,9 @@ class ImageMessageCellViewModel: ObservableObject {
     
     // MARK: - Init
 
-    init(item: AttachmentItem, alertType: Binding<ChatAlertType?>, localization: ChatLocalization) {
+    init(item: AttachmentItem, alertType: Binding<ChatAlertType?>) {
         self.item = item
         self._alertType = alertType
-        self.localization = localization
 
         Task { [weak self] in
             await self?.loadImageFromURL()
@@ -52,6 +51,7 @@ class ImageMessageCellViewModel: ObservableObject {
             await MainActor.run { [weak self] in
                 self?.loadingState = .loaded(localImage)
             }
+            
             return
         }
 
@@ -86,12 +86,12 @@ private extension ImageMessageCellViewModel {
             return nil
         }
 
-        return image.fixOrientation()
+        return image
     }
 
     func downloadImage(cacheKey: String) async {
         LogManager.trace("Downloading image from URL")
-        
+
         do {
             // Explicitly use Kingfisher.ImageResource to avoid SwiftUI's ImageResource
             let resource = Kingfisher.KF.ImageResource(downloadURL: item.url, cacheKey: cacheKey)
@@ -99,54 +99,35 @@ private extension ImageMessageCellViewModel {
                 with: resource,
                 options: [.targetCache(kingfisherManager.cache)]
             )
-            
-            await MainActor.run { [weak self] in
-                self?.loadingState = .loaded(result.image.fixOrientation())
-            }
+
+            loadingState = .loaded(result.image)
         } catch {
             error.logError()
-            
-            await MainActor.run { [weak self] in
-                guard let self else {
-                    return
-                }
-                
-                self.alertType = .genericError(localization: self.localization)
-                self.loadingState = .failed
-            }
+
+            alertType = .genericError
+            self.loadingState = .failed
         }
     }
 
     func retrieveImage(cacheKey: String) async {
         LogManager.trace("Retrieving image from cache")
-        
+
         do {
             let result = try await kingfisherManager.cache.retrieveImage(forKey: cacheKey)
-            
-            await MainActor.run { [weak self] in
-                guard let self else {
-                    return
-                }
 
-                if let image = result.image {
-                    self.loadingState = .loaded(image.fixOrientation())
-                } else {
-                    LogManager.error("Image not found in cache")
-                    self.alertType = .genericError(localization: self.localization)
-                    self.loadingState = .failed
-                }
+            if let image = result.image {
+                loadingState = .loaded(image)
+            } else {
+                LogManager.error("Image not found in cache")
+
+                alertType = .genericError
+                loadingState = .failed
             }
         } catch {
             error.logError()
-            
-            await MainActor.run { [weak self] in
-                guard let self else {
-                    return
-                }
-                
-                self.alertType = .genericError(localization: self.localization)
-                self.loadingState = .failed
-            }
+
+            alertType = .genericError
+            loadingState = .failed
         }
     }
 }

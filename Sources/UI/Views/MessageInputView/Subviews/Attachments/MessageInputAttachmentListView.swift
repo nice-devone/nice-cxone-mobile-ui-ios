@@ -17,7 +17,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct MessageInputAttachmentListView: View, Themed {
-    
+    private typealias A11yPreview = A11y.MessageInput.AttachmentPreview
+
     // MARK: - Constants
     
     private enum Constants {
@@ -25,6 +26,7 @@ struct MessageInputAttachmentListView: View, Themed {
         enum Sizing {
             static let buttonOffset: CGFloat = StyleGuide.Sizing.buttonSmallDimension / 2
             static let closeButtonStrokeWidth: CGFloat = 1.5
+            @MainActor
             static let contentHeight: CGFloat = StyleGuide.Sizing.Attachment.smallDimension + Constants.Padding.thumbnailScrollViewVertical * 2
         }
         
@@ -47,7 +49,6 @@ struct MessageInputAttachmentListView: View, Themed {
     @Environment(\.colorScheme) var scheme
 
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
 
     @Binding var attachments: [AttachmentItem]
     @Binding var loadingProgress: Progress?
@@ -62,17 +63,22 @@ struct MessageInputAttachmentListView: View, Themed {
                 ProgressView(value: loadingProgress.fractionCompleted)
                     .tint(colors.brand.primary)
                     .background(colors.border.default)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityIdentifier(A11yPreview.Loading.identifier)
+                    .accessibilityLabel(A11yPreview.Loading.label)
+                    .accessibilityValue(A11yPreview.Loading.value(Int(loadingProgress.fractionCompleted * 100)))
             } else {
             	ColoredDivider(colors.border.default)
                 	.padding(.horizontal, Constants.Padding.dividerHorizontal)
+                    .accessibilityHidden(true)
             }
             
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: Constants.Spacing.attachmentsHorizontal) {
                     Spacer()
                     
-                    ForEach(0..<attachments.count, id: \.self) { index in
-                        attachmentView(at: index)
+                    ForEach(attachments, id: \.url) { attachment in
+                        attachmentView(for: attachment)
                     }
                 }
                 .frame(height: Constants.Sizing.contentHeight)
@@ -85,11 +91,17 @@ struct MessageInputAttachmentListView: View, Themed {
 
 private extension MessageInputAttachmentListView {
 
-    @ViewBuilder
-    func attachmentView(at index: Int) -> some View {
-        let attachment = attachments[index]
-        
-        VStack(spacing: Constants.Spacing.attachmentsVertical) {
+    func attachmentView(for attachment: AttachmentItem) -> some View {
+        let (typeIdentifier, typeLabel, typeHint) = switch attachment.mimeType {
+        case let type where type.starts(with: UTType.imagePreffix):
+            (A11yPreview.Thumbnail.Image.identifier, A11yPreview.Thumbnail.Image.label(attachment.fileName), A11yPreview.Thumbnail.Image.hint)
+        case let type where type.starts(with: UTType.videoPreffix):
+            (A11yPreview.Thumbnail.Video.identifier, A11yPreview.Thumbnail.Video.label(attachment.fileName), A11yPreview.Thumbnail.Video.hint)
+        default:
+            (A11yPreview.Thumbnail.Document.identifier, A11yPreview.Thumbnail.Document.label(attachment.fileName), A11yPreview.Thumbnail.Document.hint)
+        }
+
+        return VStack(spacing: Constants.Spacing.attachmentsVertical) {
             ZStack(alignment: .topTrailing) {
                 switch attachment.mimeType {
                 case let type where type.starts(with: UTType.imagePreffix):
@@ -97,24 +109,34 @@ private extension MessageInputAttachmentListView {
                 case let type where type.starts(with: UTType.videoPreffix):
                     VideoThumbnailView(url: attachment.url, displayMode: .small)
                 default:
-                    MesssageInputAttachmentListDocumentView(item: attachment, alertType: $alertType, localization: localization)
+                    MesssageInputAttachmentListDocumentView(item: attachment, alertType: $alertType)
                 }
-                
+
                 closeButton {
-                    attachments.remove(at: index)
+                    attachments.removeAll { $0.url == attachment.url }
+
+                    A11y.announce(A11y.Announcement.Attachment.removed(attachment.fileName))
                 }
                 .offset(x: Constants.Sizing.buttonOffset, y: -Constants.Sizing.buttonOffset)
+                .accessibilityIdentifier(A11yPreview.ButtonRemove.identifier)
+                .accessibilityLabel(A11yPreview.ButtonRemove.label)
+                .accessibilityHint(A11yPreview.ButtonRemove.hint(attachment.fileName))
             }
             .padding(.top, Constants.Padding.attachmentItemTop)
-            
+
             Text(attachment.fileName)
                 .font(.caption)
-                .foregroundColor(colors.content.primary)
+                .foregroundStyle(colors.content.primary)
                 .padding(.top, Constants.Padding.textTop)
                 .frame(width: StyleGuide.Sizing.Attachment.smallDimension)
                 .lineLimit(1)
                 .truncationMode(.middle)
+                .accessibilityHidden(true)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(typeIdentifier)
+        .accessibilityLabel(typeLabel)
+        .accessibilityHint(typeHint)
     }
     
     func closeButton(closure: @escaping () -> Void) -> some View {
@@ -123,7 +145,7 @@ private extension MessageInputAttachmentListView {
         } label: {
             Asset.Attachment.remove
                 .fixedSize(width: StyleGuide.Sizing.buttonTinyDimension, height: StyleGuide.Sizing.buttonTinyDimension)
-                .foregroundColor(colors.status.error)
+                .foregroundStyle(colors.status.error)
                 .background(
                     Circle()
                         .fill(colors.background.default)
@@ -164,7 +186,6 @@ private extension MessageInputAttachmentListView {
             alertType: .constant(nil)
         )
     }
-    .environmentObject(ChatLocalization())
     .environmentObject(ChatStyle())
 }
 
@@ -187,6 +208,5 @@ private extension MessageInputAttachmentListView {
         
         MessageInputAttachmentListView(attachments: $attachments, loadingProgress: $progress, alertType: .constant(nil))
     }
-    .environmentObject(ChatLocalization())
     .environmentObject(ChatStyle())
 }

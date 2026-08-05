@@ -25,8 +25,6 @@ struct PDFThumbnailView: View {
     @State private var isPresentingPDFViewer = false
     
     @StateObject private var viewModel: PDFViewModel
-
-    @EnvironmentObject private var localization: ChatLocalization
     
     let width: CGFloat
     let height: CGFloat
@@ -51,7 +49,7 @@ struct PDFThumbnailView: View {
 
                     isPresentingPDFViewer = true
                 } label: {
-                    Image(uiImage: image)
+                    Image(uiImage: image) // swiftlint:disable:this accessibility_label_for_image
                         .resizable()
                         .scaledToFill()
                 }
@@ -83,7 +81,7 @@ struct PDFThumbnailView: View {
 
 #Preview("Small") {
     PDFThumbnailView(
-        viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem, alertType: .constant(nil), localization: ChatLocalization()),
+        viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem, alertType: .constant(nil)),
         inSelectionMode: .constant(false),
         width: StyleGuide.Sizing.Attachment.smallDimension,
         height: StyleGuide.Sizing.Attachment.smallDimension
@@ -93,7 +91,7 @@ struct PDFThumbnailView: View {
 
 #Preview("Regular") {
     PDFThumbnailView(
-        viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem, alertType: .constant(nil), localization: ChatLocalization()),
+        viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem, alertType: .constant(nil)),
         inSelectionMode: .constant(false),
         width: StyleGuide.Sizing.Attachment.regularDimension,
         height: StyleGuide.Sizing.Attachment.regularDimension
@@ -103,7 +101,7 @@ struct PDFThumbnailView: View {
 
 #Preview("Large") {
     PDFThumbnailView(
-        viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem, alertType: .constant(nil), localization: ChatLocalization()),
+        viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem, alertType: .constant(nil)),
         inSelectionMode: .constant(false),
         width: StyleGuide.Sizing.Attachment.largeWidth,
         height: StyleGuide.Sizing.Attachment.largeHeight

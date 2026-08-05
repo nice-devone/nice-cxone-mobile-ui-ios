@@ -32,21 +32,21 @@ import Foundation
 ///     ...
 /// }
 /// ```
-public class FormCustomFieldType: ObservableObject, Identifiable {
+class FormCustomFieldType: ObservableObject, Identifiable {
     
     // MARK: - Properties
     
     /// The current value associated with the field, which can be updated and observed using the `@Published` property wrapper.
-    @Published public var value: String
+    @Published var value: String
     
     /// The label or name of the custom field.
-    public let label: String
+    let label: String
     
     /// A boolean indicating whether this field is required to be filled out.
-    public let isRequired: Bool
+    let isRequired: Bool
     
     /// A unique identifier or key for this field.
-    public let ident: String
+    let ident: String
     
     // MARK: - Init
     
@@ -57,7 +57,7 @@ public class FormCustomFieldType: ObservableObject, Identifiable {
     ///   - isRequired: A boolean indicating whether this field is required to be filled out.
     ///   - ident: A unique identifier or key for this field.
     ///   - value: The current value associated with the field, which can be updated and observed using the `@Published` property wrapper.
-    public init(label: String, isRequired: Bool, ident: String, value: String) {
+    init(label: String, isRequired: Bool, ident: String, value: String) {
         self.label = label
         self.isRequired = isRequired
         self.ident = ident

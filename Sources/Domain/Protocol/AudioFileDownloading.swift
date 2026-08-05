@@ -17,14 +17,14 @@ import Foundation
 import Mockable
 
 @Mockable
-protocol AudioFileDownloading {
+protocol AudioFileDownloading: Sendable {
 
     // MARK: - Methods
 
     func downloadAudioFile(from remoteURL: URL, fileName: String) async throws -> URL
 }
 
-class DefaultAudioFileDownloader: AudioFileDownloading {
+final class DefaultAudioFileDownloader: AudioFileDownloading, Sendable {
 
     // MARK: - Methods
 

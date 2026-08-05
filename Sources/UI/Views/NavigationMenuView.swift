@@ -24,24 +24,39 @@ struct NavigationMenuView: View {
     
     // MARK: - Builder
     
+    @ViewBuilder
     var body: some View {
         if items.isEmpty {
             EmptyView()
         } else {
-            Menu {
-                ForEach(items, id: \.name) { item in
-                    Button(role: item.role, action: item.action) {
-                        Text(item.name)
-                        
-                        item.icon
-                    }
-                    // Applies color on the icon, not on the text. The text color is done via NavigationBar appearance update
-                    .tint(item.role == .destructive ? colors.status.error : colors.content.primary)
-                }
-            } label: {
-                Asset.menu
-            }
+            menuContent
         }
+    }
+
+    private var menuContent: some View {
+        Menu {
+            ForEach(items, id: \.name) { item in
+                menuButton(for: item)
+            }
+        } label: {
+            Asset.menu
+                .accessibilityHidden(true)
+        }
+        .accessibilityIdentifier(A11y.ChatContainer.NavigationBar.ButtonMenu.identifier)
+        .accessibilityLabel(A11y.ChatContainer.NavigationBar.ButtonMenu.label)
+        .accessibilityHint(A11y.ChatContainer.NavigationBar.ButtonMenu.hint)
+    }
+
+    private func menuButton(for item: MenuBuilder.Item) -> some View {
+        Button(role: item.role, action: item.action) {
+            Text(item.name)
+
+            item.icon
+        }
+        // Applies color on the icon, not on the text. The text color is done via NavigationBar appearance update
+        .tint(item.role == .destructive ? colors.status.error : colors.content.primary)
+        .accessibilityIdentifier(A11y.ChatContainer.NavigationBar.ButtonMenu.Option.identifier(item.name))
+        .accessibilityHint(A11y.ChatContainer.NavigationBar.ButtonMenu.Option.hint)
     }
 }
 
@@ -49,6 +64,7 @@ struct NavigationMenuView: View {
 
 extension MenuBuilder {
 
+    @MainActor
     func build(colors: StyleColors) -> some View {
         NavigationMenuView(items: items, colors: colors)
     }
@@ -56,41 +72,42 @@ extension MenuBuilder {
 
 // MARK: - Preview
 
+// swiftlint:disable hardcoded_strings
 @available(iOS 17.0, *)
 #Preview {
     @Previewable @Environment(\.colorScheme) var scheme
     let style = ChatStyle()
-    let localization = ChatLocalization()
 
     let items = [
         MenuBuilder.Item(
-            name: localization.chatMenuOptionUpdateName,
+            name: L10n.Chat.MenuOption.updateName,
             icon: Asset.ChatThread.editThreadName
         ) {},
         MenuBuilder.Item(
-            name: localization.alertEditPrechatCustomFieldsTitle,
+            name: L10n.Chat.MenuOption.editCustomFields,
             icon: Asset.ChatThread.editPrechatCustomFields
         ) {},
         MenuBuilder.Item(
-            name: localization.chatMenuOptionSendTranscript,
+            name: L10n.Chat.MenuOption.sendTranscript,
             icon: Asset.sendTranscript
         ) {},
         MenuBuilder.Item(
-            name: localization.chatMenuOptionEndConversation,
+            name: L10n.Chat.MenuOption.endConversation,
             icon: Asset.close,
             role: .destructive
         ) {}
     ]
 
-    return NavigationView {
+    return NavigationStack {
         VStack {
             Text("Background")
         }
-        .onAppear {
-            UINavigationBar.appearance(for: .light).chatAppearance(with: style.colors.light)
-            UINavigationBar.appearance(for: .dark).chatAppearance(with: style.colors.dark)
-        }
         .navigationTitle("Page")
-        .navigationBarItems(trailing: NavigationMenuView(items: items, colors: style.colors(for: scheme)))
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationMenuView(items: items, colors: style.colors(for: scheme))
+            }
+        }
     }
 }
+// swiftlint:enable hardcoded_strings

@@ -16,6 +16,20 @@
 input_dir: Sources/Resources
 output_dir: Sources/Resources/Generated
 
+strings:
+  - inputs: en.lproj/Accessibility.strings
+    outputs:
+      templatePath: swiftgen-templates/accessibility-swift5.stencil
+      output: Accessibility+Generated.swift
+      params:
+        enumName: A11y
+  - inputs: en.lproj/CXOneChatUI.strings
+    outputs:
+      templatePath: swiftgen-templates/localization-swift5.stencil
+      output: Localization+Generated.swift
+      params:
+        enumName: L10n
+
 xcassets:
   inputs:
     - Images.xcassets

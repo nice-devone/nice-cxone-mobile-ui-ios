@@ -17,24 +17,25 @@ import CXoneChatSDK
 
 extension Message {
 
-    func getLocalizedContentOrFallbackText(basedOn localization: ChatLocalization, useFallback: Bool = false) -> String? {
+    @MainActor
+    func getLocalizedContentOrFallbackText(useFallback: Bool = false) -> String? {
         switch self.contentType {
         case .text(let entity):
             if !attachments.isEmpty, entity.text.isEmpty {
-                return useFallback ? String(format: localization.chatFallbackMessageAttachments, attachments.count) : nil
+                return useFallback ? L10n.Chat.FallbackMessage.attachments(attachments.count) : nil
             } else {
                 return entity.text
             }
         case .richLink(let entity):
-            return entity.title.nilIfEmpty() ?? (useFallback ? localization.chatFallbackMessageTORMRichlink : nil)
+            return entity.title.nilIfEmpty() ?? (useFallback ? L10n.Chat.FallbackMessage.Torm.richLink : nil)
         case .quickReplies(let entity):
-            return entity.title.nilIfEmpty() ?? (useFallback ? localization.chatFallbackMessageTORMQuickReplies : nil)
+            return entity.title.nilIfEmpty() ?? (useFallback ? L10n.Chat.FallbackMessage.Torm.quickReplies : nil)
         case .listPicker(let entity):
-            return entity.title.nilIfEmpty() ?? (useFallback ? localization.chatFallbackMessageTORMListPicker : nil)
+            return entity.title.nilIfEmpty() ?? (useFallback ? L10n.Chat.FallbackMessage.Torm.listPicker : nil)
         case .timePicker(let entity):
-            return entity.title.nilIfEmpty() ?? (useFallback ? localization.chatFallbackMessageTORMTimePicker : nil)
+            return entity.title.nilIfEmpty() ?? (useFallback ? L10n.Chat.FallbackMessage.Torm.timePicker : nil)
         case .unknown(let fallbackText):
-            return fallbackText?.nilIfEmpty() ?? (useFallback ? localization.chatFallbackMessageUnknown : nil)
+            return fallbackText?.nilIfEmpty() ?? (useFallback ? L10n.Chat.FallbackMessage.unknown : nil)
         }
     }
 }

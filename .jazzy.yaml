@@ -16,11 +16,11 @@
 author: NiCE
 author_url: https://www.nice.com
 copyright: © 2025 NiCE
-github_url: https://github.com/BrandEmbassy/cxone-mobile-ui-ios
+github_url: https://github.com/nice-devone/nice-cxone-mobile-ui-ios
 min_acl: public
 clean: true
 module: CXoneChatUI
-module_version: 3.3.1
+module_version: 4.0.0
 swift_build_tool: xcodebuild
 output: jazzy_docs
 xcodebuild_arguments:

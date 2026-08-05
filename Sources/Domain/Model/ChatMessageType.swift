@@ -21,7 +21,7 @@ import UIKit
 ///
 /// This enum is designed for categorizing and representing various types of messages in chat systems.
 /// It allows for the display of text, multimedia, links, rich content, and more, providing versatility in message content and presentation.
-public enum ChatMessageType: Hashable, Equatable {
+enum ChatMessageType: Hashable, Equatable, Sendable {
     
     // MARK: - Cases
     
@@ -42,7 +42,7 @@ public enum ChatMessageType: Hashable, Equatable {
     // MARK: - Properties
     
     /// Indicates whether the message is of a attachment type (image, video, audio).
-    public var isAttachment: Bool {
+    var isAttachment: Bool {
         switch self {
         case .text, .richContent, .audio:
             return false
@@ -58,7 +58,7 @@ public enum ChatMessageType: Hashable, Equatable {
 ///
 /// This enum is designed to categorize and represent different types of rich messages that can be used in chat systems.
 /// It provides flexibility in displaying various types of content and interactions within chat applications.
-public enum ChatRichMessageType: Hashable, Equatable {
+enum ChatRichMessageType: Hashable, Equatable, Sendable {
 
     case quickReplies(QuickRepliesItem)
     

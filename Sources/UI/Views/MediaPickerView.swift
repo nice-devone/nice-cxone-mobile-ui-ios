@@ -25,7 +25,6 @@ struct MediaPickerView: UIViewControllerRepresentable {
     @Binding var attachments: [AttachmentItem]
     
     let attachmentRestrictions: AttachmentRestrictions
-    let localization: ChatLocalization
     let onAlert: (ChatAlertType) -> Void
     
     // MARK: - Methods
@@ -56,7 +55,6 @@ struct MediaPickerView: UIViewControllerRepresentable {
             attachmentsLoadingProgress: $attachmentsLoadingProgress,
             attachments: $attachments,
             attachmentRestrictions: attachmentRestrictions,
-            localization: localization,
             onAlert: onAlert
         )
     }
@@ -71,7 +69,6 @@ struct MediaPickerView: UIViewControllerRepresentable {
         @Binding var attachments: [AttachmentItem]
         
         let attachmentRestrictions: AttachmentRestrictions
-        let localization: ChatLocalization
         let onAlert: (ChatAlertType) -> Void
         
         private var progressObservation: NSKeyValueObservation?
@@ -83,13 +80,11 @@ struct MediaPickerView: UIViewControllerRepresentable {
             attachmentsLoadingProgress: Binding<Progress?>,
             attachments: Binding<[AttachmentItem]>,
             attachmentRestrictions: AttachmentRestrictions,
-            localization: ChatLocalization,
             onAlert: @escaping (ChatAlertType) -> Void
         ) {
             self._attachmentsLoadingProgress = attachmentsLoadingProgress
             self._attachments = attachments
             self.attachmentRestrictions = attachmentRestrictions
-            self.localization = localization
             self.onAlert = onAlert
         }
         
@@ -138,7 +133,7 @@ struct MediaPickerView: UIViewControllerRepresentable {
                     guard validContentTypes.first(where: { result.itemProvider.hasItemConformingToTypeIdentifier($0.identifier) }) != nil else {
                         LogManager.error("The customer selected not supported attachment type")
                         // No need to set the `hasErrorOccurred` flag here, the loop will stop the whole process
-                        self.onAlert(.invalidAttachmentType(localization: self.localization))
+                        self.onAlert(.invalidAttachmentType)
                         return
                     }
                     
@@ -153,12 +148,12 @@ struct MediaPickerView: UIViewControllerRepresentable {
                         CXoneChatError.invalidFileType.logError()
                         
                         self.hasErrorOccurred = true
-                        self.onAlert(.invalidAttachmentSize(localization: self.localization))
+                        self.onAlert(.invalidAttachmentSize(allowedFileSize: attachmentRestrictions.allowedFileSize))
                     } catch {
                         error.logError()
                         
                         self.hasErrorOccurred = true
-                        self.onAlert(.genericError(localization: self.localization))
+                        self.onAlert(.genericError)
                     }
                 }
             }
@@ -241,7 +236,7 @@ private extension MediaPickerView.Coordinator {
         guard result.itemProvider.canLoadObject(ofClass: UIImage.self) else {
             LogManager.error("Item provider cannot load object of type UIImage")
             
-            onAlert(.genericError(localization: localization))
+            onAlert(.genericError)
             hasErrorOccurred = true
             return
         }
@@ -267,11 +262,8 @@ private extension MediaPickerView.Coordinator {
             throw CommonError.failed("Unable to get Caches directory URL")
         }
         
-        // For iOS 15 compatibility, ensure we're normalizing the image orientation
-        let normalizedImage = image.fixOrientation()
-        
         // Use higher compression quality for better image clarity
-        guard let data = normalizedImage.jpegData(compressionQuality: 0.85) else {
+        guard let data = image.jpegData(compressionQuality: 0.85) else {
             throw CommonError.unableToParse("jpegData")
         }
         
@@ -303,13 +295,38 @@ private extension NSItemProvider {
         guard canLoadObject(ofClass: UIImage.self) else {
             throw CommonError.failed("Unable to load UIImage data")
         }
-        
+
+        do {
+            return try await withCheckedThrowingContinuation { continuation in
+                self.loadObject(ofClass: UIImage.self) { data, error in
+                    if let image = data as? UIImage {
+                        continuation.resume(returning: image)
+                    } else {
+                        continuation.resume(throwing: error ?? CommonError.failed("Failed to load UIImage from ItemProvider"))
+                    }
+                }
+            }
+        } catch {
+            // On the simulator some photos (HEIC, live photos) don't expose a public.jpeg
+            // representation, so the high-level API above fails. Fall back to loading raw
+            // data for the first registered image UTType and constructing UIImage manually.
+            LogManager.warning("loadObject(UIImage) failed (\(error)), retrying via raw data representation")
+        }
+
+        let imageTypeIdentifier = registeredTypeIdentifiers
+            .compactMap(UTType.init)
+            .first { $0.conforms(to: .image) }?
+            .identifier
+        ?? UTType.image.identifier
+
         return try await withCheckedThrowingContinuation { continuation in
-            self.loadObject(ofClass: UIImage.self) { data, error in
-                if let image = data as? UIImage {
+            self.loadDataRepresentation(forTypeIdentifier: imageTypeIdentifier) { data, error in
+                if let data, let image = UIImage(data: data) {
                     continuation.resume(returning: image)
                 } else {
-                    continuation.resume(throwing: error ?? CommonError.failed("Failed to load UIImage from ItemProvider"))
+                    continuation.resume(
+                        throwing: error ?? CommonError.failed("Failed to load image data for type \(imageTypeIdentifier)")
+                    )
                 }
             }
         }

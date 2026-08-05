@@ -50,14 +50,13 @@ struct AttachmentsView: View, Themed {
     @Environment(\.colorScheme) var scheme
     
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject private var localization: ChatLocalization
 
     @ObservedObject var viewModel: AttachmentsViewModel
 
     @Binding private var alertType: ChatAlertType?
-    
+
     @State private var iShareModalPresented = false
-    
+
     private let config = Array(
         repeating: GridItem(
             .adaptive(minimum: StyleGuide.Sizing.Attachment.largeWidth),
@@ -106,9 +105,12 @@ private extension AttachmentsView {
                 Spacer()
                     .frame(maxWidth: .infinity)
                 
-                Text(localization.commonAttachments)
+                Text(L10n.Common.attachments)
                     .font(.headline)
                     .frame(maxWidth: .infinity)
+                    .accessibilityIdentifier(A11y.AttachmentsView.Title.identifier)
+                    .accessibilityLabel(A11y.AttachmentsView.Title.label)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Spacer()
                 
@@ -117,10 +119,31 @@ private extension AttachmentsView {
                     
                     Button {
                         viewModel.inSelectionMode.toggle()
+
+                        A11y.announce(
+                            viewModel.inSelectionMode
+                                ? A11y.Announcement.AttachmentsView.SelectionMode.enabled
+                                : A11y.Announcement.AttachmentsView.SelectionMode.disabled
+                        )
                     } label: {
-                        Text(viewModel.inSelectionMode ? localization.commonCancel : localization.commonSelect)
+                        Text(viewModel.inSelectionMode ? L10n.Common.cancel : L10n.Common.select)
                             .fontWeight(.medium)
                     }
+                    .accessibilityIdentifier(
+                        viewModel.inSelectionMode
+                            ? A11y.AttachmentsView.ButtonCancel.identifier
+                            : A11y.AttachmentsView.ButtonSelect.identifier
+                    )
+                    .accessibilityLabel(
+                        viewModel.inSelectionMode
+                            ? A11y.AttachmentsView.ButtonCancel.label
+                            : A11y.AttachmentsView.ButtonSelect.label
+                    )
+                    .accessibilityHint(
+                        viewModel.inSelectionMode
+                            ? A11y.AttachmentsView.ButtonCancel.hint
+                            : A11y.AttachmentsView.ButtonSelect.hint
+                    )
                 }
                 .font(.callout)
                 .foregroundStyle(colors.brand.primary)
@@ -144,8 +167,7 @@ private extension AttachmentsView {
                                 item: selectableAttachment,
                                 attachmentsViewModel: viewModel,
                                 inSelectionMode: $viewModel.inSelectionMode,
-                                alertType: $alertType,
-                                localization: localization
+                                alertType: $alertType
                             )
                             
                             Text(entity.fileName)
@@ -155,8 +177,7 @@ private extension AttachmentsView {
                                 item: selectableAttachment,
                                 attachmentsViewModel: viewModel,
                                 inSelectionMode: $viewModel.inSelectionMode,
-                                alertType: $alertType,
-                                localization: localization
+                                alertType: $alertType
                             )
                             
                             Text(entity.fileName)
@@ -167,8 +188,7 @@ private extension AttachmentsView {
                                 item: entity,
                                 attachmentsViewModel: viewModel,
                                 inSelectionMode: $viewModel.inSelectionMode,
-                                alertType: $alertType,
-                                localization: localization
+                                alertType: $alertType
                             )
                             
                             Text(entity.fileName)
@@ -193,23 +213,39 @@ private extension AttachmentsView {
     var bottomButtonsView: some View {
         HStack(spacing: Constants.Spacing.bottomButtonsHorizontal) {
             if viewModel.inSelectionMode {
-                Button(localization.chatAttachmentsSelectionAll, action: viewModel.selectAll)
-                    .disabled(!viewModel.isSelectAllEnabled)
-                    .foregroundStyle(
-                        viewModel.isSelectAllEnabled
-                            ? colors.brand.primary
-                            : colors.content.tertiary
-                    )
-                    .adjustForA11y()
-                
-                Button(localization.chatAttachmentsDeselect, action: viewModel.selectNone)
-                    .disabled(!viewModel.isSelectNoneEnabled)
-                    .foregroundStyle(
-                        viewModel.isSelectNoneEnabled
-                            ? colors.brand.primary
-                            : colors.content.tertiary
-                    )
-                    .adjustForA11y()
+                Button {
+                    viewModel.selectAll()
+                    A11y.announce(A11y.Announcement.AttachmentsView.selectedAll)
+                } label: {
+                    Text(L10n.Chat.Attachments.Selection.all)
+                }
+                .disabled(!viewModel.isSelectAllEnabled)
+                .foregroundStyle(
+                    viewModel.isSelectAllEnabled
+                        ? colors.brand.primary
+                        : colors.content.tertiary
+                )
+                .adjustForA11y()
+                .accessibilityIdentifier(A11y.AttachmentsView.ButtonSelectAll.identifier)
+                .accessibilityLabel(A11y.AttachmentsView.ButtonSelectAll.label)
+                .accessibilityHint(A11y.AttachmentsView.ButtonSelectAll.hint)
+
+                Button {
+                    viewModel.selectNone()
+                    A11y.announce(A11y.Announcement.AttachmentsView.deselectedAll)
+                } label: {
+                    Text(L10n.Chat.Attachments.deselect)
+                }
+                .disabled(!viewModel.isSelectNoneEnabled)
+                .foregroundStyle(
+                    viewModel.isSelectNoneEnabled
+                        ? colors.brand.primary
+                        : colors.content.tertiary
+                )
+                .adjustForA11y()
+                .accessibilityIdentifier(A11y.AttachmentsView.ButtonDeselect.identifier)
+                .accessibilityLabel(A11y.AttachmentsView.ButtonDeselect.label)
+                .accessibilityHint(A11y.AttachmentsView.ButtonDeselect.hint)
             } else {
                 Spacer()
             }
@@ -218,15 +254,24 @@ private extension AttachmentsView {
                 if viewModel.inSelectionMode {
                     Text(
                         viewModel.selectedAttachments.isEmpty
-                            ? localization.chatAttachmentsSelectionMode
-                            : String(format: localization.chatAttachmentsSelectedCount, viewModel.selectedAttachments.count)
+                            ? L10n.Chat.Attachments.selectionMode
+                            : L10n.Chat.Attachments.SelectedCount.message(viewModel.selectedAttachments.count)
                     )
                     .foregroundStyle(colors.content.primary)
                     .lineLimit(Constants.Sizing.bottomSectionTextLineLimit)
                     .truncationMode(.middle)
                     .frame(maxWidth: .infinity)
+                    .accessibilityIdentifier(
+                        A11y.AttachmentsView.Status.identifier(
+                            viewModel.selectedAttachments.isEmpty ? "selection_mode" : "selected_count")
+                    )
+                    .accessibilityLabel(
+                        viewModel.selectedAttachments.isEmpty
+                            ? A11y.AttachmentsView.Status.SelectionMode.label
+                            : A11y.AttachmentsView.Status.SelectedCount.label(viewModel.selectedAttachments.count)
+                    )
                 }
-                
+
                 Button {
                     iShareModalPresented.toggle()
                 } label: {
@@ -239,6 +284,15 @@ private extension AttachmentsView {
                         : colors.content.tertiary
                 )
                 .adjustForA11y()
+                .accessibilityIdentifier(A11y.AttachmentsView.ButtonShare.identifier)
+                .accessibilityLabel(A11y.AttachmentsView.ButtonShare.label)
+                .accessibilityHint(
+                    viewModel.selectedAttachments.isEmpty
+                        ? A11y.AttachmentsView.ButtonShare.Hint.none
+                        : viewModel.selectedAttachments.count == 1
+                            ? A11y.AttachmentsView.ButtonShare.Hint.single
+                            : A11y.AttachmentsView.ButtonShare.Hint.multiple(viewModel.selectedAttachments.count)
+                )
             }
         }
         .animation(.default, value: viewModel.inSelectionMode)
@@ -261,7 +315,6 @@ private extension AttachmentsView {
         .sheet(isPresented: .constant(true)) {
             AttachmentsView(message: MockData.multipleMediaAttachmentsMessage(), messageTypes: attachments, alertType: .constant(nil))
         }
-        .environmentObject(ChatLocalization())
         .environmentObject(ChatStyle())
 }
 
@@ -279,6 +332,5 @@ private extension AttachmentsView {
         .sheet(isPresented: .constant(true)) {
             AttachmentsView(message: MockData.multipleDocumentAttachmentsMessage(), messageTypes: attachments, alertType: .constant(nil))
         }
-        .environmentObject(ChatLocalization())
         .environmentObject(ChatStyle())
 }

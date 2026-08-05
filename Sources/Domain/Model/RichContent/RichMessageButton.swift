@@ -28,24 +28,24 @@ import Foundation
 ///     iconUrl: iconUrl
 /// )
 /// ```
-public struct RichMessageButton: Hashable, Equatable {
+struct RichMessageButton: Hashable, Equatable {
     
     // MARK: - Properties
     
     /// An optional URL for an icon or image associated with the button.
-    public let iconUrl: URL?
+    let iconUrl: URL?
     
     /// The label or text displayed on the button.
-    public let title: String
+    let title: String
     
     /// A more detailed description of the option
-    public let description: String?
+    let description: String?
     
     /// An optional URL to navigate to when the button is clicked.
-    public let url: URL?
+    let url: URL?
     
     /// An optional custom string associated with the button's action.
-    public let postback: String?
+    let postback: String?
     
     // MARK: - Init
     
@@ -57,7 +57,7 @@ public struct RichMessageButton: Hashable, Equatable {
     ///   - iconUrl: An optional URL for an icon or image associated with the button.
     ///   - url: An optional URL to navigate to when the button is clicked.
     ///   - postback: An optional custom string associated with the button's action.
-    public init(title: String, description: String? = nil, iconUrl: URL? = nil, url: URL? = nil, postback: String? = nil) {
+    init(title: String, description: String? = nil, iconUrl: URL? = nil, url: URL? = nil, postback: String? = nil) {
         self.title = title
         self.description = description
         self.iconUrl = iconUrl

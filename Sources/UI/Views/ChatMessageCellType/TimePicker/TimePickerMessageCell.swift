@@ -24,7 +24,7 @@ struct TimePickerMessageCell: View, Themed {
         enum Spacing {
             static let elementsHorizontal: CGFloat = 0
             static let cellContent: CGFloat = 8
-            static let gapMinLength: CGFloat = UIScreen.main.bounds.size.width / 10
+            static let gapMinLength: CGFloat = 40
             static let cellContentTitleAndMessage: CGFloat = 2
             static let sfSymbolToText: CGFloat = 4
         }
@@ -40,7 +40,6 @@ struct TimePickerMessageCell: View, Themed {
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
     
     @Environment(\.colorScheme) var scheme
     
@@ -69,7 +68,8 @@ struct TimePickerMessageCell: View, Themed {
                 .padding(.horizontal, Constants.Padding.cellContentHorizontal)
                 .background(colors.background.surface.default)
                 .cornerRadius(StyleGuide.Sizing.Message.cornerRadius, corners: .allCorners)
-            
+                .accessibilityIdentifier(A11y.Conversation.MessageCell.TimePicker.identifier)
+
             Spacer(minLength: Constants.Spacing.gapMinLength)
         }
     }
@@ -91,39 +91,43 @@ private extension TimePickerMessageCell {
                 TimePickerSheetView(item: item) { element in
                     withAnimation {
                         slotSelected(element)
-                        
+
                         isOptionSelectedVisible = true
                         isSheetVisible = false
                     }
                 }
             }
+            .accessibilityHint(A11y.Conversation.MessageCell.TimePicker.hint)
         } else {
             cellContent
         }
     }
-    
+
     var cellContent: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.cellContentTitleAndMessage) {
             Text(item.title)
                 .font(.callout)
                 .foregroundStyle(colors.content.primary)
-            
+                .accessibilityIdentifier(A11y.Conversation.MessageCell.TimePicker.Title.identifier)
+
             if isOptionSelectedVisible {
                 RichContentOptionSelected()
             } else if isLast {
                 HStack(spacing: Constants.Spacing.sfSymbolToText) {
                     Asset.handTap
                         .foregroundColor(colors.brand.primary)
-                    
-                    Text(localization.chatMessageRichContentPressToOpen)
+                        .accessibilityHidden(true)
+
+                    Text(L10n.Chat.Message.RichContent.pressToOpen)
                         .font(.caption)
                         .foregroundColor(colors.brand.primary)
+                        .accessibilityIdentifier(A11y.Conversation.MessageCell.PressToOpen.identifier)
                 }
                 .padding(.top, Constants.Padding.cellContentActionPromptTop)
             } else {
                 MessageCellTooltipView(
-                    text: localization.chatMessageRichContentOptionsDisabled,
-                    tooltip: localization.chatMessageRichContentOptionsDisabledTooltip
+                    text: L10n.Chat.Message.RichContent.optionsDisabled,
+                    tooltip: L10n.Chat.Message.RichContent.optionsDisabledTooltip
                 )
             }
         }
@@ -174,5 +178,4 @@ private extension TimePickerMessageCell {
     .padding(.leading, 16)
     .padding(.trailing, 4)
     .environmentObject(style)
-    .environmentObject(ChatLocalization())
 }

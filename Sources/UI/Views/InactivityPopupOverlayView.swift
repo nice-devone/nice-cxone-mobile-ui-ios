@@ -18,11 +18,11 @@ import CXoneChatSDK
 import SwiftUI
 
 struct InactivityPopupView: View, Themed {
-    
+
     // MARK: - Constants
-    
+
     private enum Constants {
-    
+
         enum Sizing {
             static let headerImageDimension: CGFloat = 24
             static let agentImageDimension: CGFloat = 40
@@ -44,14 +44,13 @@ struct InactivityPopupView: View, Themed {
             static let agentNameContainerOuterHorizontal: CGFloat = 16
         }
     }
-    
+
     // MARK: - Properties
-    
-    @EnvironmentObject private var localization: ChatLocalization
+
     @EnvironmentObject var style: ChatStyle
-    
+
     @SwiftUI.Environment(\.colorScheme) var scheme
-    
+
     @State private var isTimedOut = false
     @State private var secondsRemaining: Int
 
@@ -62,11 +61,11 @@ struct InactivityPopupView: View, Themed {
     let onRefresh: () -> Void
     let onExpire: () -> Void
     let onTimeout: () -> Void
-    
+
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    
+
     // MARK: - Init
-    
+
     init(
         title: String,
         message: String,
@@ -87,9 +86,9 @@ struct InactivityPopupView: View, Themed {
         self.onExpire = onExpire
         self.onTimeout = onTimeout
     }
-    
+
     // MARK: - Builder
-    
+
     var body: some View {
         BottomSheetView {
             VStack(alignment: .leading, spacing: Constants.Spacing.contentVertical) {
@@ -103,7 +102,9 @@ struct InactivityPopupView: View, Themed {
                             action: onRefresh
                         )
                         .foregroundStyle(colors.brand.primary)
-                        
+                        .accessibilityIdentifier(A11y.InactivityPopup.ButtonRefresh.identifier)
+                        .accessibilityHint(A11y.InactivityPopup.ButtonRefresh.hint)
+
                         BottomSheetButton(
                             image: Asset.close,
                             label: expireButtonText,
@@ -111,9 +112,12 @@ struct InactivityPopupView: View, Themed {
                             action: onExpire
                         )
                         .foregroundStyle(colors.content.tertiary)
+                        .accessibilityIdentifier(A11y.InactivityPopup.ButtonExpire.identifier)
+                        .accessibilityHint(A11y.InactivityPopup.ButtonExpire.hint)
                     }
                 }
             }
+            .accessibilityAddTraits(.isModal)
         }
         .onReceive(timer) { _ in
             guard !isTimedOut else {
@@ -134,21 +138,21 @@ struct InactivityPopupView: View, Themed {
 // MARK: - Subviews
 
 private extension InactivityPopupView {
-    
+
     var header: some View {
         HStack(spacing: Constants.Spacing.headerTitleIconHorizontal) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(isTimedOut ? localization.liveChatInactivityTimeoutTitle : formattedTitle)
+                Text(isTimedOut ? L10n.LiveChat.InactivityPopup.SessionTimeout.title : formattedTitle)
                     .font(.title2.weight(.medium))
                     .foregroundStyle(colors.content.primary)
-                
-                Text(isTimedOut ? localization.liveChatInactivityTimeoutText : message)
+
+                Text(isTimedOut ? L10n.LiveChat.InactivityPopup.SessionTimeout.text : message)
                     .font(.callout)
                     .foregroundStyle(colors.content.tertiary)
             }
-            
+
             Spacer(minLength: Constants.Spacing.headerTitleIconSpacerMinLength)
-            
+
             Asset.Images.inactivityIcon.swiftUIImage
                 .resizable()
                 .scaledToFit()
@@ -161,25 +165,44 @@ private extension InactivityPopupView {
                 }
         }
         .padding(.horizontal, Constants.Padding.headerHorizontal)
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(
+            isTimedOut
+                ? A11y.InactivityPopup.Header.TimedOut.identifier
+                : A11y.InactivityPopup.Header.Active.identifier
+        )
+        .accessibilityLabel(
+            isTimedOut
+                ? A11y.InactivityPopup.Header.TimedOut.label
+                : A11y.InactivityPopup.Header.Active.label
+        )
+        .accessibilityAddTraits(.isHeader)
+        .if(!isTimedOut) { view in
+            view
+                .accessibilityValue(A11y.InactivityPopup.Header.Active.value(formattedTimeRemaining))
+                .accessibilityAddTraits(.updatesFrequently)
+        }
     }
 }
 
 // MARK: - Helpers
 
 private extension InactivityPopupView {
-    
-    var formattedTitle: String {
+
+    var formattedTimeRemaining: String {
         let minutes = secondsRemaining / 60
         let seconds = secondsRemaining % 60
-        let timeText = String(format: "%d:%02d", minutes, seconds)
-        
-        return String(format: "%@ %@", title, timeText)
+        return String(format: "%d:%02d", minutes, seconds)
     }
-    
+
+    var formattedTitle: String {
+        String(format: "%@ %@", title, formattedTimeRemaining)
+    }
+
     static func calculateSecondsRemaining(from startedAt: Date, totalSeconds: Int) -> Int {
         let elapsedSeconds = Int(Date.now.timeIntervalSince(startedAt))
         let remaining = totalSeconds - elapsedSeconds
-        
+
         return max(remaining, 0)
     }
 }
@@ -190,8 +213,7 @@ private extension InactivityPopupView {
 #Preview {
     @Previewable @StateObject var overlayManager = OverlayManager()
     let style = ChatStyle()
-    let localization = ChatLocalization()
-    
+
     Color.clear
         .onAppear {
             overlayManager.show {
@@ -207,12 +229,10 @@ private extension InactivityPopupView {
                     onTimeout: {}
                 )
                 .environmentObject(style)
-                .environmentObject(localization)
             }
         }
         .onDisappear {
             overlayManager.hide()
         }
         .environmentObject(style)
-        .environmentObject(localization)
 }

@@ -21,7 +21,7 @@ struct DocumentPickerView: UIViewControllerRepresentable {
     
     // MARK: - Properties
     
-    @SwiftUI.Environment(\.presentationMode) var presentationMode
+    @SwiftUI.Environment(\.dismiss) var dismiss
     
     let attachmentRestrictions: AttachmentRestrictions
     
@@ -74,11 +74,11 @@ struct DocumentPickerView: UIViewControllerRepresentable {
                 )
             })
             
-            parent.presentationMode.wrappedValue.dismiss()
+            parent.dismiss()
         }
 
         func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-            parent.presentationMode.wrappedValue.dismiss()
+            parent.dismiss()
         }
     }
 }

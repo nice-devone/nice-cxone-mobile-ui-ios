@@ -32,12 +32,12 @@ import Foundation
 ///     ...
 /// }
 /// ```
-public class TextFieldEntity: FormCustomFieldType {
+class TextFieldEntity: FormCustomFieldType {
 
     // MARK: - Properties
     
     /// A boolean flag indicating whether this text field is expected to contain an email address.
-    public let isEmail: Bool
+    let isEmail: Bool
     
     // MARK: - Init
     
@@ -49,7 +49,7 @@ public class TextFieldEntity: FormCustomFieldType {
     ///   - ident: A unique identifier or key for this field.
     ///   - isEmail: A boolean flag indicating whether this text field is expected to contain an email address.
     ///   - value: The current value associated with the field, which can be updated and observed using the `@Published` property wrapper.
-    public init(label: String, isRequired: Bool, ident: String, isEmail: Bool, value: String? = nil) {
+    init(label: String, isRequired: Bool, ident: String, isEmail: Bool, value: String? = nil) {
         self.isEmail = isEmail
         
         super.init(label: label, isRequired: isRequired, ident: ident, value: value ?? "")

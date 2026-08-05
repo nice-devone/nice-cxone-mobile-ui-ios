@@ -33,7 +33,6 @@ struct ThreadListView: View, Themed {
     @SwiftUI.Environment(\.colorScheme) var scheme
     
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
     
     @ObservedObject private var viewModel: ThreadListViewModel
 
@@ -50,30 +49,27 @@ struct ThreadListView: View, Themed {
     var body: some View {
         VStack {
             content
-
-            // This NavigationLink allows programmatic navigation to the ThreadView to handle
-            // the cases of direct to thread and thread creation.
-            NavigationLink(
-                destination: LazyView {
-                    viewModel.viewModel(for: viewModel.threadToShow).map(ThreadView.init)
-                        .environmentObject(localization)
-                        .environmentObject(style)
-                },
-                isActive: viewModel.showThread
-            ) { EmptyView() }
-            
-            NavigationLink(
-                destination: LazyView {
-                    viewModel.viewModel(for: viewModel.hiddenThreadToShow).map(ThreadView.init)
-                        .environmentObject(localization)
-                        .environmentObject(style)
-                },
-                isActive: viewModel.showHiddenThread
-            ) { EmptyView() }
         }
+        .background(colors.background.default)
         .onAppear(perform: viewModel.onAppear)
         .onDisappear(perform: viewModel.onDisappear)
-        .navigationTitle(localization.chatListTitle)
+        .navigationTitle(L10n.ChatList.title)
+        .chatToolbarBackground()
+        // The navigationDestination allows programmatic navigation to the ThreadView to handle
+        // the cases of direct to thread and thread creation.
+        //
+        // The `.id(currentThread?.id)` modifier forces SwiftUI to tear down and recreate the inner
+        // view when the active thread changes (e.g. a local push for thread B arrives while the user
+        // is on thread A). Without it, SwiftUI keeps the same `ThreadView` instance and only swaps
+        // the injected view model — `onDisappear` for thread A and `onAppear` for thread B never
+        // fire, so thread B's view model never registers its chat delegate or loads its initial state.
+        .navigationDestination(isPresented: viewModel.threadDestination) {
+            LazyView {
+                viewModel.viewModel(for: viewModel.currentThread).map(ThreadView.init)
+                    .environmentObject(style)
+            }
+            .id(viewModel.currentThread?.id)
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if viewModel.threadStatus == .current && viewModel.chatProvider.state.isChatAvailable {
@@ -84,10 +80,20 @@ struct ThreadListView: View, Themed {
                     } label: {
                         Asset.List.new
                     }
+                    .accessibilityIdentifier(A11y.ThreadList.NavigationBar.ButtonNew.identifier)
+                    .accessibilityLabel(A11y.ThreadList.NavigationBar.ButtonNew.label)
+                    .accessibilityHint(A11y.ThreadList.NavigationBar.ButtonNew.hint)
                 }
             }
         }
-        .background(colors.background.default)
+        .alert(L10n.Alert.UpdateThreadName.title, isPresented: $viewModel.isEditingThreadName) {
+            AlertTextFieldView(isPresented: $viewModel.isEditingThreadName) { name in
+                Task { @MainActor in
+                    await viewModel.setThreadName(name)
+                }
+                
+            }
+        }
     }
 }
 
@@ -98,149 +104,159 @@ private extension ThreadListView {
     @ViewBuilder
     var content: some View {
         Picker("", selection: $viewModel.threadStatus) {
-            ForEach(ThreadStatusType.allCases, id: \.self) {
-                Text(localization.string(for: $0)).tag($0.rawValue)
+            ForEach(ThreadStatusType.allCases, id: \.self) { status in
+                Text(pickerString(for: status))
+                    .tag(status.rawValue)
             }
         }
+        .pickerStyle(.segmented)
+        .padding(.vertical, Constants.Padding.pickerVertical)
+        .padding(.horizontal, Constants.Padding.pickerHorizontal)
         .onChange(of: viewModel.threadStatus) { newValue in
             viewModel.updateThreadStatus(newValue)
         }
-        .pickerStyle(SegmentedPickerStyle())
-        .padding(.vertical, Constants.Padding.pickerVertical)
-        .padding(.horizontal, Constants.Padding.pickerHorizontal)
         
         if viewModel.chatThreads.isEmpty {
             Spacer()
             
-            Text(localization.chatListEmpty)
-                .foregroundColor(colors.content.tertiary)
+            Text(L10n.ChatList.empty)
+                .foregroundStyle(colors.content.tertiary)
+                .accessibilityIdentifier(A11y.ThreadList.EmptyState.identifier)
 
             Spacer()
         } else {
-            if #available(iOS 16.0, *) {
-                listContent
-                    .alert(localization.alertUpdateThreadNameTitle, isPresented: $viewModel.isEditingThreadName) {
-                        AlertTextFieldView(isPresented: $viewModel.isEditingThreadName) { name in
-                            Task { @MainActor in
-                                await viewModel.setThreadName(name)
-                            }
-                            
-                        }
-                    }
-            } else {
-                lazyStackContent
-                    .textInputAlert(
-                        TextInputAlertConfiguration(
-                            title: localization.alertUpdateThreadNameTitle,
-                            placeholder: localization.alertUpdateThreadNamePlaceholder,
-                            confirmTitle: localization.commonConfirm,
-                            cancelTitle: localization.commonCancel
-                        ),
-                        isPresented: $viewModel.isEditingThreadName
-                    ) { name in
-                        Task { @MainActor in
-                            await viewModel.setThreadName(name)
-                        }
-                    }
-                
-                Spacer()
+            List(viewModel.chatThreads, id: \.id) { chatThread in
+                listCell(chatThread: chatThread)
             }
+            .listStyle(.plain)
+            .background(colors.background.default)
         }
     }
-    
-    var listContent: some View {
-        List {
-            ForEach(viewModel.chatThreads, id: \.id) { chatThread in
-                let title = chatThread.name?.nilIfEmpty()
-                    ?? chatThread.assignedAgent?.fullName
-                    ?? localization.commonUnassignedAgent
-                let timestamp = chatThread.messages.last?.createdAt ?? Date.now
-                
-                ThreadListCell(
-                    assignedAgent: ChatUserMapper.map(from: chatThread.assignedAgent),
-                    title: title,
-                    message: chatThread.messages.last?.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: true),
-                    timestamp: dateFormatter.string(from: timestamp),
-                    statusType: viewModel.threadStatus,
-                    // Read status is valid only for messages from an agent to a client
-                    isRead: chatThread.messages.last?.direction == .toClient ? chatThread.messages.last?.customerStatistics?.seenAt != nil : true,
-                    onRename: {
-                        viewModel.onEditThreadName(for: chatThread)
-                    },
-                    onArchive: {
-                        Task { @MainActor in
-                            await viewModel.onArchive(chatThread)
-                        }
-                    }
-                )
-                .listRowBackground(colors.background.default)
-                .onTapGesture {
-                    // Note that we *could* use a NavigationLink here instead, but then
-                    // we would be duplicating much of the code for the NavigationLink
-                    // on or around line 43.
-                    viewModel.show(thread: chatThread)
-                }
-            }
-            .if(viewModel.threadStatus == .current) { view in
-                view.onDelete(perform: viewModel.onSwipeToArchive)
-            }
+
+    func listCell(chatThread: ChatThread) -> some View {
+        let title = chatThread.titleForConversation
+        let timestamp = chatThread.messages.last?.createdAt ?? Date.now
+        let formattedTimestamp = dateFormatter.string(from: timestamp)
+        let messagePreview = chatThread.messages.last?.getLocalizedContentOrFallbackText(useFallback: true)
+
+        return Button {
+            viewModel.show(thread: chatThread)
+        } label: {
+            ThreadListCell(
+                assignedAgent: ChatUserMapper.map(from: chatThread.assignedAgent),
+                title: title,
+                message: messagePreview,
+                timestamp: formattedTimestamp,
+                statusType: viewModel.threadStatus,
+                // Read status is valid only for messages from an agent to a client
+                isRead: chatThread.messages.last?.direction == .toClient
+                    ? chatThread.messages.last?.customerStatistics?.seenAt != nil
+                    : true
+            )
         }
-        .listStyle(.plain)
-        .background(colors.background.default)
+        .listRowInsets(EdgeInsets())
+        .listRowSeparator(.hidden)
+        .listRowBackground(colors.background.default)
+        .if(viewModel.threadStatus == .current) { view in
+            view.cellActions(
+                chatThread: chatThread,
+                colors: colors,
+                onRename: {
+                    viewModel.onEditThreadName(for: chatThread)
+                },
+                onArchive: {
+                    Task { @MainActor in
+                        await viewModel.onArchive(chatThread)
+                    }
+                }
+            )
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(A11y.ThreadList.Cell.identifier(chatThread.id))
+        .accessibilityLabel(
+            messagePreview?.isEmpty == false
+                ? A11y.ThreadList.Cell.label(title, messagePreview ?? "", formattedTimestamp)
+                : A11y.ThreadList.Cell.Label.noMessage(title, formattedTimestamp)
+        )
+        .accessibilityHint(A11y.ThreadList.Cell.hint)
     }
+}
+
+// MARK: - Helpers
+
+private extension ThreadListView {
     
-    var lazyStackContent: some View {
-        LazyVStack {
-            ForEach(viewModel.chatThreads) { chatThread in
-                let title = chatThread.name?.nilIfEmpty()
-                    ?? chatThread.assignedAgent?.fullName
-                    ?? localization.commonUnassignedAgent
-                let timestamp = chatThread.messages.last?.createdAt ?? Date.now
-                
-                ThreadListCell(
-                    assignedAgent: ChatUserMapper.map(from: chatThread.assignedAgent),
-                    title: title,
-                    message: chatThread.messages.last?.getLocalizedContentOrFallbackText(basedOn: localization, useFallback: true),
-                    timestamp: dateFormatter.string(from: timestamp),
-                    statusType: viewModel.threadStatus,
-                    // Read status is valid only for messages from an agent to a client
-                    isRead: chatThread.messages.last?.direction == .toClient ? chatThread.messages.last?.customerStatistics?.seenAt != nil : true,
-                    onRename: {
-                        viewModel.onEditThreadName(for: chatThread)
-                    },
-                    onArchive: {
-                        Task { @MainActor in
-                            await viewModel.onArchive(chatThread)
-                        }
+    func pickerString(for status: ThreadStatusType) -> String {
+        switch status {
+        case .current:
+            return L10n.ChatList.ThreadStatus.current
+        case .archived:
+            return L10n.ChatList.ThreadStatus.archived
+        }
+    }
+}
+
+private extension View {
+
+    func cellActions(chatThread: ChatThread, colors: StyleColors, onRename: @escaping () -> Void, onArchive: @escaping () -> Void) -> some View {
+        self
+            .contextMenu {
+                Button(action: onRename) {
+                    Label {
+                        Text(L10n.ChatThread.ContextMenu.rename)
+                    } icon: {
+                        Asset.ChatThread.gear
+                            .accessibilityHidden(true)
                     }
-                )
-                .listRowBackground(colors.background.default)
-                .onTapGesture {
-                    viewModel.show(thread: chatThread)
+                }
+
+                Button(role: .destructive, action: onArchive) {
+                    Label {
+                        Text(L10n.ChatThread.ContextMenu.archive)
+                    } icon: {
+                        Asset.Message.archive
+                            .accessibilityHidden(true)
+                    }
+                    .tint(colors.status.error)
                 }
             }
-        }
-        .listStyle(.plain)
-        .background(colors.background.default)
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive, action: onArchive) {
+                    ResizedSymbol(
+                        image: Asset.List.archive,
+                        targetSize: StyleGuide.Sizing.buttonSmallDimension
+                    )
+                }
+                .foregroundStyle(colors.status.onWarning)
+                .tint(colors.status.warning)
+                .accessibilityIdentifier(A11y.ThreadList.Cell.ButtonArchive.identifier)
+                .accessibilityLabel(A11y.ThreadList.Cell.ButtonArchive.label)
+                .accessibilityHint(A11y.ThreadList.Cell.ButtonArchive.hint)
+
+                Button(action: onRename) {
+                    ResizedSymbol(
+                        image: Asset.List.rename,
+                        targetSize: StyleGuide.Sizing.buttonSmallDimension
+                    )
+                }
+                .foregroundStyle(colors.status.onSuccess)
+                .tint(colors.status.success)
+                .accessibilityIdentifier(A11y.ThreadList.Cell.ButtonRename.identifier)
+                .accessibilityLabel(A11y.ThreadList.Cell.ButtonRename.label)
+                .accessibilityHint(A11y.ThreadList.Cell.ButtonRename.hint)
+            }
     }
 }
 
 // MARK: - Previews
 
 #Preview("ThreadListView") {
-    NavigationView {
-        ThreadListView(
-            viewModel: ThreadListViewModel(
-                containerViewModel: ChatContainerViewModel(
-                    chatProvider: CXoneChat.shared,
-                    chatLocalization: ChatLocalization(),
-                    chatStyle: ChatStyle(),
-                    chatConfiguration: ChatConfiguration(),
-                    presentModally: true
-                ) {}
-            )
+    ChatContainerView(
+        viewModel: ChatContainerViewModel(
+            chatProvider: MockChatProvider(state: .prepared, mode: .multithread),
+            chatConfiguration: ChatConfiguration(),
+            presentModally: true
         )
-    }
+    )
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }

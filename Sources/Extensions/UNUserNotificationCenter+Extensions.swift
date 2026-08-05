@@ -18,8 +18,9 @@ import UserNotifications
 
 extension UNUserNotificationCenter {
     
-    func scheduleThreadNotification(lastMessage: Message, chatLocalization: ChatLocalization) async throws {
-        LogManager.trace("Scheduling thread notification for message \(lastMessage.idString) in thread \(lastMessage.threadIdString)")
+    @MainActor
+    func scheduleThreadNotification(lastMessage: Message) async throws {
+        LogManager.trace("Scheduling thread notification for message \(lastMessage.id) in thread \(lastMessage.threadId)")
         
         // First check notification permission status
         let settings = await notificationSettings()
@@ -47,17 +48,17 @@ extension UNUserNotificationCenter {
         
         let content = UNMutableNotificationContent()
     
-        content.title = lastMessage.senderInfo?.fullName ?? chatLocalization.chatFallbackMessageNoName
-        content.subtitle = lastMessage.getLocalizedContentOrFallbackText(basedOn: chatLocalization, useFallback: true) ?? ""
+        content.title = lastMessage.senderInfo?.fullName ?? L10n.Chat.FallbackMessage.noName
+        content.subtitle = lastMessage.getLocalizedContentOrFallbackText(useFallback: true) ?? ""
         content.userInfo = [
-            "threadId": lastMessage.threadIdString,
-            "messageId": lastMessage.idString,
+            "threadId": lastMessage.threadId,
+            "messageId": lastMessage.id,
             "timestamp": lastMessage.createdAt.timeIntervalSince1970,
             "messageFromDifferentThread": true
         ]
         content.sound = .default
         
-        let identifier = "\(NotificationCenter.threadDeeplinkNotificationName)_\(lastMessage.idString)"
+        let identifier = "\(NotificationCenter.threadDeeplinkNotificationName)_\(lastMessage.id)"
         
         LogManager.trace("Creating notification with identifier: \(identifier)")
         
@@ -70,7 +71,7 @@ extension UNUserNotificationCenter {
         do {
             try await add(request)
             
-            LogManager.trace("Notification request added successfully for message \(lastMessage.idString)")
+            LogManager.trace("Notification request added successfully for message \(lastMessage.id)")
         } catch {
             error.logError()
             

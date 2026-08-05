@@ -22,9 +22,9 @@ let chatStyle = ChatStyle(colorsManager: customColors)
 class MyChatCoordinator: ChatCoordinator {
 
     // MARK: - Init
-    
-    init() {
-        super.init(chatStyle: chatStyle)
+
+    init(chatProvider: ChatProvider) {
+        super.init(chatProvider: chatProvider, chatStyle: chatStyle)
     }
 
     ...

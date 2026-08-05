@@ -18,7 +18,7 @@ import SwiftUI
 /// Protocol defining the required color properties for brand styles used in the chat UI.
 ///
 /// Conforming types provide colors for primary and secondary brand colors, including their containers and on-colors.
-public protocol BrandStyleColors {
+public protocol BrandStyleColors: Sendable {
     /// The primary brand color.
     var primary: Color { get }
     /// The color used for content on top of the primary color.
@@ -42,7 +42,7 @@ public protocol BrandStyleColors {
 /// Default implementation of `BrandStyleColors` providing concrete color values.
 ///
 /// Use this struct to specify the main brand colors for light and dark themes.
-public struct BrandStyleColorsImpl: BrandStyleColors {
+public struct BrandStyleColorsImpl: BrandStyleColors, Sendable {
     
     // MARK: - Properties
     

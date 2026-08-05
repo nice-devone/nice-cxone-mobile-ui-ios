@@ -28,30 +28,14 @@ import Foundation
 ///     imageUrl: imageUrl
 /// )
 /// ```
-public struct RichLinkItem: Hashable, Equatable {
-    
-    // MARK: - Properties
+struct RichLinkItem: Hashable, Equatable {
     
     /// The title or label associated with the rich link.
-    public let title: String
+    let title: String
     
     /// The URL pointing to the web page or content being previewed.
-    public let url: URL
+    let url: URL
     
     /// The URL of an image used as a preview thumbnail for the link.
-    public let imageUrl: URL
-    
-    // MARK: - Init
-    
-    /// Initialization of the RichLinkItem
-    ///
-    /// - Parameters:
-    ///   - title: The title or label associated with the rich link.
-    ///   - url: The URL pointing to the web page or content being previewed.
-    ///   - imageUrl: The URL of an image used as a preview thumbnail for the link.
-    public init(title: String, url: URL, imageUrl: URL) {
-        self.title = title
-        self.url = url
-        self.imageUrl = imageUrl
-    }
+    let imageUrl: URL
 }

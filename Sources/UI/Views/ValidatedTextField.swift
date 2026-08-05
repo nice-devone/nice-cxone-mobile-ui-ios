@@ -53,19 +53,27 @@ struct ValidatedTextField: View, Themed {
     let title: String
     let placeholder: String?
     let validator: ((String) -> String?)?
-    
+    /// Overrides the accessibility identifier applied to the inner `TextField`.
+    ///
+    /// When `nil`, falls back to `A11y.ValidatedTextField.identifier(title)`. Callers that embed
+    /// `ValidatedTextField` in a larger field (e.g. `TextFieldView`) pass their own identifier so that
+    /// it resolves to the editable `TextField` element rather than a wrapping container.
+    let accessibilityIdentifier: String?
+
     // MARK: - Init
-    
+
     init(
         _ title: String,
         text: Binding<String>,
         placeholder: String? = nil,
         validator: ((String) -> String?)? = nil,
+        accessibilityIdentifier: String? = nil
     ) {
         self.title = title
         self._text = text
         self.placeholder = placeholder
         self.validator = validator
+        self.accessibilityIdentifier = accessibilityIdentifier
     }
     
     // MARK: - Builder
@@ -76,7 +84,8 @@ struct ValidatedTextField: View, Themed {
                 .font(.callout)
                 .bold()
                 .foregroundStyle(error == nil ? colors.content.primary : colors.status.error)
-            
+                .accessibilityHidden(true)
+
             VStack(alignment: .leading, spacing: Constants.Spacing.textFieldDividerSpacing) {
                 TextField(placeholder ?? "", text: $text)
                 .tint(error == nil ? colors.content.primary : colors.status.error)
@@ -88,7 +97,15 @@ struct ValidatedTextField: View, Themed {
                 .onSubmit {
                     isFocused = false
                 }
-                
+                .accessibilityIdentifier(accessibilityIdentifier ?? A11y.ValidatedTextField.identifier(title.lowercased()))
+                .accessibilityLabel(title)
+                .accessibilityHint(A11y.ValidatedTextField.hint(title))
+                .accessibilityValue(
+                    text.isEmpty
+                        ? error == nil ? A11y.ValidatedTextField.Validation.Valid.Empty.value : A11y.ValidatedTextField.Validation.Invalid.Empty.value
+                        : error == nil ? A11y.ValidatedTextField.Validation.Valid.value(text) : A11y.ValidatedTextField.Validation.Invalid.value(text)
+                )
+
                 ColoredDivider(
                     error != nil
                         ? colors.status.error
@@ -97,8 +114,9 @@ struct ValidatedTextField: View, Themed {
                             : colors.border.default,
                     height: isFocused || !text.isEmpty ? Constants.Sizing.dividerFocusedHeight : Constants.Sizing.dividerHeight
                 )
+                .accessibilityHidden(true)
             }
-            
+
             if let error {
                 Text(error)
                     .font(.caption)
@@ -111,6 +129,11 @@ struct ValidatedTextField: View, Themed {
         .onChange(of: isFocused) { focused in
             if !focused {
                 error = validator?(text)
+
+                if let error {
+                    // Announce only when focus is lost
+                    A11y.announce(error)
+                }
             }
         }
         .animation(.easeInOut(duration: StyleGuide.animationDuration), value: isFocused)
@@ -120,29 +143,33 @@ struct ValidatedTextField: View, Themed {
 
 // MARK: - Validators
 
-func required(_ localization: ChatLocalization) -> (String) -> String? {
+@MainActor
+var required: (String) -> String? {
     { text in
-        text.isEmpty ? localization.commonRequired : nil
+        text.isEmpty ? L10n.Common.required : nil
     }
 }
 
-func numeric(_ localization: ChatLocalization) -> (String) -> String? {
+@MainActor
+var numeric: (String) -> String? {
     { text in
         text.isEmpty
             ? nil
-            : (Double(text) == nil) ? localization.commonInvalidNumber : nil
+            : (Double(text) == nil) ? L10n.Common.invalidNumber : nil
     }
 }
 
-func email(_ localization: ChatLocalization) -> (String) -> String? {
+@MainActor
+var email: (String) -> String? {
     { text in
-        !text.isValidEmail ? localization.commonInvalidEmail : nil
+        !text.isValidEmail ? L10n.Common.invalidEmail : nil
     }
 }
 
-func compare(_ expected: String, _ localization: ChatLocalization) -> (String) -> String? {
+@MainActor
+func compare(_ expected: String) -> (String) -> String? {
     { text in
-        text != expected ? localization.commonFieldsDontMatch : nil
+        text != expected ? L10n.Common.fieldsDontMatch : nil
     }
 }
 
@@ -163,39 +190,26 @@ func allOf(_ validators: ((String) -> String?)...) -> (String) -> String? {
 @available(iOS 17, *)
 #Preview {
     @Previewable @State var text: String = ""
-    
-    let localization = ChatLocalization()
 
-    var isRequired: (String) -> String? {
-        required(localization)
-    }
-    var isEmail: (String) -> String? {
-        email(localization)
-    }
-    var isNumeric: (String) -> String? {
-        numeric(localization)
-    }
-    
     ScrollView {
         VStack(spacing: 24) {
             ValidatedTextField("Text", text: $text)
-            
-            ValidatedTextField("Required Text", text: $text, validator: isRequired)
 
-            ValidatedTextField("Numeric", text: $text, placeholder: "Enter a number", validator: isNumeric)
+            ValidatedTextField("Required Text", text: $text, validator: required)
+
+            ValidatedTextField("Numeric", text: $text, placeholder: "Enter a number", validator: numeric)
                 .keyboardType(.decimalPad)
-            
-            ValidatedTextField("Required Numeric", text: $text, validator: allOf(isNumeric, isRequired))
+
+            ValidatedTextField("Required Numeric", text: $text, validator: allOf(numeric, required))
                 .keyboardType(.decimalPad)
-            
-            ValidatedTextField("Email", text: $text, placeholder: "Enter your e-mail", validator: isEmail)
+
+            ValidatedTextField("Email", text: $text, placeholder: "Enter your e-mail", validator: email)
                 .keyboardType(.emailAddress)
-            
-            ValidatedTextField("Required Email", text: $text, validator: allOf(isRequired, isEmail))
+
+            ValidatedTextField("Required Email", text: $text, validator: allOf(required, email))
                 .keyboardType(.emailAddress)
         }
     }
     .padding(.horizontal, 24)
-    .environmentObject(localization)
     .environmentObject(ChatStyle())
 }

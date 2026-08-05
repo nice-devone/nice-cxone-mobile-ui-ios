@@ -45,9 +45,11 @@ struct PrimaryButtonStyle: ButtonStyle, Themed {
 
 // MARK: - Previews
 
+// swiftlint:disable hardcoded_strings
 #Preview {
     Button("Button") { }
         .padding()
         .buttonStyle(.primary)
         .environmentObject(ChatStyle())
 }
+// swiftlint:enable hardcoded_strings

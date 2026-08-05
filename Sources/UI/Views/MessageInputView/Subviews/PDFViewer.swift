@@ -33,7 +33,6 @@ struct PDFViewer: View, Themed {
     
     // MARK: - Properties
     
-    @EnvironmentObject var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     @SwiftUI.Environment(\.colorScheme) var scheme
@@ -67,11 +66,11 @@ private extension PDFViewer {
                 .font(.largeTitle)
                 .foregroundStyle(colors.status.error)
             
-            Text(localization.loadingDocError)
+            Text(L10n.Chat.Attachments.Loading.documentError)
                 .padding(.top, Constants.Padding.titleTop)
                 .foregroundStyle(colors.content.primary)
             
-            Button(localization.commonTryAgain, action: viewModel.preparePDFForViewing)
+            Button(L10n.Common.tryAgain, action: viewModel.preparePDFForViewing)
                 .foregroundStyle(colors.brand.primary)
         }
         .background(colors.background.default)
@@ -102,17 +101,11 @@ private struct PDFKitView: UIViewRepresentable {
 // MARK: - Previews
 
 #Preview("PDF") {
-    let localization = ChatLocalization()
-
-    PDFViewer(viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem, alertType: .constant(nil), localization: localization))
-       .environmentObject(localization)
+    PDFViewer(viewModel: PDFViewModel(attachmentItem: MockData.pdfPreviewItem, alertType: .constant(nil)))
        .environmentObject(ChatStyle())
 }
 
 #Preview("Error") {
-    let localization = ChatLocalization()
-
-    PDFViewer(viewModel: PDFViewModel(attachmentItem: MockData.docPreviewItem, alertType: .constant(nil), localization: localization))
-       .environmentObject(localization)
+    PDFViewer(viewModel: PDFViewModel(attachmentItem: MockData.docPreviewItem, alertType: .constant(nil)))
        .environmentObject(ChatStyle())
 }

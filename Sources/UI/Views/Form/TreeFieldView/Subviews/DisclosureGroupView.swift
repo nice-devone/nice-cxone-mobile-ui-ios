@@ -39,26 +39,19 @@ struct DisclosureGroupView<Label, Content>: View, Themed where Label: View, Cont
     // MARK: - Builder
     
     var body: some View {
-        if #available(iOS 16, *) {
-            DisclosureGroup(isExpanded: $isExpanded, content: content, label: label)
-                .foregroundStyle(isExpanded ? colors.brand.primary : colors.content.tertiary)
-                .disclosureGroupStyle(.custom)
-        } else {
-            DisclosureGroup(isExpanded: $isExpanded, content: content, label: label)
-                .foregroundStyle(isExpanded ? colors.brand.primary : colors.content.tertiary)
-        }
+        DisclosureGroup(isExpanded: $isExpanded, content: content, label: label)
+            .foregroundStyle(isExpanded ? colors.brand.primary : colors.content.tertiary)
+            .disclosureGroupStyle(.custom)
     }
 }
 
 // MARK: - DisclosureGroupStyle
 
-@available(iOS 16.0, *)
 extension DisclosureGroupStyle where Self == CustomDisclosureGroupStyle {
-    
+
     static var custom: CustomDisclosureGroupStyle { CustomDisclosureGroupStyle() }
 }
 
-@available(iOS 16.0, *)
 private struct CustomDisclosureGroupStyle: DisclosureGroupStyle, Themed {
     
     // MARK: - Constants
@@ -96,11 +89,13 @@ private struct CustomDisclosureGroupStyle: DisclosureGroupStyle, Themed {
                         .rotationEffect(Angle(degrees: configuration.isExpanded ? Constants.chevronExpandedAngle : .zero))
                         .font(.footnote.weight(.bold))
                         .padding(.horizontal, Constants.Padding.chevronHorizontal)
+                        .accessibilityHidden(true)
                 }
                 .background(colors.background.default)
             }
             
             ColoredDivider(colors.border.default)
+                .accessibilityHidden(true)
             
             if configuration.isExpanded {
                 configuration.content
@@ -112,6 +107,7 @@ private struct CustomDisclosureGroupStyle: DisclosureGroupStyle, Themed {
 
 // MARK: - Previews
 
+// swiftlint:disable hardcoded_strings
 #Preview {
     DisclosureGroupView(isExpanded: false) {
         VStack {
@@ -136,3 +132,4 @@ private struct CustomDisclosureGroupStyle: DisclosureGroupStyle, Themed {
     .padding(.horizontal, 16)
     .environmentObject(ChatStyle())
 }
+// swiftlint:enable hardcoded_strings

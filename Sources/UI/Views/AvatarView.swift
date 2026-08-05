@@ -39,7 +39,7 @@ struct AvatarView: View {
             } else {
                 KFImage(imageUrl)
                     .onSuccess { result in
-                        loadedImage = result.image.fixOrientation()
+                        loadedImage = result.image
                     }
                     .placeholder {
                         CircleText(text: imageUrl != nil ? nil : initials)
@@ -49,6 +49,7 @@ struct AvatarView: View {
         }
         .scaledToFit()
         .clipShape(Circle())
+        .accessibilityHidden(true)
     }
 }
 
@@ -115,24 +116,24 @@ private struct TestPreviewView<Content: View>: View {
         ZStack(alignment: .bottomLeading) {
             RoundedRectangle(cornerRadius: 60)
                 .fill(Color.accentColor)
-                .frame(width: UIScreen.main.bounds.width, height: 150)
+                .frame(width: UIScreen.currentBounds.width, height: 150)
             
             content()
                 .frame(width: 72, height: 72)
                 .offset(x: -36, y: 36)
         }
-        .offset(x: UIScreen.main.bounds.width / 3)
+        .offset(x: UIScreen.currentBounds.width / 3)
     }
 }
 
 #Preview {
     VStack(spacing: 24) {
         TestPreviewView {
-            AvatarView(imageUrl: MockData.imageUrl, initials: nil)
+            AvatarView(imageUrl: MockData.imageUrl(), initials: nil)
         }
         
         TestPreviewView {
-            AvatarView(imageUrl: MockData.imageUrl, initials: "PP")
+            AvatarView(imageUrl: MockData.imageUrl(), initials: "PP")
         }
         
         TestPreviewView {

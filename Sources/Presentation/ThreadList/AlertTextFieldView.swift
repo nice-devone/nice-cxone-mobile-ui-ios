@@ -19,64 +19,53 @@ struct AlertTextFieldView: View {
 
     // MARK: - Properties
 
-    @EnvironmentObject private var localization: ChatLocalization
-
     @State private var text = ""
 
     @Binding var isPresented: Bool
 
-    let initialText: String
-
     let onConfirm: (String) -> Void
-
-    // MARK: - Init
-
-    init(isPresented: Binding<Bool>, initialText: String = "", onConfirm: @escaping (String) -> Void) {
-        self._isPresented = isPresented
-        self._text = State(initialValue: initialText)
-        self.initialText = initialText
-        self.onConfirm = onConfirm
-    }
 
     // MARK: - Body
 
-    @ViewBuilder
     var body: some View {
-        TextField(localization.alertUpdateThreadNamePlaceholder, text: $text)
+        VStack {
+            TextField(L10n.Alert.UpdateThreadName.placeholder, text: $text)
+                .accessibilityIdentifier(A11y.Alert.UpdateThreadName.identifier)
 
-        Button(localization.commonConfirm) {
-            onConfirm(text)
-            text = ""
-            isPresented = false
-        }
+            HStack {
+                Button(L10n.Common.confirm) {
+                    onConfirm(text)
+                    text = ""
+                    isPresented = false
+                }
 
-        Button(localization.commonCancel, role: .cancel) {
-            text = ""
-            isPresented = false
+                Button(L10n.Common.cancel, role: .cancel) {
+                    isPresented = false
+                }
+            }
         }
     }
 }
 
 // MARK: - Preview
 
+// swiftlint:disable hardcoded_strings
 @available(iOS 17.0, *)
 #Preview("Alert Text Field") {
     @Previewable @State var text = ""
     @Previewable @State var isPresented = true
-    
-    let localization = ChatLocalization()
-    
+
     VStack {
         Text(text)
-        
+
         Button("Show") {
             isPresented = true
         }
     }
-    .alert(localization.alertUpdateThreadNameTitle, isPresented: $isPresented) {
+    .alert(L10n.Alert.UpdateThreadName.title, isPresented: $isPresented) {
         AlertTextFieldView(isPresented: $isPresented) { newText in
             text = newText
         }
     }
-    .environmentObject(localization)
 }
+// swiftlint:enable hardcoded_strings

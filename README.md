@@ -1,4 +1,4 @@
-![](https://img.shields.io/badge/min_iOS-15.0%2B-orange?style=flat) ![](https://img.shields.io/badge/Swift-5.7%2B-orange?style=flat) ![](https://img.shields.io/badge/Framework-SwiftUI-orange?style=flat) ![](https://img.shields.io/badge/Licence-NICE-orange?style=flat)
+![](https://img.shields.io/badge/min_iOS-16.0%2B-orange?style=flat) ![](https://img.shields.io/badge/Swift-5.10%2B-orange?style=flat) ![](https://img.shields.io/badge/Framework-SwiftUI-orange?style=flat) ![](https://img.shields.io/badge/Licence-NICE-orange?style=flat)
 
 # CXoneChatUI
 
@@ -9,8 +9,8 @@ The CXoneChatUI module provides a default implementation of a Chat User Interfac
 
 ## Requirements
 
-- iOS 15.0+
-- Swift 5.7+
+- iOS 16.0+
+- Swift 5.10+
 
 
 ## Limitations
@@ -43,9 +43,20 @@ Include the CXoneChatUI module in your project. You can do this by adding the fo
 import CXoneChatUI
 ```
 
-### Step 2: Use ChatCoordinator
+### Step 2: Construct the SDK provider and hand it to `ChatCoordinator`
 
-Initialize and use the `ChatCoordinator` to start the chat functionality. This coordinator simplifies the setup process and provides a quick way to integrate the chat UI into your application.
+`ChatCoordinator` requires a `ChatProvider` (your `CXoneChat` instance) so it can drive the SDK on your behalf. Construct **one** `CXoneChat()` at app start, hold the reference for the lifetime of the chat experience, and pass it into every `ChatCoordinator` you create.
+
+```swift
+import CXoneChatSDK
+import CXoneChatUI
+
+let chatProvider = CXoneChat()                          // hold this for app lifetime
+let chatCoordinator = ChatCoordinator(chatProvider: chatProvider)
+```
+
+> 📖 **Upgrading from an earlier version that used `CXoneChat.shared` + `CXoneChatDelegate`?** The SDK [Migration Guide](../cxone-chat-sdk/docs/migration-from-singleton.md) walks through every breaking change, including a delegate-method → `ChatEvent`-case mapping table, `signOut()` semantics, and `@MainActor` rules. UI-module integrators are affected too — the snippets below all assume the singleton-free pattern.
+
 When initializing, you must specify the presentation style using the 'presentModally' parameter. This determines whether the chat interface appears as a modal overlay or in full-screen mode. The core functionality remains the same in both presentation styles, with each supporting native iOS gestures - swipe down to dismiss for modal presentation, or swipe from left edge to return to the previous screen in full-screen mode.
 
 
@@ -70,7 +81,7 @@ var body: some View {
     }
 }
 ...
-let chatCoordinator = ChatCoordinator()
+let chatCoordinator = ChatCoordinator(chatProvider: chatProvider)
 ...
 func chatContentView() -> some View {
     ...
@@ -99,7 +110,7 @@ The `ChatCoordinator` provides a completion handler that is executed when the ch
 In the sample application, the completion handler is used to reset the appearance of UI components. This ensures that the app's UI returns to its default state after the chat session.
 
 ```swift
-chatCoordinator.content(modally: modally) { [weak self] in
+chatCoordinator.content(presentModally: modally) { [weak self] in
     // Reset UI appearance after chat ends
     self?.navigationController.navigationBar.defaultAppearance()
     UISegmentedControl.defaultAppearance()
@@ -112,7 +123,7 @@ chatCoordinator.content(modally: modally) { [weak self] in
 The chat can be integrated with UIKit using the method `public func start(threadId: String? = nil, in parentViewController: UIViewController, presentModally: Bool, onFinish: (() -> Void)? = nil)`. This method requires a `UINavigationController` to control the navigation flow and presentation style.
 
 ```swift
-let chatCoordinator = ChatCoordinator()
+let chatCoordinator = ChatCoordinator(chatProvider: chatProvider)
 ...
 chatCoordinator.start(in: navigationController, presentModally: true)
 ```
@@ -185,7 +196,7 @@ let localization = ChatLocalization()
 // Override `commonConfirm`
 localization.commonConfirm = "👌"
         
-self.chatCoordinator = ChatCoordinator(chatLocalization: localization)
+self.chatCoordinator = ChatCoordinator(chatProvider: chatProvider, chatLocalization: localization)
 ```
 
 ### Additional Configuration
@@ -214,5 +225,5 @@ let configuration = ChatConfiguration(
     ]
 )
 
-let chatCoordinator = ChatCoordinator(chatConfiguration: configuration)
+let chatCoordinator = ChatCoordinator(chatProvider: chatProvider, chatConfiguration: configuration)
 ```

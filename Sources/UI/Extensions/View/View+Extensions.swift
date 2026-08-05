@@ -59,4 +59,28 @@ extension View {
     func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
+
+    /// Applies a transform to the view when an optional value is non-`nil`, passing the unwrapped value to the closure.
+    @ViewBuilder
+    func ifLet<Content: View, T>(_ conditional: T?, @ViewBuilder _ content: (Self, _ value: T) -> Content) -> some View {
+        if let conditional {
+            content(self, conditional)
+        } else {
+            self
+        }
+    }
+
+    /// Applies one of two transforms depending on whether an optional value is non-`nil`.
+    @ViewBuilder
+    func ifLet<TrueContent: View, T, ElseContent: View>(
+        _ conditional: T?,
+        @ViewBuilder _ content: (Self, _ value: T) -> TrueContent,
+        @ViewBuilder else: (Self) -> ElseContent
+    ) -> some View {
+        if let conditional {
+            content(self, conditional)
+        } else {
+            `else`(self)
+        }
+    }
 }

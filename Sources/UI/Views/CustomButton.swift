@@ -55,7 +55,7 @@ struct CustomButton: View {
             .font(.body.weight(.bold))
             .adjustForA11y()
             .padding(.horizontal, Constants.Padding.horizontal)
-            .foregroundColor(foregroundColor)
+            .foregroundStyle(foregroundColor)
             .background(
                 RoundedRectangle(cornerRadius: Constants.Sizing.backgroundCornerRadius)
                     .fill(
@@ -69,6 +69,7 @@ struct CustomButton: View {
 
 // MARK: - Preview
 
+// swiftlint:disable hardcoded_strings
 private struct PreviewButtonStyle: ButtonStyle {
     
     // MARK: - Builder
@@ -87,3 +88,4 @@ private struct PreviewButtonStyle: ButtonStyle {
         .padding()
         .buttonStyle(PreviewButtonStyle())
 }
+// swiftlint:enable hardcoded_strings

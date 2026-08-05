@@ -13,9 +13,10 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
-import PDFKit
+@preconcurrency import PDFKit
 import SwiftUI
 
+@MainActor
 class PDFViewModel: ObservableObject {
 
     // MARK: - Properties
@@ -27,20 +28,18 @@ class PDFViewModel: ObservableObject {
 
     let url: URL
     let loader: AttachmentLoader
-    let localization: ChatLocalization
 
     private let requiresSecurityScope: Bool
     
-    private static let thumbnailDimension: CGFloat = 1024
+    private nonisolated static let thumbnailDimension: CGFloat = 1024
     
     // MARK: - Init
 
-    init(attachmentItem: AttachmentItem, alertType: Binding<ChatAlertType?>, localization: ChatLocalization) {
+    init(attachmentItem: AttachmentItem, alertType: Binding<ChatAlertType?>) {
         self.url = attachmentItem.url
         self.requiresSecurityScope = attachmentItem.requiresSecurityScope
         self.loader = AttachmentLoader(url: attachmentItem.url)
         self._alertType = alertType
-        self.localization = localization
 
         loadDocumentFromLoaderOrCache(url: url)
         
@@ -58,21 +57,17 @@ class PDFViewModel: ObservableObject {
         let cacheKey = stableIdentifier + ":thumbnail"
 
         if let cachedData = AttachmentCache.shared.data(for: cacheKey), let cachedImage = UIImage(data: cachedData) {
-            Task { @MainActor in
-                self.thumbnailLoadingState = .loaded(cachedImage)
-            }
+            self.thumbnailLoadingState = .loaded(cachedImage)
             return
         }
 
-        Task { @MainActor in
-            thumbnailLoadingState = .loading
-        }
+        thumbnailLoadingState = .loading
         
         Task { [weak self] in
             guard let self else {
                 return
             }
-            
+
             let thumbnail = await self.createThumbnail(url: self.url)
             
             await MainActor.run {
@@ -83,7 +78,7 @@ class PDFViewModel: ObservableObject {
                     
                     self.thumbnailLoadingState = .loaded(thumbnail)
                 } else {
-                    self.alertType = .genericError(localization: self.localization)
+                    self.alertType = .genericError
                     self.thumbnailLoadingState = .failed
                 }
             }
@@ -100,15 +95,11 @@ class PDFViewModel: ObservableObject {
 
         // Check document cache first
         if let cachedData = AttachmentCache.shared.data(for: documentCacheKey), let document = PDFDocument(data: cachedData) {
-            Task { @MainActor in
-                documentLoadingState = .loaded(document)
-            }
+            documentLoadingState = .loaded(document)
             return
         }
 
-        Task { @MainActor in
-            documentLoadingState = .loading
-        }
+        documentLoadingState = .loading
         
         Task { [weak self] in
             guard let self else {
@@ -130,7 +121,7 @@ class PDFViewModel: ObservableObject {
                 }
             } else {
                 await MainActor.run {
-                    self.alertType = .genericError(localization: self.localization)
+                    self.alertType = .genericError
                     self.documentLoadingState = .failed
                 }
             }
@@ -142,7 +133,7 @@ class PDFViewModel: ObservableObject {
 
 private extension PDFViewModel {
     
-    private func loadDocumentFromLoaderOrCache(url: URL) {
+    func loadDocumentFromLoaderOrCache(url: URL) {
         // Check if document is already loaded in the loader
         if case .loaded(let data) = self.loader.loadingState, let document = PDFDocument(data: data) {
             self.documentLoadingState = .loaded(document)
@@ -166,7 +157,7 @@ private extension PDFViewModel {
     }
 
     /// Extracts a stable identifier from a URL by removing the changing token components
-    func extractStableIdentifier(from url: URL) -> String {
+    nonisolated func extractStableIdentifier(from url: URL) -> String {
         let urlString = url.absoluteString
         
         // Extract attachment ID pattern - looking for IDs like 7d2a3ec4-37c4-4e97-b842-97ca6d141b64
@@ -207,14 +198,15 @@ private extension PDFViewModel {
         }
 
         // 3. Generate thumbnail in background
-        return await Task.detached(priority: .userInitiated) { [weak self] in
-            self?.withSecurityScopedURLIfNeeded(url) { url in
+        let requiresSecurityScope = self.requiresSecurityScope
+        return await Task.detached(priority: .userInitiated) {
+            PDFViewModel.withSecurityScopedURLIfNeeded(url, requiresSecurityScope: requiresSecurityScope) { url in
                 guard let document = PDFDocument(url: url), let page = document.page(at: .zero) else {
                     return nil
                 }
-                
+
                 let thumbnail = page.thumbnail(
-                    of: CGSize(width: Self.thumbnailDimension, height: Self.thumbnailDimension),
+                    of: CGSize(width: PDFViewModel.thumbnailDimension, height: PDFViewModel.thumbnailDimension),
                     for: .artBox
                 )
                 
@@ -226,7 +218,7 @@ private extension PDFViewModel {
                 if let data = document.dataRepresentation() {
                     AttachmentCache.shared.set(data, for: stableIdentifier + ":document")
                 }
-                
+
                 return thumbnail
             }
         }.value
@@ -251,33 +243,36 @@ private extension PDFViewModel {
         }
         
         // Otherwise load from URL and cache
-        return await Task.detached(priority: .userInitiated) { [weak self] in
-            self?.withSecurityScopedURLIfNeeded(url) { url in
-                guard let document = PDFDocument(url: url) else {
-                    return nil
+        let requiresSecurityScope = self.requiresSecurityScope
+        return await Task
+            .detached(priority: .userInitiated) {
+                PDFViewModel.withSecurityScopedURLIfNeeded(url, requiresSecurityScope: requiresSecurityScope) { url in
+                    guard let document = PDFDocument(url: url) else {
+                        return nil
+                    }
+
+                    // Cache the PDF data
+                    if let data = document.dataRepresentation() {
+                        AttachmentCache.shared.set(data, for: documentCacheKey)
+                    }
+
+                    return document
                 }
-                
-                // Cache the PDF data
-                if let data = document.dataRepresentation() {
-                    AttachmentCache.shared.set(data, for: documentCacheKey)
-                }
-                
-                return document
             }
-        }.value
+            .value
     }
     
-    func withSecurityScopedURLIfNeeded<T>(_ url: URL, operation: (URL) -> T?) -> T? {
+    nonisolated static func withSecurityScopedURLIfNeeded<T>(_ url: URL, requiresSecurityScope: Bool, operation: (URL) -> T?) -> T? {
         if requiresSecurityScope {
             guard url.startAccessingSecurityScopedResource() else {
                 LogManager.error("Failed accessing security scoped resource")
                 return nil
             }
-            
+
             defer {
                 url.stopAccessingSecurityScopedResource()
             }
-            
+
             return operation(url)
         } else {
             return operation(url)

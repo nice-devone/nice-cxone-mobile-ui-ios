@@ -39,14 +39,14 @@ struct TreeFieldView: View, Themed {
     // MARK: - Properties
 
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
     
     @Environment(\.colorScheme) var scheme
     
     @ObservedObject var entity: TreeFieldEntity
-    
+
     @State private var error: String?
-    
+    @State private var selectedNode: TreeNodeFieldEntity?
+
     let onChange: () -> Void
     
     // MARK: - Init
@@ -60,12 +60,16 @@ struct TreeFieldView: View, Themed {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.bodyVertical) {
-            Text(entity.isRequired ? String(format: localization.formRequiredLabel, entity.label) : entity.label)
+            Text(entity.isRequired ? L10n.Form.requiredLabel(entity.label) : entity.label)
                 .font(.callout)
                 .bold()
                 .foregroundStyle(error != nil ? colors.status.error : colors.content.primary)
-            
-            ForEach(entity.children, id: \.idString) { node in
+                .accessibilityLabel(entity.isRequired ? A11y.Form.TreeFieldView.Title.label(entity.label, L10n.Common.required) : entity.label)
+                .accessibilityValue(selectedNode?.label ?? L10n.Common.noSelection)
+                .accessibilityHint(A11y.Form.TreeFieldView.Title.hint)
+                .accessibilityIdentifier(A11y.Form.TreeFieldView.Title.identifier(entity.label))
+
+            ForEach(entity.children) { node in
                 cell(node: node, leadingPadding: Constants.Padding.nodeInitialLeading)
             }
 
@@ -73,10 +77,16 @@ struct TreeFieldView: View, Themed {
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(colors.status.error)
+                    .accessibilityHidden(true)
             }
         }
         .onChange(of: entity.value) { value in
-            error = value.isEmpty && entity.isRequired ? localization.commonRequired : nil
+            error = value.isEmpty && entity.isRequired ? L10n.Common.required : nil
+        }
+        .onChange(of: error) { newError in
+            if let newError {
+                A11y.announce(newError)
+            }
         }
     }
 }
@@ -106,9 +116,10 @@ private extension TreeFieldView {
     func leafNodeView(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
         Button {
             node.isSelected.toggle()
-        
+
+            selectedNode = node
             entity.value = entity.value == node.value ? "" : node.value
-            
+
             onChange()
         } label: {
             VStack(spacing: Constants.Spacing.nodeVertical) {
@@ -116,9 +127,9 @@ private extension TreeFieldView {
                     Text(node.label)
                         .padding(.leading, leadingPadding)
                         .foregroundStyle(colors.content.primary)
-                    
+
                     Spacer()
-                    
+
                     if entity.value == node.value {
                         Asset.check
                             .font(.footnote.weight(.bold))
@@ -127,12 +138,19 @@ private extension TreeFieldView {
                     }
                 }
                 .contentShape(Rectangle())
-                
+
                 ColoredDivider(colors.border.default)
             }
         }
         .padding(.top, Constants.Padding.nodeVertical)
         .background(entity.value == node.value ? colors.background.surface.emphasis : colors.background.default)
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(A11y.Form.TreeFieldView.Content.Leaf.identifier(node.label))
+        .accessibilityLabel(node.label)
+        .accessibilityHint(entity.value == node.value ? A11y.Form.TreeFieldView.Content.Leaf.Selected.hint : A11y.Form.TreeFieldView.Content.Leaf.hint)
+        .if(entity.value == node.value) { view in
+            view.accessibilityAddTraits(.isSelected)
+        }
     }
 
     func parentNoteLabelView(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
@@ -140,13 +158,15 @@ private extension TreeFieldView {
             Text(node.label)
                 .foregroundStyle(colors.content.primary)
                 .padding(.leading, leadingPadding)
-            
+
             if #unavailable(iOS 16) {
                 ColoredDivider(colors.border.default)
+                    .accessibilityHidden(true)
             }
         }
         .background(colors.background.default)
         .padding(.vertical, Constants.Padding.nodeVertical)
+        .accessibilityIdentifier(A11y.Form.TreeFieldView.Content.Parent.identifier(node.label))
     }
 
     func childrenListView(children: [TreeNodeFieldEntity], leadingPadding: CGFloat) -> some View {
@@ -166,5 +186,4 @@ private extension TreeFieldView {
     }
     .padding(.horizontal, 12)
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }

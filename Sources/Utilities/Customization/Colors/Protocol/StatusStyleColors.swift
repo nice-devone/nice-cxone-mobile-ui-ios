@@ -18,7 +18,7 @@ import SwiftUI
 /// Protocol defining the required color properties for status styles used in the chat UI.
 ///
 /// Conforming types provide colors for success, warning, and error statuses, including their containers and on-colors.
-public protocol StatusStyleColors {
+public protocol StatusStyleColors: Sendable {
     /// The success status color.
     var success: Color { get }
     /// The color used for content on top of the success color.
@@ -50,7 +50,7 @@ public protocol StatusStyleColors {
 /// Default implementation of `StatusStyleColors` providing concrete color values.
 ///
 /// Use this struct to specify the main status colors for light and dark themes.
-public struct StatusStyleColorsImpl: StatusStyleColors {
+public struct StatusStyleColorsImpl: StatusStyleColors, Sendable {
     
     // MARK: - Properties
     

@@ -42,6 +42,7 @@ struct ColoredDivider: View {
 
 // MARK: - Preview
 
+// swiftlint:disable hardcoded_strings sf_symbol_key_in_image
 #Preview("Default") {
     // swiftlint:disable:next line_length force_try
     let information = try! AttributedString(markdown: "Notice the difference between SwiftUI's ***Divider*** color and the custom ***ColoredDivider*** even the both use same color ***(Color.black)*** and same dimension ***(width: .infinity, height: 1)***")
@@ -159,3 +160,4 @@ private struct DescribedView<Content: View>: View {
         }
     }
 }
+// swiftlint:enable hardcoded_strings sf_symbol_key_in_image

@@ -49,28 +49,28 @@ private struct ShareableModifier: ViewModifier, Themed {
     @State private var showShareSheet = false
 
     @EnvironmentObject var style: ChatStyle
-    
+
     @Environment(\.colorScheme) var scheme
-    
+
     let message: ChatMessage
     let attachments: [AttachmentItem]
     let spacerLength: CGFloat
-    
+
     // MARK: - Builder
-    
+
     func body(content: Content) -> some View {
         HStack(spacing: Constants.Spacing.contentHorizontal) {
             if !message.isUserAgent {
                 Spacer(minLength: spacerLength)
-                
+
                 shareButton
             }
-            
+
             content
 
             if message.isUserAgent {
                 shareButton
-                
+
                 Spacer(minLength: spacerLength)
             }
         }
@@ -83,9 +83,13 @@ private struct ShareableModifier: ViewModifier, Themed {
 // MARK: - Subviews
 
 private extension ShareableModifier {
-    
+
     var shareButton: some View {
-        Button {
+        let attachmentDescription = attachments.count == 1
+            ? attachments.first?.fileName ?? A11y.Conversation.MessageCell.Attachment.ButtonShare.fallback
+            : A11y.Conversation.MessageCell.MultipleAttachments.ButtonShare.fallback
+
+        return Button {
             showShareSheet = true
         } label: {
             Asset.share
@@ -102,32 +106,39 @@ private extension ShareableModifier {
                         .fill(colors.background.surface.default)
                 )
         )
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(A11y.Conversation.MessageCell.Attachment.ButtonShare.identifier)
+        .accessibilityLabel(
+            attachments.count == 1
+                ? A11y.Conversation.MessageCell.Attachment.ButtonShare.label
+                : A11y.Conversation.MessageCell.MultipleAttachments.ButtonShare.label
+        )
+        .accessibilityHint(
+            attachments.count == 1
+                ? A11y.Conversation.MessageCell.Attachment.ButtonShare.hint(attachmentDescription)
+                : A11y.Conversation.MessageCell.MultipleAttachments.ButtonShare.hint(attachmentDescription)
+        )
     }
 }
 
 // MARK: - Preview
 
 #Preview {
-    let localization = ChatLocalization()
-    
     VStack(spacing: 4) {
         ImageMessageCell(
             message: MockData.imageMessage(user: MockData.agent),
             item: MockData.imageItem,
             position: .single,
-            alertType: .constant(nil),
-            localization: localization
+            alertType: .constant(nil)
         )
         
         ImageMessageCell(
             message: MockData.imageMessage(user: MockData.customer),
             item: MockData.imageItem,
             position: .single,
-            alertType: .constant(nil),
-            localization: localization
+            alertType: .constant(nil)
         )
     }
     .padding(.horizontal, 10)
     .environmentObject(ChatStyle())
-    .environmentObject(localization)
 }

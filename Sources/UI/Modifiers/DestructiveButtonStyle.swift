@@ -45,9 +45,11 @@ struct DestructiveButtonStyle: ButtonStyle, Themed {
 
 // MARK: - Preview
 
+// swiftlint:disable hardcoded_strings
 #Preview {
     Button("Button") { }
         .padding()
         .buttonStyle(.destructive)
         .environmentObject(ChatStyle())
 }
+// swiftlint:enable hardcoded_strings

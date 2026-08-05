@@ -51,18 +51,19 @@ class PrechatSurveyFormViewModel: FormViewModel<[String: String]> {
     
     override func validateForm() {
         LogManager.trace("Validating form")
-        
-        isFormValid = self.customFields.allSatisfy { type in
-            var isValid = true
-            
-            if let textfield = type as? TextFieldEntity, textfield.isEmail {
-                isValid = type.value.isValidEmail
-            }
-            
-            return type.isRequired
-                ? !type.value.isEmpty && isValid
-                : type.value.isEmpty || isValid
-        }
+
+        self.firstInvalidFieldID = customFields
+            .first { field in
+                // Check if the custom field is an e-mail with valid value
+                if let textfield = field as? TextFieldEntity, textfield.isEmail, !field.value.isValidEmail {
+                    return true
+                }
+                // Required fields must be non-empty
+                return field.isRequired ? field.value.isEmpty : false
+            }?
+            .id
+
+        isFormValid = firstInvalidFieldID == nil
     }
 }
 

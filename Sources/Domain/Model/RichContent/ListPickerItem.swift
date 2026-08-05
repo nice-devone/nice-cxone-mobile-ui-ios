@@ -31,30 +31,14 @@ import Foundation
 ///
 /// let item = ListPickerItem(title: Lorem.word(), message: Lorem.sentence(), buttons: options)
 /// ```
-public struct ListPickerItem: Hashable, Equatable {
-    
-    // MARK: - Properties
+struct ListPickerItem: Hashable, Equatable {
     
     /// The title or label associated with the list picker item.
-    public let title: String
+    let title: String
     
     /// An optional message or description providing additional context for the item.
-    public let message: String?
+    let message: String?
     
     /// An array of `RichMessageButton` objects
-    public let buttons: [RichMessageButton]
-    
-    // MARK: - Init
-    
-    /// Initialization of the ListPickerItem
-    ///
-    /// - Parameters:
-    ///  - title: The title or label associated with the list picker item.
-    ///  - message: An optional message or description providing additional context for the item.
-    ///  - buttons: An array of `RichMessageButton` objects
-    public init(title: String, message: String?, buttons: [RichMessageButton]) {
-        self.title = title
-        self.message = message
-        self.buttons = buttons
-    }
+    let buttons: [RichMessageButton]
 }

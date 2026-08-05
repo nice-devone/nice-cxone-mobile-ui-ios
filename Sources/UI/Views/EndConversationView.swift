@@ -13,16 +13,14 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
-import CXoneChatSDK
-import Kingfisher
 import SwiftUI
 
 struct EndConversationView: View, Themed {
-    
+
     // MARK: - Constants
-    
+
     private enum Constants {
-    
+
         enum Sizing {
             static let headerImageDimension: CGFloat = 22
             static let agentImageDimension: CGFloat = 40
@@ -45,100 +43,97 @@ struct EndConversationView: View, Themed {
             static let agentNameContainerOuterHorizontal: CGFloat = 16
         }
     }
-    
+
     // MARK: - Properties
-    
-    @EnvironmentObject private var localization: ChatLocalization
+
     @EnvironmentObject var style: ChatStyle
-    
+
     @SwiftUI.Environment(\.colorScheme) var scheme
-    
+
     let agentName: String?
-    let agentImageUrl: String?
+    let agentImageUrl: URL?
+    let isSendTranscriptEnabled: Bool
     let onStartNewChatTapped: () -> Void
     let onBackToConversationTapped: () -> Void
     let onSendTranscriptTapped: () -> Void
     let onCloseChatTapped: () -> Void
-    
-    private var title: String {
-        agentName != nil
-            ? self.localization.liveChatEndConversationAssignedAgent
-            : self.localization.liveChatEndConversationDefaultTitle
-    }
-    
+
     // MARK: - Init
-    
-    init(
-        agentName: String?,
-        agentImageUrl: String?,
-        onStartNewChatTapped: @escaping () -> Void,
-        onBackToConversationTapped: @escaping () -> Void,
-        onSendTranscriptTapped: @escaping () -> Void,
-        onCloseChatTapped: @escaping () -> Void
-    ) {
-        self.agentName = agentName
-        self.agentImageUrl = agentImageUrl
-        self.onStartNewChatTapped = onStartNewChatTapped
-        self.onBackToConversationTapped = onBackToConversationTapped
-        self.onSendTranscriptTapped = onSendTranscriptTapped
-        self.onCloseChatTapped = onCloseChatTapped
-    }
-    
+
     init(
         thread: ChatThread,
+        isSendTranscriptEnabled: Bool,
         onStartNewChatTapped: @escaping () -> Void,
         onBackToConversationTapped: @escaping () -> Void,
         onSendTranscriptTapped: @escaping () -> Void,
         onCloseChatTapped: @escaping () -> Void
     ) {
-        self.agentName = thread.assignedAgent?.fullName ?? thread.lastAssignedAgent?.fullName
-        self.agentImageUrl = thread.assignedAgent?.imageUrl ?? thread.lastAssignedAgent?.imageUrl
+        // Prefer the currently assigned agent, falling back to the last assigned one.
+        let agent = thread.assignedAgent ?? thread.lastAssignedAgent
+        // When an agent is present but its personal information is hidden, show the localized
+        // "Agent" fallback. When no agent exists at all, keep `nil` so the closed-conversation state is shown.
+        self.agentName = agent.map { agent in
+            agent.nickname?.nilIfEmpty() ?? agent.fullName ?? L10n.Common.agent
+        }
+        // Reuse the same default-placeholder filtering applied elsewhere so a hidden/default avatar
+        // falls back to the placeholder rather than rendering the backend's generic image.
+        self.agentImageUrl = agent?.nonDefaultAvatarImageUrl
+        self.isSendTranscriptEnabled = isSendTranscriptEnabled
         self.onStartNewChatTapped = onStartNewChatTapped
         self.onBackToConversationTapped = onBackToConversationTapped
         self.onSendTranscriptTapped = onSendTranscriptTapped
         self.onCloseChatTapped = onCloseChatTapped
     }
-    
+
     // MARK: - Builder
-    
+
     var body: some View {
         BottomSheetView {
             VStack(alignment: .leading, spacing: Constants.Spacing.contentVertical) {
                 header
-                
+
                 VStack(alignment: .leading, spacing: Constants.Spacing.buttonsVertical) {
                     BottomSheetButton(
                         image: Asset.LiveChat.EndConversation.startNewChat,
-                        label: localization.liveChatEndConversationNew,
+                        label: L10n.LiveChat.EndConversation.new,
                         action: onStartNewChatTapped
                     )
                     .foregroundStyle(colors.brand.primary)
-                    
+                    .accessibilityIdentifier(A11y.EndConversationPopup.ButtonNewChat.identifier)
+                    .accessibilityHint(A11y.EndConversationPopup.ButtonNewChat.hint)
+
                     BottomSheetButton(
                         image: Asset.LiveChat.EndConversation.backToConversation,
-                        label: localization.liveChatEndConversationBack,
+                        label: L10n.LiveChat.EndConversation.back,
                         action: onBackToConversationTapped
                     )
                     .foregroundStyle(colors.brand.primary)
-                    
-                    if CXoneChat.shared.connection.channelConfiguration.isSendTranscriptEnabled {
+                    .accessibilityIdentifier(A11y.EndConversationPopup.ButtonBack.identifier)
+                    .accessibilityHint(A11y.EndConversationPopup.ButtonBack.hint)
+
+                    if isSendTranscriptEnabled {
                         BottomSheetButton(
                             image: Asset.sendTranscript,
-                            label: localization.chatMenuOptionSendTranscript,
+                            label: L10n.Chat.MenuOption.sendTranscript,
                             action: onSendTranscriptTapped
                         )
                         .foregroundStyle(colors.brand.primary)
+                        .accessibilityIdentifier(A11y.EndConversationPopup.ButtonSendTranscript.identifier)
+                        .accessibilityHint(A11y.EndConversationPopup.ButtonSendTranscript.hint)
                     }
-                    
+
                     BottomSheetButton(
                         image: Asset.close,
-                        label: localization.commonCloseChat,
+                        label: L10n.Common.closeChat,
                         isDividerVisible: false,
                         action: onCloseChatTapped
                     )
                     .foregroundStyle(colors.content.secondary)
+                    .accessibilityIdentifier(A11y.EndConversationPopup.ButtonClose.identifier)
+                    .accessibilityHint(A11y.EndConversationPopup.ButtonClose.hint)
                 }
             }
+            .accessibilityAddTraits(.isModal)
         }
     }
 }
@@ -150,13 +145,18 @@ private extension EndConversationView {
     @ViewBuilder
     var header: some View {
         HStack(spacing: Constants.Spacing.headerTitleIconHorizontal) {
-            Text(title)
-                .font(.title2.weight(.medium))
-                .foregroundStyle(colors.content.primary)
-            
+            Text(agentName != nil
+                 ? L10n.LiveChat.EndConversation.assignedAgent
+                 : L10n.LiveChat.EndConversation.defaultTitle
+            )
+            .font(.title2.weight(.medium))
+            .foregroundStyle(colors.content.primary)
+            .accessibilityIdentifier(A11y.EndConversationPopup.Header.Title.identifier)
+            .accessibilityAddTraits(.isHeader)
+
             if agentName == nil {
                 Spacer(minLength: Constants.Spacing.headerTitleIconSpacerMinLength)
-                
+
                 Asset.Images.closedConversation.swiftUIImage
                     .resizable()
                     .scaledToFit()
@@ -167,41 +167,20 @@ private extension EndConversationView {
                         Circle()
                             .fill(colors.status.errorContainer)
                     }
+                    .accessibilityHidden(true)
             }
         }
         .padding(.horizontal, Constants.Padding.headerHorizontal)
-        
+
         if let agentName {
             HStack(spacing: Constants.Spacing.agentNameContainerHorizontal) {
-                if let agentImageUrl, let url = URL(string: agentImageUrl) {
-                    KFImage(url)
-                        .placeholder { progress in
-                            ProgressView(value: progress.fractionCompleted)
-                                .background {
-                                    Circle()
-                                        .strokeBorder(colors.border.default, lineWidth: Constants.Sizing.agentImagePlaceholderBorderWidth)
-                                }
-                        }
-                        .onFailureView {
-                            Asset.Message.fallbackAvatar
-                                .font(.title3)
-                                .foregroundStyle(colors.content.primary)
-                                .padding(Constants.Padding.headerImagefallback)
-                                .background {
-                                    Circle()
-                                        .fill(colors.brand.primaryContainer)
-                                }
-                        }
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: Constants.Sizing.agentImageDimension, height: Constants.Sizing.agentImageDimension)
-                        .clipShape(.circle)
-                }
-                
+                AvatarView(imageUrl: agentImageUrl, initials: agentName == L10n.Common.agent ? nil : initials(from: agentName))
+                    .frame(width: Constants.Sizing.agentImageDimension, height: Constants.Sizing.agentImageDimension)
+
                 Text(agentName)
                     .font(.callout.weight(.medium))
                     .foregroundStyle(colors.content.primary)
-                
+
                 Spacer()
             }
             .padding(Constants.Padding.agentNameContainerInner)
@@ -210,18 +189,70 @@ private extension EndConversationView {
                     .strokeBorder(colors.border.default, lineWidth: Constants.Sizing.agentNameContainerBorderWidth)
             }
             .padding(.horizontal, Constants.Padding.agentNameContainerOuterHorizontal)
+            .accessibilityElement(children: .ignore)
+            .accessibilityIdentifier(A11y.EndConversationPopup.Header.AgentInfo.identifier)
+            .accessibilityLabel(A11y.EndConversationPopup.Header.AgentInfo.label(agentName))
         }
+    }
+}
+
+// MARK: - Helpers
+
+private extension EndConversationView {
+
+    func initials(from agentName: String) -> String? {
+        // Remove quoted substrings
+        let pattern = "\"[^\"]*\""
+        let cleaned = agentName.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
+        let words = cleaned.split(whereSeparator: \.isWhitespace)
+        
+        // Safely get the first word and its initial; return nil so the avatar falls back to its icon
+        guard let first = words.first, let firstInitial = first.first else {
+            return nil
+        }
+
+        // Single-word username: use only the first initial
+        if words.count == 1 {
+            return String(firstInitial).uppercased()
+        }
+
+        // Ensure there's at least one word and get its initial
+        guard let last = words.last, let lastInitial = last.first else {
+            return nil
+        }
+        return (String(firstInitial) + String(lastInitial)).uppercased()
     }
 }
 
 // MARK: - Previews
 
-#Preview("Agent with URL") {
+#if DEBUG
+import CXoneChatSDK
+
+#Preview("Agent - Image + Name") {
     Color.clear
         .fullScreenCover(isPresented: .constant(true)) {
             EndConversationView(
-                agentName: "John Doe",
-                agentImageUrl: MockData.imageUrl.absoluteString,
+                thread: ChatThread(
+                    id: LowercaseUUID().uuidString,
+                    name: nil,
+                    messages: [],
+                    assignedAgent: Agent(
+                        id: 1,
+                        firstName: "John",
+                        surname: "Doe",
+                        nickname: nil,
+                        isBotUser: false,
+                        isSurveyUser: false,
+                        imageUrl: MockData.imageUrl().absoluteString
+                    ),
+                    lastAssignedAgent: nil,
+                    ownerAssignee: nil,
+                    scrollToken: "",
+                    state: .closed,
+                    positionInQueue: nil
+                ),
+                isSendTranscriptEnabled: true,
                 onStartNewChatTapped: { },
                 onBackToConversationTapped: { },
                 onSendTranscriptTapped: { },
@@ -229,15 +260,32 @@ private extension EndConversationView {
             )
         }
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }
 
-#Preview("Agent with incorrect URL") {
+#Preview("Agent - Image") {
     Color.clear
         .fullScreenCover(isPresented: .constant(true)) {
             EndConversationView(
-                agentName: "John Doe",
-                agentImageUrl: "https://www.google.com",
+                thread: ChatThread(
+                    id: LowercaseUUID().uuidString,
+                    name: nil,
+                    messages: [],
+                    assignedAgent: Agent(
+                        id: 1,
+                        firstName: nil,
+                        surname: nil,
+                        nickname: nil,
+                        isBotUser: false,
+                        isSurveyUser: false,
+                        imageUrl: MockData.imageUrl().absoluteString
+                    ),
+                    lastAssignedAgent: nil,
+                    ownerAssignee: nil,
+                    scrollToken: "",
+                    state: .closed,
+                    positionInQueue: nil
+                ),
+                isSendTranscriptEnabled: true,
                 onStartNewChatTapped: { },
                 onBackToConversationTapped: { },
                 onSendTranscriptTapped: { },
@@ -245,15 +293,32 @@ private extension EndConversationView {
             )
         }
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }
 
-#Preview("Agent without URL") {
+#Preview("Agent - Name") {
     Color.clear
         .fullScreenCover(isPresented: .constant(true)) {
             EndConversationView(
-                agentName: "John Doe",
-                agentImageUrl: nil,
+                thread: ChatThread(
+                    id: LowercaseUUID().uuidString,
+                    name: nil,
+                    messages: [],
+                    assignedAgent: Agent(
+                        id: 1,
+                        firstName: "John",
+                        surname: "Doe",
+                        nickname: nil,
+                        isBotUser: false,
+                        isSurveyUser: false,
+                        imageUrl: nil
+                    ),
+                    lastAssignedAgent: nil,
+                    ownerAssignee: nil,
+                    scrollToken: "",
+                    state: .closed,
+                    positionInQueue: nil
+                ),
+                isSendTranscriptEnabled: true,
                 onStartNewChatTapped: { },
                 onBackToConversationTapped: { },
                 onSendTranscriptTapped: { },
@@ -261,15 +326,57 @@ private extension EndConversationView {
             )
         }
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
+}
+
+#Preview("Agent - Hidden Personal Data") {
+    Color.clear
+        .fullScreenCover(isPresented: .constant(true)) {
+            EndConversationView(
+                thread: ChatThread(
+                    id: LowercaseUUID().uuidString,
+                    name: nil,
+                    messages: [],
+                    assignedAgent: Agent(
+                        id: 1,
+                        firstName: nil,
+                        surname: nil,
+                        nickname: nil,
+                        isBotUser: false,
+                        isSurveyUser: false,
+                        imageUrl: nil
+                    ),
+                    lastAssignedAgent: nil,
+                    ownerAssignee: nil,
+                    scrollToken: "",
+                    state: .closed,
+                    positionInQueue: nil
+                ),
+                isSendTranscriptEnabled: true,
+                onStartNewChatTapped: { },
+                onBackToConversationTapped: { },
+                onSendTranscriptTapped: { },
+                onCloseChatTapped: { }
+            )
+        }
+    .environmentObject(ChatStyle())
 }
 
 #Preview("No Agent") {
     Color.clear
         .fullScreenCover(isPresented: .constant(true)) {
             EndConversationView(
-                agentName: nil,
-                agentImageUrl: nil,
+                thread: ChatThread(
+                    id: LowercaseUUID().uuidString,
+                    name: nil,
+                    messages: [],
+                    assignedAgent: nil,
+                    lastAssignedAgent: nil,
+                    ownerAssignee: nil,
+                    scrollToken: "",
+                    state: .closed,
+                    positionInQueue: nil
+                ),
+                isSendTranscriptEnabled: true,
                 onStartNewChatTapped: { },
                 onBackToConversationTapped: { },
                 onSendTranscriptTapped: { },
@@ -277,5 +384,5 @@ private extension EndConversationView {
             )
         }
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }
+#endif

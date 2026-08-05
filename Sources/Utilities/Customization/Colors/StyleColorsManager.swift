@@ -19,7 +19,7 @@ import SwiftUI
 ///
 /// `StyleColorsManager` provides an interface for handling and switching
 /// between color styles for different color schemes.
-public struct StyleColorsManager {
+public struct StyleColorsManager: Sendable {
     
     // MARK: - Properties
     
@@ -49,6 +49,7 @@ public struct StyleColorsManager {
 
 // MARK: - Previews
 
+// swiftlint:disable hardcoded_strings
 private struct TestViewPreview: View, Themed {
     
     // MARK: - Properties
@@ -88,3 +89,4 @@ private struct TestViewPreview: View, Themed {
         .environmentObject(ChatStyle())
         .preferredColorScheme(.dark)
 }
+// swiftlint:enable hardcoded_strings

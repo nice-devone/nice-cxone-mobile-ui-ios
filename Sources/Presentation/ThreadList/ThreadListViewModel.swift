@@ -17,38 +17,50 @@ import Combine
 import CXoneChatSDK
 import SwiftUI
 
+@MainActor
 class ThreadListViewModel: ObservableObject {
 
     // MARK: - Properties
     
     @Published var chatThreads = [CXoneChatUI.ChatThread]()
     @Published var threadStatus: ThreadStatusType = .current
-    @Published var threadToShow: CXoneChatUI.ChatThread?
-    @Published var hiddenThreadToShow: CXoneChatUI.ChatThread?
+    @Published var currentThread: CXoneChatUI.ChatThread?
     @Published var isEditingThreadName = false
 
-    lazy var showThread = Binding { [weak self] in
-        self?.threadToShow != nil
-    } set: { [weak self] _ in
-        self?.threadToShow = nil
-    }
-    lazy var showHiddenThread = Binding { [weak self] in
-        self?.hiddenThreadToShow != nil
-    } set: { [weak self] _ in
-        self?.hiddenThreadToShow = nil
-    }
-    
-    var selectedThread: ChatThread?
+    /// Binding that drives whether `ThreadListView` is presenting a `ThreadView`.
+    ///
+    /// Reads as `true` whenever `currentThread` is non-nil, and writing `false` (e.g. when SwiftUI
+    /// dismisses the destination on a back swipe) clears `currentThread`. This keeps the presented
+    /// thread and the navigation-destination state in sync from a single source of truth without
+    /// requiring callers to manage a separate `isPresented` flag.
+    ///
+    /// `MainActor.assumeIsolated` is safe here: SwiftUI always evaluates `Binding` get/set on the
+    /// main actor, and this view model is `@MainActor` — the closures only ever run on the main thread.
+    lazy var threadDestination = Binding {
+        MainActor.assumeIsolated { [weak self] in
+            self?.currentThread != nil
+        }
+    } set: { [weak self] newValue in
+        MainActor.assumeIsolated {
+            guard !newValue else {
+                return
+            }
 
-    let chatProvider: ChatProvider
+            self?.currentThread = nil
+        }
+    }
+
+    var selectedThread: ChatThread?
 
     var alertType: ChatAlertType? {
         get { containerViewModel?.alertType }
         set { containerViewModel?.alertType = newValue }
     }
     
-    private var localization: ChatLocalization
+    let chatProvider: ChatProvider
+
     private var threadToOpen: String?
+    private var eventTask: Task<Void, Never>?
 
     weak var containerViewModel: ChatContainerViewModel?
     
@@ -57,7 +69,6 @@ class ThreadListViewModel: ObservableObject {
     init(containerViewModel: ChatContainerViewModel) {
         self.chatProvider = containerViewModel.chatProvider
         self.containerViewModel = containerViewModel
-        self.localization = containerViewModel.chatLocalization
         self.threadToOpen = containerViewModel.threadToOpen
     }
 
@@ -73,25 +84,30 @@ extension ThreadListViewModel {
  
     @discardableResult
     func show(thread: CXoneChatUI.ChatThread?) -> ThreadListViewModel {
-        threadToShow = thread
-        
+        // Defer the @Published mutation to the next run loop turn to avoid the
+        // "Publishing changes from within view updates" warning on iOS 16, where
+        // List+ForEach can invoke button actions during an active layout pass.
+        Task { @MainActor in
+            self.currentThread = thread
+        }
+
         return self
     }
     
     func onAppear() {
         LogManager.trace("Thread list view appeared")
-        
-        chatProvider.add(delegate: self)
-        
-        Task { @MainActor [weak self] in
+
+        startObservingEvents()
+
+        Task { [weak self] in
             self?.updateCurrentThreads()
         }
     }
-    
+
     func onDisappear() {
         LogManager.trace("Thread list view disappeared")
-        
-        containerViewModel?.chatProvider.remove(delegate: self)
+
+        stopObservingEvents()
     }
     
     @MainActor
@@ -114,7 +130,7 @@ extension ThreadListViewModel {
         } catch {
             error.logError()
             
-            self.alertType = .connectionErrorAlert(localization: self.localization) {
+            self.alertType = .connectionErrorAlert {
                 Task { @MainActor [weak self] in
                     await self?.containerViewModel?.disconnect()
                 }
@@ -131,17 +147,6 @@ extension ThreadListViewModel {
         self.updateCurrentThreads()
     }
 
-    func onSwipeToArchive(offsets: IndexSet) {
-        guard let archivedThread = offsets.compactMap({ chatThreads[safe: $0] }).first else {
-            LogManager.error(.failed("Unable to get thread for archiving."))
-            return
-        }
-
-        Task { @MainActor [weak self] in
-            await self?.onArchive(archivedThread)
-        }
-    }
-    
     @MainActor
     func onArchive(_ thread: CXoneChatUI.ChatThread) async {
         LogManager.trace("Archiving thread")
@@ -153,7 +158,7 @@ extension ThreadListViewModel {
         } catch {
             error.logError()
             
-            alertType = .genericError(localization: localization)
+            alertType = .genericError
         }
     }
     
@@ -177,52 +182,70 @@ extension ThreadListViewModel {
         } catch {
             error.logError()
             
-            self.alertType = .genericError(localization: localization)
+            self.alertType = .genericError
         }
         
         self.selectedThread = nil
     }
 }
 
-// MARK: - CXoneChatDelegate
+// MARK: - Event Handling
 
-extension ThreadListViewModel: CXoneChatDelegate {
+private extension ThreadListViewModel {
 
-    func onChatUpdated(_ chatState: ChatState, mode: ChatMode) {
-        LogManager.scope {
-            LogManager.trace("updated state = \(String(describing: chatState))")
-            
-            if chatState == .ready, let threadToOpen, let thread = chatProvider.threads.get().first(where: { $0.idString == threadToOpen }) {
-                LogManager.trace("Opening thread with id \(thread.idString)")
-                
+    func startObservingEvents() {
+        guard eventTask == nil else {
+            return
+        }
+
+        eventTask = Task { [weak self] in
+            guard let self else {
+                return
+            }
+
+            for await event in chatProvider.events() {
+                await self.handle(event: event)
+            }
+        }
+    }
+
+    func stopObservingEvents() {
+        eventTask?.cancel()
+        eventTask = nil
+    }
+
+    @MainActor
+    func handle(event: ChatEvent) async {
+        switch event {
+        case .chatUpdated(let state, _):
+            LogManager.trace("updated state = \(String(describing: state))")
+
+            if state == .ready, let threadToOpen = self.threadToOpen,
+               chatProvider.threads.get().contains(where: { $0.id == threadToOpen }) {
+                LogManager.trace("Opening thread with id \(threadToOpen)")
+
                 self.threadToOpen = nil
-                
+
                 NotificationCenter.default.postThreadDeeplinkNotification(threadId: threadToOpen)
             }
-        }
-    }
 
-    func onThreadsUpdated(_ chatThreads: [CXoneChatSDK.ChatThread]) {
-        LogManager.scope { [weak self] in
-            Task { @MainActor in
-                self?.updateCurrentThreads(with: chatThreads)
+        case .threadsUpdated(let threads):
+            LogManager.scope { self.updateCurrentThreads(with: threads) }
+
+        case .threadUpdated(let thread):
+            LogManager.scope {
+                if thread.state.isLoaded {
+                    LogManager.trace("Setting shouldRefreshThread flag to refresh the thread")
+                    self.containerViewModel?.shouldRefreshThread = true
+                } else {
+                    LogManager.trace("Skipping thread refresh - the thread is not loaded")
+                }
+
+                self.updateCurrentThreads()
             }
-        }
-    }
-    
-    func onThreadUpdated(_ chatThread: CXoneChatSDK.ChatThread) {
-        LogManager.scope { [weak self] in
-            if chatThread.state.isLoaded {
-                LogManager.trace("Setting shouldRefreshThread flag to refresh the thread")
-                
-                self?.containerViewModel?.shouldRefreshThread = true
-            } else {
-                LogManager.trace("Skipping thread refresh - the thread is not loaded")
-            }
-            
-            Task { @MainActor in
-                self?.updateCurrentThreads()
-            }
+
+        default:
+            break
         }
     }
 }

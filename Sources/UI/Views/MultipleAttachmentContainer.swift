@@ -23,6 +23,7 @@ struct MultipleAttachmentContainer: View, Themed {
         
         static let displayMode: AttachmentThumbnailDisplayMode = .regular
         static let gridMaxCount = 4
+        @MainActor
         static let gridConfig = [
             GridItem(.fixed(displayMode.size.width), spacing: Spacing.itemSpacing),
             GridItem(.fixed(displayMode.size.width), spacing: Spacing.itemSpacing)
@@ -48,7 +49,6 @@ struct MultipleAttachmentContainer: View, Themed {
     // MARK: - Properties
 
     @EnvironmentObject var style: ChatStyle
-    @EnvironmentObject var localization: ChatLocalization
     
     @Environment(\.colorScheme) var scheme
     
@@ -135,21 +135,18 @@ struct MultipleAttachmentContainer: View, Themed {
                 contentView
             }
             .padding(Constants.Padding.container)
-            .background(
-                message.isUserAgent
-                    ? colors.background.surface.default
-                    : colors.brand.primary
-            )
             .messageChatStyle(message, position: attachmentsGroupPosition)
             .shareable(message, attachments: AttachmentItemMapper.map(message.types), spacerLength: Constants.Spacing.shareButtonMinLength)
-            
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(A11y.Conversation.MessageCell.MultipleAttachments.Container.identifier)
+            .accessibilityLabel(A11y.Conversation.MessageCell.MultipleAttachments.Container.label("\(filteredTypes.count)"))
+
             ForEach(audioAttachments, id: \.self) { audioAttachment in
                 AudioMessageCell(
                     message: message,
                     item: audioAttachment,
                     position: audioGroupPosition,
-                    alertType: $alertType,
-                    localization: localization
+                    alertType: $alertType
                 )
             }
             
@@ -196,24 +193,21 @@ private extension MultipleAttachmentContainer {
             ImageMessageCell(
                 message: message,
                 item: item,
-                alertType: $alertType,
-                localization: localization
+                alertType: $alertType
             )
             .frame(width: Constants.displayMode.size.width, height: Constants.displayMode.size.height)
         case .video(let item):
             VideoMessageCell(
                 message: message,
                 item: item,
-                alertType: $alertType,
-                localization: localization
+                alertType: $alertType
             )
             .frame(width: Constants.displayMode.size.width, height: Constants.displayMode.size.height)
         case .documentPreview(let item):
             DocumentMessageCell(
                 message: message,
                 item: item,
-                alertType: $alertType,
-                localization: localization
+                alertType: $alertType
             )
             .frame(width: Constants.displayMode.size.width, height: Constants.displayMode.size.height)
         default:
@@ -222,7 +216,7 @@ private extension MultipleAttachmentContainer {
     }
     
     var moreAttachmentsIndicatorView: some View {
-        Text("+\(filteredTypes.count - 3)")
+        Text("+\(filteredTypes.count - 3)") // swiftlint:disable:this hardcoded_strings
             .font(.callout)
             .fontWeight(.bold)
             .foregroundStyle(colors.content.primary)
@@ -232,6 +226,10 @@ private extension MultipleAttachmentContainer {
                     .fill(colors.brand.onPrimary)
                     .opacity(Constants.Colors.moreAttachmentsOverlayTextCircleOpacity)
             )
+            .accessibilityElement(children: .ignore)
+            .accessibilityIdentifier(A11y.Conversation.MessageCell.MultipleAttachments.MoreIndicator.identifier)
+            .accessibilityLabel(A11y.Conversation.MessageCell.MultipleAttachments.MoreIndicator.label("\(filteredTypes.count - 3)"))
+            .accessibilityHint(A11y.Conversation.MessageCell.MultipleAttachments.MoreIndicator.hint)
     }
 }
 
@@ -257,7 +255,6 @@ private extension MultipleAttachmentContainer {
     }
     .padding(.horizontal, 10)
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }
 
 #Preview("Document Attachments") {
@@ -280,5 +277,4 @@ private extension MultipleAttachmentContainer {
     }
     .padding(.horizontal, 10)
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }

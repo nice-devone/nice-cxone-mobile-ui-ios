@@ -16,7 +16,8 @@
 import SwiftUI
 
 struct TimePickerSlotView: View, Themed {
-    
+    private typealias Accessibility = A11y.Conversation.MessageCell.TimePicker.Sheet
+
     // MARK: - Constants
     
     enum Constants {
@@ -38,7 +39,6 @@ struct TimePickerSlotView: View, Themed {
     
     // MARK: - Properties
     
-    @EnvironmentObject private var localization: ChatLocalization
     @EnvironmentObject var style: ChatStyle
     
     @Environment(\.colorScheme) var scheme
@@ -64,7 +64,7 @@ struct TimePickerSlotView: View, Themed {
                     .font(.headline.weight(.bold))
                     .foregroundStyle(isSelected ? colors.brand.onPrimary : colors.brand.primary)
                 
-                Text(String(format: localization.formTimePickerTimeSlotDuration, entity.durationInMinutes))
+                Text(L10n.Form.TimePicker.TimeSlot.duration(entity.durationInMinutes))
                     .font(.footnote)
                     .foregroundStyle(isSelected ? colors.brand.onPrimary : colors.content.tertiary)
             }
@@ -75,6 +75,14 @@ struct TimePickerSlotView: View, Themed {
             RoundedRectangle(cornerRadius: Constants.Sizing.cornerRadius)
                 .fill(isSelected ? colors.brand.primary : colors.background.surface.emphasis)
         )
+        .accessibilityIdentifier(Accessibility.TimeSlots.Slot.identifier(id: entity.id))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            isSelected
+                ? Accessibility.Slot.Selected.label(entity.startTime.formatted(date: .long, time: .shortened), entity.durationInMinutes)
+                : Accessibility.Slot.label(entity.startTime.formatted(date: .long, time: .shortened), entity.durationInMinutes)
+        )
+        .accessibilityHint(Accessibility.Slot.hint)
     }
 }
 
@@ -91,5 +99,4 @@ struct TimePickerSlotView: View, Themed {
     }
     .padding(.horizontal, 16)
     .environmentObject(ChatStyle())
-    .environmentObject(ChatLocalization())
 }

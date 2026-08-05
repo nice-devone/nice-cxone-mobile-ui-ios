@@ -34,9 +34,9 @@ let configuration = ChatConfiguration(
 class MyChatCoordinator: ChatCoordinator {
 
     // MARK: - Init
-    
-    init() {
-        super.init(chatConfiguration: configuration)
+
+    init(chatProvider: ChatProvider) {
+        super.init(chatProvider: chatProvider, chatConfiguration: configuration)
     }
 
     ...
