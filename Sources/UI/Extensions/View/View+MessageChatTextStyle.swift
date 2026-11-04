@@ -17,70 +17,63 @@ import SwiftUI
 
 extension View {
     
-    func messageChatStyle(_ message: ChatMessage, position: MessageGroupPosition, text: String? = nil) -> some View {
-        modifier(ChatTextStyleModifier(message: message, text: text, position: position))
+    /// - Parameter maxWidth: Width cap for the bubble. Defaults to `nil`, which lets the modifier take
+    ///   the standard cap from its own ``ChatLayoutContext`` — resolving it there rather than in the
+    ///   caller's `body` is what keeps it correct across a rotation, since the modifier is re-evaluated
+    ///   on a layout change even when the calling cell's `body` is not.
+    func messageChatStyle(
+        _ message: ChatMessage,
+        position: MessageGroupPosition,
+        text: String? = nil,
+        maxWidth: CGFloat? = nil
+    ) -> some View {
+        modifier(ChatTextStyleModifier(message: message, text: text, position: position, maxWidth: maxWidth))
     }
 }
 
-// MARK: - ChatBubbleModifier
+// The preview's ruler visualizes the bubble cap at a fixed size and never rotates, so it reads the
+// orientation-derived constant directly rather than through `LayoutAware`.
+// swiftlint:disable hardcoded_strings sf_symbol_key_in_image orientation_outside_layout_context
+#Preview {
+    VStack(spacing: 4) {
+        Spacer()
 
-private struct ChatTextStyleModifier: ViewModifier, Themed {
+        // Ruler visualizing `StyleGuide.Sizing.Message.maxWidth` (red segment) against the
+        // full `StyleGuide.screenBoundsProvider.screenBounds.width` (red + gray) — the
+        // message bubble below must never cross the boundary the arrow points to.
+        ZStack(alignment: .topLeading) {
+            HStack(spacing: .zero) {
+                Capsule()
+                    .fill(Color.red)
+                    .frame(width: StyleGuide.Sizing.Message.maxWidth, height: 4)
 
-    // MARK: - Constants
-    
-    private enum Constants {
-        
-        enum Sizing {
-            static let cornerRadiusBetweenMessages: CGFloat = 4
+                Capsule()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(height: 4)
+            }
+
+            VStack(spacing: 2) {
+                Text("60 %")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+
+                Image(systemName: "arrow.down")
+            }
+            .foregroundStyle(Color.red)
+            .offset(x: StyleGuide.Sizing.Message.maxWidth - 16, y: 8)
         }
-    }
-    
-	// MARK: - Properties
 
-    @EnvironmentObject var style: ChatStyle
-    
-    @Environment(\.colorScheme) var scheme
-    
-    let message: ChatMessage
-    let text: String?
-    let position: MessageGroupPosition
-    
-    private var font: Font? {
-        guard let text else {
-            return nil
+        HStack(spacing: .zero) {
+            Text(Lorem.paragraph(nbSentences: 2))
+                .padding(.vertical, StyleGuide.Padding.Message.contentVertical)
+                .padding(.horizontal, StyleGuide.Padding.Message.contentHorizontal)
+                .messageChatStyle(MockData.textMessage(user: MockData.agent), position: .single)
+
+            Spacer()
         }
-        
-        return text.isLargeEmoji ? .largeTitle : .callout
+
+        Spacer()
     }
-    
-    // MARK: - Builder
-    
-    func body(content: Content) -> some View {
-        content
-            .font(font)
-            .foregroundStyle(message.isUserAgent ? colors.content.primary : colors.brand.onPrimary)
-            .tint(message.isUserAgent ? colors.content.primary : colors.brand.onPrimary)
-            .background(
-                UnevenRoundedRectangle(
-                    topLeft: position.topLeftCornerRadius(isUserAgent: message.isUserAgent),
-                    topRight: position.topRightCornerRadius(isUserAgent: message.isUserAgent),
-                    bottomLeft: position.bottomLeftCornerRadius(isUserAgent: message.isUserAgent),
-                    bottomRight: position.bottomRightCornerRadius(isUserAgent: message.isUserAgent)
-                )
-                .fill(backgroundColor)
-            )
-    }
+    .environmentObject(ChatStyle())
 }
-
-// MARK: - Helpers
-
-private extension ChatTextStyleModifier {
-    
-    var backgroundColor: Color {
-        if text?.isLargeEmoji == true {
-            Color.clear
-        } else {
-            message.isUserAgent ? colors.background.surface.default : colors.brand.primary
-        }
-    }
-}
+// swiftlint:enable hardcoded_strings sf_symbol_key_in_image orientation_outside_layout_context

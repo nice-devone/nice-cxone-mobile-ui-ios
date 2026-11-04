@@ -32,6 +32,9 @@ class ThreadViewModel: ObservableObject {
     @Published var hasMoreMessagesToLoad = true
     @Published var typingAgent: ChatUser?
     @Published var isUserTyping = false
+    /// Attachments staged for the next message. Owned here rather than by `MessageInputView` because
+    /// the strip that renders them lives in `ChatView`'s scroll content, so both need the same source.
+    @Published var attachments = [AttachmentItem]()
     @Published var isSendingMessage = false
     @Published var isEditingThreadName = false
     @Published var threadName: String = ""
@@ -46,20 +49,42 @@ class ThreadViewModel: ObservableObject {
     var isLiveChat: Bool {
         chatProvider.mode == .liveChat
     }
+    var isMultithread: Bool {
+        chatProvider.mode == .multithread
+    }
     var alertType: ChatAlertType? {
         get { containerViewModel?.alertType }
         set { containerViewModel?.alertType = newValue }
+    }
+    /// Forwards to the container rather than storing locally - the survey can be active
+    /// while this view model doesn't exist yet (thread list) or gets replaced (switching threads),
+    /// so only container-owned state survives every path that needs to observe it.
+    var isShowingSatisfactionSurvey: Bool {
+        get { containerViewModel?.isSatisfactionSurveyActive ?? false }
+        set { containerViewModel?.isSatisfactionSurveyActive = newValue }
     }
 
     private let chatProvider: ChatProvider
 
     private var didSetAdditionalCustomFields = false
     private var isEndConversationShown = false
+    /// Bumped every time `showEndConversation()` installs an overlay, even when `isEndConversationShown`
+    /// was already `true` - a plain boolean can't tell "still showing what I put up" apart from
+    /// "was showing something, got replaced, and a fresh one just went up" once the flag has settled
+    /// back to `true` in both cases. `reloadThread(with:)` snapshots this to detect the second case.
+    private var endConversationInstallGeneration = 0
     private var isThreadPermanentlyClosed = false
+    /// Set only when `handleSingleThreadAndLivechatReadyState` actually skips the create-thread branch
+    /// for a closed thread because a survey is active - not derived from `thread.state == .closed` alone,
+    /// since a thread can also close through the ordinary CSAT flow without ever being deferred.
+    private var didDeferClosedThreadRecovery = false
+    /// A survey this view model's own event stream delivered, kept until the next ready state consumes it.
+    ///
+    /// The SDK sends a recovered survey just before `.chatUpdated(.ready)`, but the container presents it from a
+    /// separate stream - so this view model can reach the ready state before `isShowingSatisfactionSurvey` is set.
+    private var receivedSatisfactionSurvey: SatisfactionSurvey?
     private var eventTask: Task<Void, Never>?
     private var taskOnAppear: Task<Void, Never>?
-
-    private static let groupInterval = MessageGroup.defaultGroupingInterval
 
     // MARK: - Init
 
@@ -98,7 +123,12 @@ class ThreadViewModel: ObservableObject {
 
             await self.updateThread(with: self.thread)
 
+            // Cleared before the survey below, whose presentation can wait as long as a form stays open - `onDisappear()`
+            // skips its cleanup while this is set, so a thread switch meanwhile would leave this view model observing events.
             self.taskOnAppear = nil
+
+            // A survey that arrived while another thread (or the thread list) was on screen waits for this one
+            await self.containerViewModel?.showPendingSatisfactionSurveyIfNeeded(for: self.thread?.id)
         }
     }
 
@@ -122,20 +152,116 @@ class ThreadViewModel: ObservableObject {
         self.hasMoreMessagesToLoad = true
         self.typingAgent = nil
         self.isUserTyping = false
+        self.attachments = []
         self.isSendingMessage = false
         self.isEditingThreadName = false
         self.threadName = ""
         self.positionInQueue = nil
         self.isShowingInactivityPopup = false
+        // Forwards to containerViewModel.isSatisfactionSurveyActive, not a local field - safe here
+        // because the only caller (createThread()) already calls hideOverlay() first.
+        self.isShowingSatisfactionSurvey = false
         self.didSetAdditionalCustomFields = false
         self.isEndConversationShown = false
         self.isThreadPermanentlyClosed = false
+        self.didDeferClosedThreadRecovery = false
+        self.receivedSatisfactionSurvey = nil
     }
 }
 
 // MARK: - Actions
 
 extension ThreadViewModel {
+
+    /// Re-runs the thread update flow if a recovery was deferred while a satisfaction survey was active.
+    ///
+    /// A `.loaded` update arriving during an active survey latches `containerViewModel.shouldRefreshThread`
+    /// rather than losing the trigger, since `.loaded` itself isn't sticky - but nothing then re-checks it
+    /// until the next server-driven thread update, which may never arrive. Call this after the survey is
+    /// dismissed so a deferred recovery actually runs instead of leaving the thread in a stale `.loaded` state.
+    @MainActor
+    func recoverPendingRefreshIfNeeded() async {
+        guard containerViewModel?.shouldRefreshThread == true else {
+            return
+        }
+
+        await updateThread(with: thread)
+    }
+
+    /// Re-runs the closed-thread ready-state flow deferred while a satisfaction survey kept a
+    /// recovered closed thread on screen (see `handleSingleThreadAndLivechatReadyState`'s
+    /// `isShowingSatisfactionSurvey` escape hatch). Live Chat has its own path via
+    /// `showEndConversation()`; this covers Messaging, where dismissing the survey must still
+    /// create a new conversation the way `.chatUpdated(.ready)` would have if the survey hadn't
+    /// deferred it.
+    ///
+    /// Gated on `didDeferClosedThreadRecovery` rather than `thread.state == .closed` alone - a thread
+    /// closed by the ordinary CSAT flow (agent closes the conversation, survey arrives after) reaches
+    /// this same closed state without ever being deferred, and re-driving the ready-state flow for it
+    /// would destructively call `createThread()` on an archived transcript the user is still reading.
+    ///
+    /// - Returns: `true` if a deferred recovery was actually taken over (regardless of whether it
+    ///   succeeded, failed, or the user cancelled the pre-chat form) - the caller must not also run
+    ///   `recoverPendingRefreshIfNeeded()` in that case. `createThread()` failing or being cancelled
+    ///   still leaves the session on a screen this method chose (an error alert or a disconnect), and
+    ///   `updateSinglethreadThread` has no chat-availability guard, so re-driving a load on top of that
+    ///   would fire a spurious network call against a chat that may already be disconnected.
+    @MainActor
+    func recoverClosedThreadIfNeeded() async -> Bool {
+        guard didDeferClosedThreadRecovery, thread?.state == .closed else {
+            return false
+        }
+
+        didDeferClosedThreadRecovery = false
+        // A `.loaded`-then-`.closed` relatch while the survey stayed active can leave this set
+        // alongside the deferral - taking over here means the caller won't drain it afterwards
+        // (see `- Returns` above), so an untouched flag would fire an unwanted `reloadThread()`
+        // against whatever thread this recovery leaves behind, success or not.
+        containerViewModel?.shouldRefreshThread = false
+
+        do {
+            try await handleChatReadyState(for: chatProvider.mode)
+        } catch {
+            error.logError()
+
+            alertType = .connectionErrorAlert { [weak self] in
+                Task { @MainActor in
+                    await self?.containerViewModel?.disconnect()
+                }
+            }
+        }
+
+        return true
+    }
+
+    /// Clears a `didDeferClosedThreadRecovery` deferral that no longer applies to the thread's current
+    /// state - e.g. it was latched while the thread was `.closed`, but a later update moved it to
+    /// `.loaded` before this dismissal, so neither `recoverClosedThreadIfNeeded()` (needs `.closed`) nor
+    /// the Live Chat branch's `clearDeferredClosedThreadRecovery()` (needs `chatProvider.mode == .liveChat`)
+    /// ran to consume it. Left set, a later *ordinary* CSAT-flow closure - never actually deferred - would
+    /// be mistaken for one on its own dismissal and incorrectly call `createThread()`.
+    ///
+    /// Deliberately narrower than `clearDeferredClosedThreadRecovery()`: it does not touch
+    /// `shouldRefreshThread`, since the caller still needs that latch intact for `recoverPendingRefreshIfNeeded()`.
+    @MainActor
+    func clearStaleClosedThreadRecoveryDeferral() {
+        didDeferClosedThreadRecovery = false
+    }
+
+    /// Drains state latched for a closed thread that Live Chat's `showEndConversation()` handles
+    /// directly, without ever going through `recoverClosedThreadIfNeeded()` or `recoverPendingRefreshIfNeeded()`.
+    ///
+    /// Clears both: `didDeferClosedThreadRecovery`, since `handleSingleThreadAndLivechatReadyState` sets it
+    /// for both singlethread and Live Chat alike and it would otherwise survive to the next survey; and
+    /// `shouldRefreshThread`, since a stray `.loaded` update latched it for an unrelated reason (e.g. the app
+    /// returning to the foreground) - if left set, `dismissSatisfactionSurvey()`'s unconditional trailing call
+    /// to `recoverPendingRefreshIfNeeded()` would call `reloadThread(with:)` right after `showEndConversation()`,
+    /// replacing the just-shown End Conversation overlay with the loading overlay.
+    @MainActor
+    func clearDeferredClosedThreadRecovery() {
+        didDeferClosedThreadRecovery = false
+        containerViewModel?.shouldRefreshThread = false
+    }
 
     @MainActor
     func onEditPrechatField() async {
@@ -145,7 +271,7 @@ extension ThreadViewModel {
             LogManager.error("Unexpected nil thread")
             return
         }
-        guard let prechatCustomFields = chatProvider.threads.preChatSurvey?.customFields, !prechatCustomFields.isEmpty else {
+        guard hasPrechatCustomFields, let prechatCustomFields = chatProvider.threads.preChatSurvey?.customFields else {
             LogManager.error(.unableToParse("prechatCustomFields"))
             return
         }
@@ -190,6 +316,35 @@ extension ThreadViewModel {
         }
     }
 
+    /// Brings End Conversation back after a satisfaction survey that replaced it is dismissed.
+    ///
+    /// A transient overlay (e.g. a reconnect's loading overlay) can claim the slot while the survey's hide waits out its
+    /// dismissal animation, and `showEndConversation()` refuses an occupied slot - so this keeps retrying until the slot
+    /// is free. It stops once End Conversation is shown (here or by a later closed-thread update), a new survey takes
+    /// the slot, the thread is no longer closed (e.g. replaced by a new one), the chat is disconnecting, or a teardown
+    /// (disconnect, going offline, closing the chat) has begun - which may still be awaiting its own overlay hide.
+    @MainActor
+    func restoreEndConversation() async {
+        // The survey replaced the End Conversation overlay, so its "already shown" state no longer holds
+        isEndConversationShown = false
+
+        let teardownGeneration = containerViewModel?.satisfactionSurveyTeardownGeneration
+
+        while !isEndConversationShown,
+              thread?.state == .closed,
+              containerViewModel?.isSatisfactionSurveyActive == false,
+              containerViewModel?.disconnecting == false,
+              containerViewModel?.satisfactionSurveyTeardownGeneration == teardownGeneration {
+            await showEndConversation()
+
+            guard !isEndConversationShown else {
+                return
+            }
+
+            await Task.sleep(seconds: 0.2)
+        }
+    }
+
     @MainActor
     func showEndConversation() async {
         guard let thread else {
@@ -197,9 +352,17 @@ extension ThreadViewModel {
             return
         }
 
+        // `showOverlay` rejects when the slot is taken (e.g. by `reloadThread`'s loading overlay). Bail out
+        // before touching the flag and generation, which must only change for an install that happens.
+        guard containerViewModel?.overlay == nil else {
+            LogManager.warning("Cannot show EndConversation view: another overlay is already being displayed")
+            return
+        }
+
         LogManager.trace("Showing EndConversation view")
 
         self.isEndConversationShown = true
+        self.endConversationInstallGeneration += 1
 
         let isSendTranscriptEnabled = chatProvider.connection.channelConfiguration.isSendTranscriptEnabled
         await containerViewModel?.showOverlay {
@@ -260,7 +423,7 @@ extension ThreadViewModel {
         }
     }
 
-    func onSendMessage(_ messageType: ChatMessageType, attachments: [AttachmentItem], postback: String? = nil) {
+    func onSendMessage(_ messageType: ChatMessageType, attachments attachmentsToSend: [AttachmentItem], postback: String? = nil) {
         LogManager.trace("Sending a message")
 
         guard let thread, let threadProvider = try? chatProvider.threads.provider(for: thread.id) else {
@@ -276,7 +439,7 @@ extension ThreadViewModel {
 
             switch messageType {
             case .text(let text):
-                message = OutboundMessage(text: text, attachments: attachments.compactMap(AttachmentItemMapper.map), postback: postback)
+                message = OutboundMessage(text: text, attachments: attachmentsToSend.compactMap(AttachmentItemMapper.map), postback: postback)
             case .audio(let item):
                 message = OutboundMessage(text: "", attachments: [AttachmentItemMapper.map(item)], postback: postback)
             default:
@@ -341,19 +504,11 @@ extension ThreadViewModel {
     func onRichMessageElementSelected(element: RichMessageSubElementType) {
         LogManager.trace("Did select rich content message")
 
-        // Currently `.button` and `.timeSlot` are supported (and used)
-        let textToSend: String? = switch element {
+        let textToSend = switch element {
         case .button(let entity):
             entity.title
         case .timeSlot(let entity):
             entity.formattedDescription
-        default:
-            nil
-        }
-
-        guard let textToSend else {
-            LogManager.error("Unable to send rich message content - textToSend is nil")
-            return
         }
 
         onSendMessage(.text(textToSend), attachments: [], postback: element.postback)
@@ -408,8 +563,8 @@ extension ThreadViewModel {
         } catch {
             error.logError()
             
-            self.alertType = .connectionErrorAlert {
-                Task { @MainActor [weak self] in
+            self.alertType = .connectionErrorAlert { [weak self] in
+                Task { @MainActor in
                     await self?.containerViewModel?.disconnect()
                 }
             }
@@ -419,18 +574,24 @@ extension ThreadViewModel {
     @MainActor
     func updateInputEnabledStateBasedOnThread() {
         self.isInputEnabled = thread != nil
-        
+
         // If thread was ever closed, keep input disabled
         if isThreadPermanentlyClosed {
             self.isThreadClosed = true
-            return
-        }
-        
-        // Otherwise check current thread state
-        if let thread {
+        } else if let thread {
+            // Otherwise check current thread state
             self.isThreadClosed = thread.state == .closed
         } else {
             self.isThreadClosed = false
+        }
+
+        if isThreadClosed, !attachments.isEmpty {
+            // A closed thread replaces the input bar with the archived-conversation notice and hides the
+            // attachment strip, so anything staged would linger unreachable — impossible to send or
+            // remove, and shown again if the thread ever becomes writable.
+            LogManager.trace("Discarding staged attachments because the thread is closed")
+
+            attachments.removeAll()
         }
     }
     
@@ -476,13 +637,13 @@ extension ThreadViewModel {
             return
         }
         // Show alert dialog with either success or failure result
-        alertType = .sendTranscript(isSuccess: sentSuccessfully) {
+        alertType = .sendTranscript(isSuccess: sentSuccessfully) { [weak self] in
             // Don't show end conversation if the feature was triggered from navigation bar's menu
             guard !fromMenu else {
                 return
             }
             
-            Task { @MainActor [weak self] in
+            Task { @MainActor in
                 await self?.showEndConversation()
             }
         }
@@ -555,6 +716,10 @@ private extension ThreadViewModel {
             LogManager.trace("Agent \(isTyping ? "started" : "ended") typing")
             typingAgent = isTyping ? ChatUserMapper.map(from: agent) : nil
 
+        case .proactiveActionReceived(.satisfactionSurvey(let survey)) where chatProvider.mode != .multithread:
+            // Presented by the container - only remembered here for the ready-state decision that may follow it
+            receivedSatisfactionSurvey = survey
+
         default:
             break
         }
@@ -564,6 +729,33 @@ private extension ThreadViewModel {
 // MARK: - Private methods
 
 private extension ThreadViewModel {
+
+    /// Whether the channel's pre-chat survey defines any custom fields the customer can edit.
+    var hasPrechatCustomFields: Bool {
+        chatProvider.threads.preChatSurvey?.customFields.isEmpty == false
+    }
+
+    /// Whether a survey is showing, or was received on this view model's stream and hasn't reached the container yet.
+    ///
+    /// Consumes `receivedSatisfactionSurvey`: the recovered survey precedes the ready state it belongs to, and one
+    /// left over would keep a later, unrelated ready state from replacing a closed thread.
+    func hasSatisfactionSurveyForReadyState() -> Bool {
+        let receivedSurvey = receivedSatisfactionSurvey
+        receivedSatisfactionSurvey = nil
+
+        let isSurveyOnItsWay = receivedSurvey != nil && receivedSurvey != containerViewModel?.lastActivatedSatisfactionSurvey
+
+        return isShowingSatisfactionSurvey || isSurveyOnItsWay
+    }
+
+    /// Whether a singlethread or multithread thread update should trigger a thread reload — the UI module returned
+    /// from the background or the thread is not loaded yet — and no recovery is already in progress
+    /// and no satisfaction survey is being shown.
+    func shouldRecoverThread(_ updatedThread: CXoneChatUI.ChatThread?) -> Bool {
+        (containerViewModel?.shouldRefreshThread == true || updatedThread?.state == .loaded)
+            && containerViewModel?.isRecoveringThread == false
+            && !isShowingSatisfactionSurvey
+    }
 
     @MainActor
     func updateThread(with updatedThread: CXoneChatUI.ChatThread?) async {
@@ -630,32 +822,42 @@ private extension ThreadViewModel {
     func updateSinglethreadThread(_ updatedThread: CXoneChatUI.ChatThread?, flowContinues: inout Bool) async {
         LogManager.trace("Updating thread for singlethread channel configuration")
 
-        let shouldRecover = (containerViewModel?.shouldRefreshThread == true || updatedThread?.state == .loaded)
-            && containerViewModel?.isRecoveringThread == false
-        if shouldRecover, let updatedThread {
+        if isShowingSatisfactionSurvey, updatedThread?.state == .loaded {
+            // `.loaded` is not sticky like `shouldRefreshThread` - without latching it here, skipping
+            // recovery while the survey is open loses the trigger for good, since nothing re-drives it.
+            containerViewModel?.shouldRefreshThread = true
+        }
+
+        if shouldRecoverThread(updatedThread), let updatedThread {
             // Trigger the load if the UI module entered the background or the thread is not loaded yet
             // Skip if recovery is already in progress to prevent duplicate recovery attempts on iOS 16
             containerViewModel?.shouldRefreshThread = false
             containerViewModel?.isRecoveringThread = true
-            
+
             await reloadThread(with: updatedThread.id)
             // Note: isRecoveringThread flag is reset inside reloadThread() before triggering UI update
             // If the thread is not loaded, we don't want to update the view. It will be updated once the thread is loaded via `onThreadUpdated(_:)`.
             flowContinues = false
             return
-        } else if updatedThread?.state == .ready || updatedThread?.state != .closed {
-            // Hide the loading overlay if the thread is ready or not closed
+        } else if let state = updatedThread?.state,
+                  state != .closed,
+                  !isShowingSatisfactionSurvey {
+            // Hide the loading overlay if the thread is not closed and a satisfaction survey is not being shown
             await containerViewModel?.hideOverlay()
         }
     }
-    
+
     @MainActor
     func updateMultithreadThread(_ updatedThread: CXoneChatUI.ChatThread?, flowContinues: inout Bool) async {
         LogManager.trace("Updating thread for multithread channel configuration")
 
-        let shouldRecover = (containerViewModel?.shouldRefreshThread == true || updatedThread?.state == .loaded)
-            && containerViewModel?.isRecoveringThread == false
-        if shouldRecover, let updatedThread {
+        if isShowingSatisfactionSurvey, updatedThread?.state == .loaded {
+            // `.loaded` is not sticky like `shouldRefreshThread` - without latching it here, skipping
+            // recovery while the survey is open loses the trigger for good, since nothing re-drives it.
+            containerViewModel?.shouldRefreshThread = true
+        }
+
+        if shouldRecoverThread(updatedThread), let updatedThread {
             // Trigger the load if the UI module entered the background or the thread is not loaded yet
             // Skip if recovery is already in progress to prevent duplicate recovery attempts on iOS 16
             containerViewModel?.shouldRefreshThread = false
@@ -666,8 +868,10 @@ private extension ThreadViewModel {
             // If the thread is not loaded, we don't want to update the view. It will be updated once the thread is loaded via `onThreadUpdated(_:)`.
             flowContinues = false
             return
-        } else if updatedThread?.state == .ready || updatedThread?.state != .closed {
-            // Hide the loading overlay if the thread is ready or not closed
+        } else if let state = updatedThread?.state,
+                  state != .closed,
+                  !isShowingSatisfactionSurvey {
+            // Hide the loading overlay if the thread is not closed and a satisfaction survey is not being shown
             await containerViewModel?.hideOverlay()
         }
         
@@ -687,33 +891,38 @@ private extension ThreadViewModel {
         
         let shouldRecover = containerViewModel?.shouldRefreshThread == true
             && isShowingInactivityPopup == false
+            && !isShowingSatisfactionSurvey
             && containerViewModel?.isRecoveringThread == false
         if shouldRecover, let updatedThread {
             // Trigger the load if the UI module entered the background or the thread is not loaded yet
             // Skip if recovery is already in progress to prevent duplicate recovery attempts on iOS 16
             containerViewModel?.shouldRefreshThread = false
             containerViewModel?.isRecoveringThread = true
-            
+
             await reloadThread(with: updatedThread.id)
             // Note: isRecoveringThread flag is reset inside reloadThread() before triggering UI update
             // If the thread is not loaded, we don't want to update the view. It will be updated once the thread is loaded via `onThreadUpdated(_:)`.
             flowContinues = false
             return
-        } else if updatedThread?.state == .closed, !isEndConversationShown {
-            // Show end conversation view when the state is `.closed` and only if it is not already shown
-            await showEndConversation()
-        } else if !isEndConversationShown, [.ready, .closed].contains(updatedThread?.state) == false, updatedThread?.positionInQueue == nil {
-            // Show loading before the BE sends position in queue
-            await containerViewModel?.showLoading()
-            // If the thread is not ready and position in queue is not set, we want to show loading overlay
-            flowContinues = false
-            return
-        } else if updatedThread?.state == .ready || (updatedThread?.state != .closed && updatedThread?.positionInQueue != nil),
-                  !isEndConversationShown,
-                  !isShowingInactivityPopup {
-            // Hide the loading overlay if the thread is ready or position in queue is set,
-            // and neither the EndConversation view nor inactivity popup is being shown
-            await containerViewModel?.hideOverlay()
+        } else {
+            switch Self.resolveLiveChatOverlay(
+                for: updatedThread,
+                isEndConversationShown: isEndConversationShown,
+                isShowingInactivityPopup: isShowingInactivityPopup,
+                isShowingSatisfactionSurvey: isShowingSatisfactionSurvey
+            ) {
+            case .showEndConversation:
+                await showEndConversation()
+            case .showLoading:
+                await containerViewModel?.showLoading()
+                // If the thread is not ready and position in queue is not set, we want to show loading overlay
+                flowContinues = false
+                return
+            case .hideOverlay:
+                await containerViewModel?.hideOverlay()
+            case .noChange:
+                break
+            }
         }
         
         handleLivechatPositionInQueueVisibility()
@@ -722,21 +931,36 @@ private extension ThreadViewModel {
     @MainActor
     func reloadThread(with id: String) async {
         LogManager.trace("Recovering thread with id: \(id)")
-        
+
+        let endConversationGenerationBeforeReload = endConversationInstallGeneration
+
         await containerViewModel?.showLoading()
-        
+
         do {
             try await chatProvider.threads.load(with: id)
         } catch {
             error.logError()
-            self.alertType = .connectionErrorAlert {
-                Task { @MainActor [weak self] in
+            self.alertType = .connectionErrorAlert { [weak self] in
+                Task { @MainActor in
                     await self?.containerViewModel?.disconnect()
                 }
             }
         }
-        
-        await containerViewModel?.hideOverlay()
+
+        // A satisfaction survey may have arrived and taken the overlay slot during the network
+        // round trip above - don't tear it down for a recovery that started before it existed.
+        // `isShowingSatisfactionSurvey` alone can't see a survey that arrived *and was dismissed*
+        // within this same await, since dismissing it already installed a fresh End Conversation
+        // overlay before clearing the flag. A plain `isEndConversationShown` snapshot isn't enough
+        // either: if it was already `true` before this call started, dismissSatisfactionSurvey()
+        // installing another one during the await leaves the flag unchanged at `true == true`, so
+        // comparing the boolean can't tell "still showing what I put up" from "got replaced with a
+        // fresh one." Comparing `endConversationInstallGeneration` instead catches both directions -
+        // any new call to `showEndConversation()` during the await bumps it regardless of the flag's
+        // starting value, so this recovery only hides the overlay when nothing else has claimed it.
+        if !isShowingSatisfactionSurvey && endConversationInstallGeneration == endConversationGenerationBeforeReload {
+            await containerViewModel?.hideOverlay()
+        }
 
         // Reset the recovery flag to allow future recovery attempts
         containerViewModel?.isRecoveringThread = false
@@ -752,7 +976,14 @@ private extension ThreadViewModel {
     }
     
     func handleSingleThreadAndLivechatReadyState() async throws {
-        if let thread = chatProvider.threads.get().first, thread.state != .closed {
+        // A recovered closed thread carrying an active survey must stay on screen so the survey can be
+        // dismissed and End Conversation shown - otherwise this falls into the create-thread branch below,
+        // which calls createThread() -> resetStaleState(), silently discarding the survey and the thread.
+        if let thread = chatProvider.threads.get().first, thread.state != .closed || hasSatisfactionSurveyForReadyState() {
+            if thread.state == .closed {
+                didDeferClosedThreadRecovery = true
+            }
+
             await updateThread(with: ChatThreadMapper.map(from: thread))
         } else if let threadProvider = try await containerViewModel?.createThread() {
             await updateThread(with: ChatThreadMapper.map(from: threadProvider.chatThread))
@@ -778,8 +1009,8 @@ private extension ThreadViewModel {
             
             await containerViewModel?.hideOverlay()
             
-            alertType = .connectionErrorAlert {
-                Task { @MainActor [weak self] in
+            alertType = .connectionErrorAlert { [weak self] in
+                Task { @MainActor in
                     await self?.containerViewModel?.disconnect()
                 }
             }
@@ -806,7 +1037,7 @@ private extension ThreadViewModel {
     }
     
     func markThreadAsReadIfNeeded(_ thread: ChatThread) async throws {
-        guard thread.messages.last?.customerStatistics?.seenAt == nil else {
+        guard thread.messages.last?.isSeenByCustomer != true else {
             // The thread is already marked as read
             return
         }
@@ -864,7 +1095,7 @@ extension ThreadViewModel {
     var menu: MenuBuilder {
         MenuBuilder()
             .add(
-                if: !isThreadClosed && containerViewModel?.chatProvider.mode == .multithread,
+                if: !isThreadClosed && isMultithread,
                 name: L10n.Chat.MenuOption.updateName,
                 icon: Asset.ChatThread.editThreadName
             ) {
@@ -873,7 +1104,7 @@ extension ThreadViewModel {
                 }
             }
             .add(
-                if: !isThreadClosed && chatProvider.threads.preChatSurvey?.customFields.isEmpty == false,
+                if: !isThreadClosed && hasPrechatCustomFields,
                 name: L10n.Alert.EditPrechatCustomFields.title,
                 icon: Asset.ChatThread.editPrechatCustomFields
             ) {
@@ -891,22 +1122,22 @@ extension ThreadViewModel {
                 }
             }
             .add(
-                if: containerViewModel?.chatProvider.mode == .liveChat,
+                if: isLiveChat,
                 name: L10n.Chat.MenuOption.endConversation,
                 icon: Asset.close,
                 role: .destructive
-            ) {
-                Task { @MainActor [weak self] in
+            ) { [weak self] in
+                Task { @MainActor in
                     guard let self else {
                         return
                     }
                     
-                    if thread?.state == .closed {
+                    if self.thread?.state == .closed {
                         await self.showEndConversation()
                     } else {
-                        self.alertType = .endConversation {
+                        self.alertType = .endConversation { [weak self] in
                             Task { @MainActor in
-                                await self.onEndConversation()
+                                await self?.onEndConversation()
                             }
                         }
                     }
@@ -915,9 +1146,52 @@ extension ThreadViewModel {
     }
 }
 
-// MARK: - Position In Queue Visibility
+// MARK: - Overlay Visibility
 
 extension ThreadViewModel {
+
+    /// Decides what should happen to the live chat overlay for a thread update.
+    ///
+    /// A bot-held contact is checked before the loading branch and resolves to ``LiveChatOverlayAction/hideOverlay``
+    /// rather than merely declining to show it. Such a contact is never queued - no `SetPositionInQueue` arrives -
+    /// and stays below `.ready` until the bot's first message, so no later update would dismiss an overlay that a
+    /// previous update (or the unconditional `showLoading()` before thread creation) already put up.
+    ///
+    /// While a satisfaction survey is shown it owns the screen: the end conversation view waits until the survey
+    /// is dismissed, and the loading overlay is neither shown over it nor hidden from under it.
+    nonisolated static func resolveLiveChatOverlay(
+        for thread: CXoneChatUI.ChatThread?,
+        isEndConversationShown: Bool,
+        isShowingInactivityPopup: Bool,
+        isShowingSatisfactionSurvey: Bool
+    ) -> LiveChatOverlayAction {
+        guard !isShowingSatisfactionSurvey else {
+            // The satisfaction survey owns the screen, leave any overlay alone
+            return .noChange
+        }
+        if thread?.state == .closed, !isEndConversationShown {
+            // The conversation is over -> hand over to the end conversation view
+            return .showEndConversation
+        }
+        guard !isEndConversationShown else {
+            // The end conversation view owns the screen, leave any overlay alone
+            return .noChange
+        }
+        if thread?.isHandledByNonCxone == true {
+            // A bot is serving the customer, so neither the queue counter nor the loading overlay applies.
+            // The inactivity popup is itself presented as an overlay, so it must never be dismissed from here.
+            return isShowingInactivityPopup ? .noChange : .hideOverlay
+        }
+        if [.ready, .closed].contains(thread?.state) == false, thread?.positionInQueue == nil {
+            // Show loading until the backend reports a position in queue
+            return .showLoading
+        }
+        if thread?.state == .ready || (thread?.state != .closed && thread?.positionInQueue != nil), !isShowingInactivityPopup {
+            return .hideOverlay
+        }
+
+        return .noChange
+    }
 
     /// Resolves which position-in-queue value the overlay should display.
     ///
@@ -934,6 +1208,13 @@ extension ThreadViewModel {
         if let thread {
             if thread.state == .closed {
                 // The thread is closed, don't show position in queue
+                return nil
+            }
+
+            if thread.isHandledByNonCxone {
+                // A bot is handling the contact, so there is no queue to report. After a handover the handler
+                // becomes `.cxone` and the agent-association rules below take over, bringing the overlay back
+                // until an agent is actually assigned.
                 return nil
             }
 

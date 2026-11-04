@@ -13,9 +13,7 @@
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
 
-import AVFoundation
 import Foundation
-import SwiftUI
 import UniformTypeIdentifiers
 
 extension URL {
@@ -29,33 +27,6 @@ extension URL {
     }
 
     // MARK: - Methods
-
-    func getVideoThumbnail() -> Image? {
-        let cacheKey = self.absoluteString + ":videoThumbnail"
-        // 1. Check cache first
-        if let data = AttachmentCache.shared.data(for: cacheKey),
-           let uiImage = UIImage(data: data) {
-            return Image(uiImage: uiImage)
-        }
-
-        // 2. Generate thumbnail
-        let asset = AVAsset(url: self)
-        let assetImgGenerate = AVAssetImageGenerator(asset: asset)
-        assetImgGenerate.appliesPreferredTrackTransform = true
-
-        do {
-            let img = try assetImgGenerate.copyCGImage(at: CMTimeMakeWithSeconds(1.0, preferredTimescale: 600), actualTime: nil)
-            let uiImage = UIImage(cgImage: img)
-            // 3. Cache the thumbnail
-            if let data = uiImage.pngData() {
-                AttachmentCache.shared.set(data, for: cacheKey)
-            }
-            return Image(uiImage: uiImage)
-        } catch {
-            error.logError()
-            return nil
-        }
-    }
 
     ///
     /// Access a resource which *may* be securely scoped.  Since there is no apparent

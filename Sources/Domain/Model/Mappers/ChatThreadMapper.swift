@@ -28,7 +28,8 @@ enum ChatThreadMapper {
             ownerAssignee: thread.ownerAssignee,
             scrollToken: thread.scrollToken,
             state: thread.state,
-            positionInQueue: thread.positionInQueue
+            positionInQueue: thread.positionInQueue,
+            contactHandler: thread.contactHandler
         )
     }
 }

@@ -38,6 +38,11 @@ extension String {
         self.range(of: Constants.emailRegEx, options: [.regularExpression]) != nil
     }
     
+    /// The string without leading and trailing whitespace and newlines.
+    var trimmed: String {
+        trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
     // MARK: - Methods
     
     func nilIfEmpty() -> String? {

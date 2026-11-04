@@ -39,21 +39,21 @@ struct ChatUser: Identifiable, Equatable {
 
 extension ChatUser {
     
+    /// Up to two uppercase initials derived from the user name, ignoring quoted substrings (e.g. nicknames).
+    ///
+    /// Returns `nil` when no initials can be derived (missing, empty or whitespace-only name) so the avatar falls back to its icon.
     var initials: String? {
-        guard let userName, !userName.isEmpty else {
+        guard let userName else {
             return nil
         }
         
         // Remove quoted substrings
         let pattern = "\"[^\"]*\""
         let cleaned = userName.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
-        let words = cleaned
-            .split(separator: " ")
-            .filter { !$0.isEmpty }
+        let words = cleaned.split(whereSeparator: \.isWhitespace)
         
-        // Safely get the first word and its initial; return empty if not available
         guard let first = words.first, let firstInitial = first.first else {
-            return ""
+            return nil
         }
         
         // Single-word username: use only the first initial
@@ -61,10 +61,10 @@ extension ChatUser {
             return String(firstInitial).uppercased()
         }
         
-        // Ensure there's at least one word and get its initial
         guard let last = words.last, let lastInitial = last.first else {
-            return ""
+            return nil
         }
+        
         return (String(firstInitial) + String(lastInitial)).uppercased()
     }
 }

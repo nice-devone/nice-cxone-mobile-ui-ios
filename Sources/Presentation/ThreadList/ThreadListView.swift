@@ -26,12 +26,18 @@ struct ThreadListView: View, Themed {
             static let pickerHorizontal: CGFloat = 16
             static let pickerVertical: CGFloat = 12
         }
+
+        enum Sizing {
+            // Intentionally the same value as `StyleGuide.Sizing.overlayMaxWidth`; named
+            // separately so the picker's width cap reads as its own intent at the call site.
+            static let pickerMaxWidth: CGFloat = StyleGuide.Sizing.overlayMaxWidth
+        }
     }
 
     // MARK: - Properties
 
     @SwiftUI.Environment(\.colorScheme) var scheme
-    
+
     @EnvironmentObject var style: ChatStyle
     
     @ObservedObject private var viewModel: ThreadListViewModel
@@ -53,7 +59,7 @@ struct ThreadListView: View, Themed {
         .background(colors.background.default)
         .onAppear(perform: viewModel.onAppear)
         .onDisappear(perform: viewModel.onDisappear)
-        .navigationTitle(L10n.ChatList.title)
+        .chatNavigationTitle(L10n.ChatList.title)
         .chatToolbarBackground()
         // The navigationDestination allows programmatic navigation to the ThreadView to handle
         // the cases of direct to thread and thread creation.
@@ -110,6 +116,7 @@ private extension ThreadListView {
             }
         }
         .pickerStyle(.segmented)
+        .frame(maxWidth: Constants.Sizing.pickerMaxWidth)
         .padding(.vertical, Constants.Padding.pickerVertical)
         .padding(.horizontal, Constants.Padding.pickerHorizontal)
         .onChange(of: viewModel.threadStatus) { newValue in
@@ -135,9 +142,15 @@ private extension ThreadListView {
 
     func listCell(chatThread: ChatThread) -> some View {
         let title = chatThread.titleForConversation
-        let timestamp = chatThread.messages.last?.createdAt ?? Date.now
+        let latestMessage = chatThread.latestMessage
+        let timestamp = latestMessage?.createdAt ?? Date.now
         let formattedTimestamp = dateFormatter.string(from: timestamp)
-        let messagePreview = chatThread.messages.last?.getLocalizedContentOrFallbackText(useFallback: true)
+        let messagePreview = latestMessage?.getLocalizedContentOrFallbackText(useFallback: true)
+        let isRead = isRead(chatThread)
+        let hasPendingSatisfactionSurvey = viewModel.threadIdsWithPendingSurvey.contains(chatThread.id)
+        let showsUnreadIndicator = ThreadListCell.showsUnreadIndicator(
+            isRead: isRead, statusType: viewModel.threadStatus, hasPendingSatisfactionSurvey: hasPendingSatisfactionSurvey
+        )
 
         return Button {
             viewModel.show(thread: chatThread)
@@ -148,10 +161,8 @@ private extension ThreadListView {
                 message: messagePreview,
                 timestamp: formattedTimestamp,
                 statusType: viewModel.threadStatus,
-                // Read status is valid only for messages from an agent to a client
-                isRead: chatThread.messages.last?.direction == .toClient
-                    ? chatThread.messages.last?.customerStatistics?.seenAt != nil
-                    : true
+                isRead: isRead,
+                hasPendingSatisfactionSurvey: hasPendingSatisfactionSurvey
             )
         }
         .listRowInsets(EdgeInsets())
@@ -159,7 +170,6 @@ private extension ThreadListView {
         .listRowBackground(colors.background.default)
         .if(viewModel.threadStatus == .current) { view in
             view.cellActions(
-                chatThread: chatThread,
                 colors: colors,
                 onRename: {
                     viewModel.onEditThreadName(for: chatThread)
@@ -178,6 +188,8 @@ private extension ThreadListView {
                 ? A11y.ThreadList.Cell.label(title, messagePreview ?? "", formattedTimestamp)
                 : A11y.ThreadList.Cell.Label.noMessage(title, formattedTimestamp)
         )
+        // The row ignores its children, so the unread indicator's own label never reaches VoiceOver
+        .accessibilityValue(showsUnreadIndicator ? A11y.ThreadList.Cell.UnreadIndicator.label : "")
         .accessibilityHint(A11y.ThreadList.Cell.hint)
     }
 }
@@ -186,6 +198,13 @@ private extension ThreadListView {
 
 private extension ThreadListView {
     
+    func isRead(_ chatThread: CXoneChatUI.ChatThread) -> Bool {
+        // Read status is valid only for messages from an agent to a client
+        chatThread.latestMessage?.direction == .toClient
+            ? chatThread.latestMessage?.isSeenByCustomer == true
+            : true
+    }
+
     func pickerString(for status: ThreadStatusType) -> String {
         switch status {
         case .current:
@@ -198,7 +217,7 @@ private extension ThreadListView {
 
 private extension View {
 
-    func cellActions(chatThread: ChatThread, colors: StyleColors, onRename: @escaping () -> Void, onArchive: @escaping () -> Void) -> some View {
+    func cellActions(colors: StyleColors, onRename: @escaping () -> Void, onArchive: @escaping () -> Void) -> some View {
         self
             .contextMenu {
                 Button(action: onRename) {
@@ -224,7 +243,7 @@ private extension View {
                 Button(role: .destructive, action: onArchive) {
                     ResizedSymbol(
                         image: Asset.List.archive,
-                        targetSize: StyleGuide.Sizing.buttonSmallDimension
+                        targetSize: StyleGuide.Sizing.Button.smallDimension
                     )
                 }
                 .foregroundStyle(colors.status.onWarning)
@@ -236,7 +255,7 @@ private extension View {
                 Button(action: onRename) {
                     ResizedSymbol(
                         image: Asset.List.rename,
-                        targetSize: StyleGuide.Sizing.buttonSmallDimension
+                        targetSize: StyleGuide.Sizing.Button.smallDimension
                     )
                 }
                 .foregroundStyle(colors.status.onSuccess)

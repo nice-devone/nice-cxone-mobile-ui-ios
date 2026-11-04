@@ -20,6 +20,8 @@ protocol Overlayable: AnyObject {
     
     var sheet: (() -> AnyView)? { get set }
     var overlay: (() -> AnyView)? { get set }
+    /// `true` from the moment a sheet starts closing until its dismissal wait has ended.
+    var isSheetDismissing: Bool { get set }
     var isSheetDisplayed: Binding<Bool> { get }
     var isOverlayDisplayed: Binding<Bool> { get }
 
@@ -45,6 +47,11 @@ extension Overlayable {
     
     var overlay: (() -> AnyView)? {
         get { nil }
+        set { } // swiftlint:disable:this unused_setter_value
+    }
+
+    var isSheetDismissing: Bool {
+        get { false }
         set { } // swiftlint:disable:this unused_setter_value
     }
 }
@@ -158,9 +165,15 @@ private extension Overlayable {
         case .overlay:
             self.overlay = nil
         case .sheet:
+            // Raised before `sheet` clears, so a reader never sees `sheet == nil` without it
+            self.isSheetDismissing = true
             self.sheet = nil
         }
-        
+
         await Task.sleep(seconds: 0.5)
+
+        if !isOverlay {
+            self.isSheetDismissing = false
+        }
     }
 }

@@ -36,13 +36,5 @@ struct LowercaseUUID: Equatable {
     init(uuid: UUID = UUID()) {
         self.uuid = uuid
     }
-    
-    init?(uuidString: String) {
-        guard let uuid = UUID(uuidString: uuidString) else {
-            return nil
-        }
-        
-        self.uuid = uuid
-    }
 }
 // swiftlint:enable no_uuid

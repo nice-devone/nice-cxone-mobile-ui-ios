@@ -22,6 +22,10 @@ struct MessageGroup: Identifiable, Equatable {
 
     static let defaultGroupingInterval: TimeInterval = 120
 
+    /// Stable, collision-free identity: the group's message ids concatenated, computed
+    /// once at init (messages are immutable). Folding them into a single `hashValue`
+    /// would be lossy — a hash collision makes SwiftUI treat two distinct groups as one,
+    /// so a group's messages silently fail to render or animate.
     let id: String
     let messages: [ChatMessage]
     let shouldShowHeader: Bool

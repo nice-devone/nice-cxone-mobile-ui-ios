@@ -16,24 +16,37 @@
 import UIKit
 
 extension UIDevice {
-    
-    static var hasHomeButton: Bool {
-        let keyWindow = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap(\.windows)
-            .first(where: \.isKeyWindow)
-        
-        guard let safeAreaBottom = keyWindow?.safeAreaInsets.bottom else {
-            return false
-        }
-        
-        return safeAreaBottom <= 0
-    }
-    
+
     @MainActor
     static var isLandscape: Bool {
-        UIWindowScene.activeWindowScene?.interfaceOrientation.isLandscape ?? false
+        // Derive orientation from the screen bounds — the same source the layout
+        // sizing uses — rather than the window scene. This stays equivalent in the
+        // app (`screenBounds` is orientation-aware) while remaining deterministic and
+        // mockable in snapshot tests, where there is no active window scene.
+        let bounds = StyleGuide.screenBoundsProvider.screenBounds
+
+        return bounds.width > bounds.height
     }
+
+    /// `true` when the screen is too short to show a full-size message input alongside the keyboard —
+    /// in practice, an iPhone in landscape.
+    ///
+    /// A landscape iPhone leaves roughly 150 pt between the navigation bar and the top of the keyboard.
+    /// The attachment strip at its regular size (~128 pt) plus the input bar (~52 pt) does not fit in
+    /// that space, so the strip switches to a compact geometry — see
+    /// `StyleGuide.Sizing.Attachment.smallCompactDimension`. iPad landscape keeps at least 744 pt of
+    /// height and is deliberately excluded by the threshold.
+    @MainActor
+    static var isCompactHeight: Bool {
+        let bounds = StyleGuide.screenBoundsProvider.screenBounds
+
+        return isLandscape && bounds.height < compactHeightThreshold
+    }
+
+    /// Short-edge cut-off separating a phone in landscape from a tablet. The widest iPhone short edge
+    /// is 440 pt (16 Pro Max) and the narrowest iPad short edge is 744 pt (mini), so any value between
+    /// the two splits them; 600 pt sits in the middle of that gap.
+    private static let compactHeightThreshold: CGFloat = 600
 }
 
 // MARK: - UIScreen
@@ -49,19 +62,5 @@ extension UIScreen {
     @MainActor
     static var currentBounds: CGRect {
         UIWindowScene.activeWindowScene?.screen.bounds ?? UIScreen.main.bounds
-    }
-}
-
-// MARK: - UIWindowScene
-
-private extension UIWindowScene {
-
-    /// Foreground-active window scene, with a fallback to the first connected window scene to handle
-    /// pre-activation lifecycle and single-scene apps.
-    @MainActor
-    static var activeWindowScene: UIWindowScene? {
-        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-
-        return scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
     }
 }

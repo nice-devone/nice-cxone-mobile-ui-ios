@@ -25,7 +25,7 @@ enum ChatUserMapper {
         
         return ChatUser(
             id: String(agent.id),
-            userName: agent.nickname?.nilIfEmpty() ?? agent.fullName,
+            userName: agent.displayName,
             avatarURL: agent.nonDefaultAvatarImageUrl,
             isAgent: true
         )
@@ -48,6 +48,14 @@ enum ChatUserMapper {
 // MARK: - Helpers
 
 extension Agent {
+
+    /// The agent's name to show in the UI: the nickname when set, otherwise the full name.
+    /// A whitespace-only nickname counts as not set, matching how the full name treats whitespace-only names.
+    ///
+    /// `nil` when neither is available (e.g. hidden personal information); callers add their own fallback.
+    var displayName: String? {
+        nickname?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty() ?? fullName
+    }
 
     /// The agent's profile photo URL, excluding the backend's generic default-avatar placeholder.
     ///

@@ -21,13 +21,3 @@ extension View {
         modifier(AdjustForA11yModifier())
     }
 }
-
-// MARK: - AdjustForA11yModifier
-
-private struct AdjustForA11yModifier: ViewModifier {
-    
-    func body(content: Content) -> some View {
-        content
-            .frame(minWidth: StyleGuide.Sizing.buttonRegularDimension, minHeight: StyleGuide.Sizing.buttonRegularDimension)
-    }
-}

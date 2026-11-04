@@ -18,7 +18,7 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-struct MessageInputView: View, Themed {
+struct MessageInputView: View, Themed, LayoutAware {
     
     // MARK: - Types
 
@@ -34,7 +34,7 @@ struct MessageInputView: View, Themed {
         enum Sizing {
             static let textFieldLineLimit: Int = 6
             static let textFieldAudioStateLineLimit: Int = 1
-            static let inputBarCornerRadius: CGFloat = StyleGuide.Sizing.buttonRegularDimension / 2
+            static let inputBarCornerRadius: CGFloat = StyleGuide.Sizing.Button.regularDimension / 2
             static let sendingProgressScaleEffect: CGFloat = 1.5
         }
         
@@ -49,7 +49,11 @@ struct MessageInputView: View, Themed {
             static let voiceIndicatorLeading: CGFloat = 8
             static let animatedDotsHorizontal: CGFloat = 4
             static let animatedDotsVertical: CGFloat = 10
-            static let inputBarHorizontal: CGFloat = 12
+            /// Horizontal inset for the input bar: flush to the edges in landscape, where the extra
+            /// width matters more than the margin.
+            static func inputBarHorizontal(isLandscape: Bool) -> CGFloat {
+                isLandscape ? 0 : 12
+            }
             static let inputBarVertical: CGFloat = 4
             static let timeLapsedTextTrailing: CGFloat = 8
         }
@@ -67,21 +71,28 @@ struct MessageInputView: View, Themed {
 
     @Environment(\.colorScheme) var scheme
 
-    @ObservedObject private var audioRecorder: AudioRecorder
+    @Environment(\.chatLayout) var chatLayout
+
+    @StateObject private var audioRecorder: AudioRecorder
     
     @Binding private var isEditing: Bool
     @Binding private var isInputEnabled: Bool
     @Binding private var alertType: ChatAlertType?
     @Binding private var isSendingMessage: Bool
+    /// Owned by `ChatView`, which renders the attachment strip as its scroll content's footer so the
+    /// input bar's height — and therefore its visibility above the keyboard — never depends on how
+    /// many attachments are staged.
+    @Binding private var attachments: [AttachmentItem]
+    /// Mirrors the message field's first-responder state out to `ChatView`, which needs to tell a
+    /// keyboard raised here apart from one raised by presented content — a picker sheet's search field,
+    /// an alert — that leaves the conversation's own layout untouched.
+    @Binding private var isInputFocused: Bool
 
     @FocusState private var isTextFieldFocused: Bool
 
     @AccessibilityFocusState private var isTextFieldA11yFocused: Bool
 
     @State private var message = ""
-    @State private var attachmentsLoadingProgress: Progress?
-    @State private var attachments = [AttachmentItem]()
-    @State private var contentSizeThatFits: CGSize = .zero
     @State private var showAttachmentsSheet = false
     @State private var activePickerSheet: PickerSheet?
     @State private var shouldMaintainA11yFocus = false
@@ -89,15 +100,19 @@ struct MessageInputView: View, Themed {
 
     private let attachmentRestrictions: AttachmentRestrictions
     
-    private var isSendButtonDisabled: Bool {
-        guard isInputEnabled else {
+    private var isComposerEmpty: Bool {
+        message.isEmpty && attachments.isEmpty
+    }
+    
+    private var isSendDisabled: Bool {
+        guard isInputEnabled, !isSendingMessage else {
             return true
         }
         
         if audioRecorder.state != .idle {
             return audioRecorder.state == .playing || audioRecorder.state == .recording
         } else {
-            return message.isEmpty && attachments.isEmpty
+            return isComposerEmpty
         }
     }
 
@@ -107,36 +122,42 @@ struct MessageInputView: View, Themed {
             return false
         }
         
-        return message.isEmpty && attachments.isEmpty && attachmentRestrictions.areVoiceMessagesEnabled
+        return isComposerEmpty && attachmentRestrictions.areVoiceMessagesEnabled
     }
     
     // MARK: - Init
     
     init(
         attachmentRestrictions: AttachmentRestrictions,
+        attachments: Binding<[AttachmentItem]>,
         isEditing: Binding<Bool>,
+        // Defaulted because only `ChatView` acts on the focus state; previews and snapshot tests render
+        // the bar in isolation, where nothing observes it.
+        isInputFocused: Binding<Bool> = .constant(false),
         isInputEnabled: Binding<Bool>,
         isSendingMessage: Binding<Bool>,
         alertType: Binding<ChatAlertType?>,
+        audioRecorder: AudioRecorder? = nil,
         onSend: @escaping (ChatMessageType, [AttachmentItem]) -> Void
     ) {
         self.attachmentRestrictions = attachmentRestrictions
+        self._attachments = attachments
         self._isEditing = isEditing
+        self._isInputFocused = isInputFocused
         self._isInputEnabled = isInputEnabled
         self._alertType = alertType
         self._isSendingMessage = isSendingMessage
         self.onSend = onSend
-        self.audioRecorder = AudioRecorder(alertType: alertType)
+        // `@StateObject` so the recorder survives the parent re-rendering — an `@ObservedObject`
+        // assigned here would be replaced on every re-init, silently discarding an in-progress recording.
+        // Previews pass `.preview(alertType:)` so the record button doesn't reach the real microphone
+        self._audioRecorder = StateObject(wrappedValue: audioRecorder ?? AudioRecorder(alertType: alertType))
     }
     
     // MARK: - Builder
     
     var body: some View {
         VStack(spacing: 0) {
-            if !attachments.isEmpty {
-                MessageInputAttachmentListView(attachments: $attachments, loadingProgress: $attachmentsLoadingProgress, alertType: $alertType)
-            }
-            
             HStack(alignment: .bottom, spacing: Constants.Spacing.inputBarElementsHorizontal) {
                 if audioRecorder.state == .idle, attachmentRestrictions.areAttachmentsEnabled {
                     attachmentsButton
@@ -149,18 +170,38 @@ struct MessageInputView: View, Themed {
                 inputBar
                     .padding(.leading, Constants.Padding.inputBarTextFieldLeading)
             }
-            .padding(.horizontal, Constants.Padding.inputBarHorizontal)
+            .padding(.horizontal, Constants.Padding.inputBarHorizontal(isLandscape: isLandscape))
             .padding(.vertical, Constants.Padding.inputBarVertical)
         }
         .background(colors.background.default)
+        .onAppear {
+            // Weak, and resigned on disappear: the coordinator outlives the input bar
+            AudioSessionCoordinator.shared.setPlaybackClaimHandler(owner: audioRecorder) { [weak recorder = audioRecorder] in
+                recorder?.yieldAudioSession()
+            }
+        }
+        .onDisappear {
+            AudioSessionCoordinator.shared.resignPlaybackClaimHandler(owner: audioRecorder)
+
+            // Finalizes an in-progress capture and releases the session, but leaves a captured clip on disk
+            audioRecorder.yieldAudioSession()
+        }
         .animation(.spring(duration: 0.5), value: audioRecorder.state)
-        .animation(.default, value: isSendButtonDisabled)
+        .animation(.default, value: isSendDisabled)
         .animation(.default, value: isSendingMessage)
+        .onChange(of: isTextFieldFocused) { newValue in
+            isInputFocused = newValue
+        }
+        .onDisappear {
+            // `onChange` never reports the focus loss that comes with the bar being torn down — the
+            // thread closing swaps it for the archived-conversation notice — so it would otherwise
+            // stay latched as focused for the rest of the conversation's lifetime.
+            isInputFocused = false
+        }
         .sheet(item: $activePickerSheet) { sheet in
             switch sheet {
             case .media:
                 MediaPickerView(
-                    attachmentsLoadingProgress: $attachmentsLoadingProgress,
                     attachments: $attachments,
                     attachmentRestrictions: attachmentRestrictions
                 ) { alert in
@@ -203,7 +244,7 @@ private extension MessageInputView {
         .font(.title2)
         .disabled(!isInputEnabled)
         .foregroundStyle(isInputEnabled ? colors.brand.primary : colors.content.tertiary)
-        .frame(width: StyleGuide.Sizing.buttonRegularDimension, height: StyleGuide.Sizing.buttonRegularDimension)
+        .frame(width: StyleGuide.Sizing.Button.regularDimension, height: StyleGuide.Sizing.Button.regularDimension)
         .accessibilityIdentifier(A11y.MessageInput.ButtonAttachmentSource.identifier)
         .accessibilityLabel(A11y.MessageInput.ButtonAttachmentSource.label)
         .accessibilityHint(A11y.MessageInput.ButtonAttachmentSource.hint)
@@ -215,7 +256,7 @@ private extension MessageInputView {
             .accessibilityLabel(A11y.MessageInput.ButtonAttachmentSource.Files.label)
             .accessibilityHint(A11y.MessageInput.ButtonAttachmentSource.Files.hint)
 
-            if isAnyMimeTypeAllowed([UTType.imagePreffix, UTType.videoPreffix]) {
+            if isAnyMimeTypeAllowed([UTType.imagePrefix, UTType.videoPrefix]) {
                 Button(L10n.Chat.MessageInput.AttachmentsOption.photos) {
                     activePickerSheet = .media
                 }
@@ -224,7 +265,7 @@ private extension MessageInputView {
                 .accessibilityHint(A11y.MessageInput.ButtonAttachmentSource.Photos.hint)
             }
             // `.camera` does not allow to have only `video` MIME type, it requires also image
-            if isAnyMimeTypeAllowed([UTType.imagePreffix]) {
+            if isAnyMimeTypeAllowed([UTType.imagePrefix]) {
                 Button(L10n.Chat.MessageInput.AttachmentsOption.camera) {
                     checkCameraPermissionAndShowPicker()
                 }
@@ -298,12 +339,12 @@ private extension MessageInputView {
     var audioStateContent: some View {
         switch audioRecorder.state {
         case .recording:
-            AnimatedDotsView(text: L10n.Chat.MessageInput.AudioRecorder.recording)
+            MessageInputAnimatedDotsView(text: L10n.Chat.MessageInput.AudioRecorder.recording)
                 .accessibilityIdentifier(A11y.MessageInput.VoiceMessage.Recording.identifier)
                 .accessibilityLabel(A11y.MessageInput.VoiceMessage.Recording.label)
                 .accessibilityHint(A11y.MessageInput.VoiceMessage.Recording.hint)
         case .playing:
-            AnimatedDotsView(text: L10n.Chat.MessageInput.AudioRecorder.playing)
+            MessageInputAnimatedDotsView(text: L10n.Chat.MessageInput.AudioRecorder.playing)
                 .accessibilityIdentifier(A11y.MessageInput.VoiceMessage.Playing.identifier)
                 .accessibilityLabel(A11y.MessageInput.VoiceMessage.Playing.label)
                 .accessibilityHint(A11y.MessageInput.VoiceMessage.Playing.hint)
@@ -323,7 +364,7 @@ private extension MessageInputView {
         ProgressView()
             .progressViewStyle(CircularProgressViewStyle(tint: colors.brand.primary))
             .scaleEffect(Constants.Sizing.sendingProgressScaleEffect)
-            .frame(width: StyleGuide.Sizing.buttonRegularDimension, height: StyleGuide.Sizing.buttonRegularDimension)
+            .frame(width: StyleGuide.Sizing.Button.regularDimension, height: StyleGuide.Sizing.Button.regularDimension)
     }
     
     var recordVoiceMessageButton: some View {
@@ -335,7 +376,7 @@ private extension MessageInputView {
             Asset.Attachment.recordVoice
         }
         .font(.largeTitle)
-        .frame(width: StyleGuide.Sizing.buttonRegularDimension, height: StyleGuide.Sizing.buttonRegularDimension)
+        .frame(width: StyleGuide.Sizing.Button.regularDimension, height: StyleGuide.Sizing.Button.regularDimension)
         .foregroundStyle(colors.brand.onPrimary, colors.brand.primary)
     }
     
@@ -357,13 +398,13 @@ private extension MessageInputView {
             Asset.Message.send
         }
         .font(.largeTitle)
-        .frame(width: StyleGuide.Sizing.buttonRegularDimension, height: StyleGuide.Sizing.buttonRegularDimension)
-        .disabled(isSendButtonDisabled || isSendingMessage)
-        .foregroundStyle(isSendButtonDisabled || isSendingMessage ? colors.content.tertiary : colors.brand.primary)
+        .frame(width: StyleGuide.Sizing.Button.regularDimension, height: StyleGuide.Sizing.Button.regularDimension)
+        .disabled(isSendDisabled)
+        .foregroundStyle(isSendDisabled ? colors.content.tertiary : colors.brand.primary)
         .accessibilityIdentifier(A11y.MessageInput.ButtonSend.identifier)
         .accessibilityLabel(A11y.MessageInput.ButtonSend.label)
         .accessibilityHint(
-            isSendButtonDisabled
+            isSendDisabled
                 ? A11y.MessageInput.ButtonSend.hintDisabled
                 : A11y.MessageInput.ButtonSend.hintEnabled
         )
@@ -375,7 +416,7 @@ private extension MessageInputView {
         }
         .font(.title2)
         .foregroundStyle(colors.status.error)
-        .frame(width: StyleGuide.Sizing.buttonRegularDimension, height: StyleGuide.Sizing.buttonRegularDimension)
+        .frame(width: StyleGuide.Sizing.Button.regularDimension, height: StyleGuide.Sizing.Button.regularDimension)
         .accessibilityIdentifier(A11y.MessageInput.VoiceMessage.Delete.identifier)
         .accessibilityLabel(A11y.MessageInput.VoiceMessage.Delete.label)
         .accessibilityHint(A11y.MessageInput.VoiceMessage.Delete.hint)
@@ -406,7 +447,8 @@ private extension MessageInputView {
             }
         }
         .font(.title)
-        .frame(width: StyleGuide.Sizing.buttonRegularDimension, height: StyleGuide.Sizing.buttonRegularDimension)
+        .foregroundStyle(colors.brand.primary)
+        .frame(width: StyleGuide.Sizing.Button.regularDimension, height: StyleGuide.Sizing.Button.regularDimension)
         .if(audioRecorder.state != .idle) { view in
             switch audioRecorder.state {
             case .recording:
@@ -523,24 +565,29 @@ private extension MessageInputView {
     }
 }
 
+#if DEBUG
+
 // MARK: - Preview
 
 @available(iOS 17.0, *)
 #Preview {
     @Previewable @State var isEditing = false
     @Previewable @State var isInputEnabled = true
-    @Previewable @State var isSendingMessage = true
+    @Previewable @State var isSendingMessage = false
     @Previewable @State var alertType: ChatAlertType?
+    @Previewable @State var attachments = [AttachmentItem]()
     
     VStack {
         Spacer()
         
         MessageInputView(
             attachmentRestrictions: MockData.attachmentRestrictions,
+            attachments: $attachments,
             isEditing: $isEditing,
             isInputEnabled: $isInputEnabled,
             isSendingMessage: $isSendingMessage,
-            alertType: $alertType
+            alertType: $alertType,
+            audioRecorder: .preview(alertType: $alertType)
         ) { _, _ in }
     }
     .alertable(
@@ -549,3 +596,5 @@ private extension MessageInputView {
     )
     .environmentObject(ChatStyle())
 }
+
+#endif

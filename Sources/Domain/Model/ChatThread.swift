@@ -52,13 +52,57 @@ struct ChatThread: Identifiable {
 
     /// The position in the queue
     let positionInQueue: Int?
+
+    /// The party currently responsible for handling the contact behind this thread.
+    ///
+    /// `nil` when the platform reports no handler for the channel.
+    let contactHandler: ContactHandler?
     
     /// Whether there are more messages to load in the thread.
     var hasMoreMessagesToLoad: Bool {
         !messages.isEmpty && !scrollToken.isEmpty
     }
     
+    // MARK: - Init
+
+    init(
+        id: String,
+        name: String?,
+        messages: [Message],
+        assignedAgent: Agent?,
+        lastAssignedAgent: Agent?,
+        ownerAssignee: Agent?,
+        scrollToken: String,
+        state: ChatThreadState,
+        positionInQueue: Int?,
+        contactHandler: ContactHandler? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.messages = messages
+        self.assignedAgent = assignedAgent
+        self.lastAssignedAgent = lastAssignedAgent
+        self.ownerAssignee = ownerAssignee
+        self.scrollToken = scrollToken
+        self.state = state
+        self.positionInQueue = positionInQueue
+        self.contactHandler = contactHandler
+    }
+    
     // MARK: - Computed Properties
+
+    /// Whether the contact is currently handled by a party other than CXone - today, the Cognigy bot.
+    ///
+    /// `false` when the platform reports no handler at all, so channels without the capability keep behaving
+    /// exactly as they did before. An unrecognized handler counts as non-CXone, so a future bot integration
+    /// suppresses the queue overlay without an SDK release.
+    var isHandledByNonCxone: Bool {
+        guard let contactHandler else {
+            return false
+        }
+
+        return contactHandler != .cxone
+    }
 
     /// Determines the conversation title.
     ///
@@ -75,21 +119,29 @@ struct ChatThread: Identifiable {
         if let explicitName = name?.nilIfEmpty() {
             return explicitName
         } else if let assignedAgent {
-            return assignedAgent.nickname?.nilIfEmpty()
-                ?? assignedAgent.fullName
-                ?? L10n.Common.agent
+            return assignedAgent.displayName ?? L10n.Common.agent
         } else if let lastAssignedAgent {
-            return lastAssignedAgent.nickname?.nilIfEmpty()
-                ?? lastAssignedAgent.fullName
-                ?? L10n.Common.agent
+            return lastAssignedAgent.displayName ?? L10n.Common.agent
         } else if let ownerAssignee {
-            return ownerAssignee.nickname?.nilIfEmpty()
-                ?? ownerAssignee.fullName
-                ?? L10n.Common.agent
+            return ownerAssignee.displayName ?? L10n.Common.agent
         }
 
         // No assigned or previous agent available.
         return L10n.Common.unassignedAgent
+    }
+
+    /// The most recently created message, or `nil` when the thread has no messages.
+    ///
+    /// When several messages share the newest `createdAt`, the one appended last wins.
+    var latestMessage: Message? {
+        messages.reversed().max { first, second in
+            first.createdAt < second.createdAt
+        }
+    }
+
+    /// The creation date of the most recent message, or `nil` when the thread has no messages.
+    var latestMessageDate: Date? {
+        latestMessage?.createdAt
     }
 
     /// Whether the conversation is currently being handled by an AI assistant.
@@ -117,5 +169,6 @@ extension ChatThread: Equatable {
             && lhs.scrollToken == rhs.scrollToken
             && lhs.state == rhs.state
             && lhs.positionInQueue == rhs.positionInQueue
+            && lhs.contactHandler == rhs.contactHandler
     }
 }

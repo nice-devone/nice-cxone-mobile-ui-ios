@@ -1,0 +1,150 @@
+//
+// Copyright (c) 2021-2026. NICE Ltd. All rights reserved.
+//
+// Licensed under the NICE License;
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://github.com/nice-devone/nice-cxone-mobile-ui-ios/blob/main/LICENSE
+//
+// TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE CXONE MOBILE SDK IS PROVIDED ON
+// AN "AS IS" BASIS. NICE HEREBY DISCLAIMS ALL WARRANTIES AND CONDITIONS, EXPRESS
+// OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
+//
+
+import Kingfisher
+import SwiftUI
+
+struct AvatarView: View {
+    
+    // MARK: - Properties
+    
+    @EnvironmentObject var style: ChatStyle
+    
+    @Environment(\.colorScheme) var scheme
+    
+    let imageUrl: URL?
+    let initials: String?
+    
+    @State private var loadedImage: UIImage?
+    
+    // MARK: - Builder
+    
+    var body: some View {
+        Group {
+            if let image = loadedImage {
+                Image(uiImage: image)
+                    .resizable()
+            } else {
+                KFImage(imageUrl)
+                    .onSuccess { result in
+                        loadedImage = result.image
+                    }
+                    .placeholder {
+                        CircleText(text: imageUrl != nil ? nil : initials)
+                    }
+                    .resizable()
+            }
+        }
+        .scaledToFit()
+        .clipShape(Circle())
+        .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Helper Views
+
+private struct CircleText: View, Themed {
+    
+    // MARK: - Constants
+    
+    private enum Constants {
+        
+        enum Spacing {
+            static let initialsLineLimit: Int = 1
+        }
+    }
+    
+    // MARK: - Properties
+    
+    @EnvironmentObject var style: ChatStyle
+    
+    @Environment(\.colorScheme) var scheme
+    
+    let text: String?
+    
+    // MARK: - Builder
+    
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack {
+                Circle()
+                    .fill(colors.brand.primaryContainer)
+                
+                Group {
+                    if let text {
+                        Text(text)
+                    } else {
+                        Asset.Message.fallbackAvatar
+                    }
+                }
+                .foregroundStyle(colors.brand.onPrimaryContainer)
+                .font(
+                    .system(size: proxy.size.height > proxy.size.width ? proxy.size.width * 0.4: proxy.size.height * 0.4)
+                    .bold()
+                )
+                .lineLimit(Constants.Spacing.initialsLineLimit)
+            }
+        }
+    }
+}
+
+// Previews demonstrate each fixed size deliberately and never rotate, so they read the
+// orientation-derived constants directly rather than through `LayoutAware`.
+// swiftlint:disable orientation_outside_layout_context
+// MARK: - Previews
+
+private struct TestPreviewView<Content: View>: View {
+    
+    let content: () -> Content
+    
+    init(@ViewBuilder content: @escaping () -> Content) {
+        self.content = content
+    }
+    
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            RoundedRectangle(cornerRadius: 60)
+                .fill(Color.accentColor)
+                .frame(width: UIScreen.currentBounds.width, height: 150)
+            
+            content()
+                .frame(width: 72, height: 72)
+                .offset(x: -36, y: 36)
+        }
+        .offset(x: UIScreen.currentBounds.width / 3)
+    }
+}
+
+#Preview {
+    VStack(spacing: 24) {
+        TestPreviewView {
+            AvatarView(imageUrl: MockData.imageUrl(), initials: nil)
+        }
+        
+        TestPreviewView {
+            AvatarView(imageUrl: MockData.imageUrl(), initials: "PP")
+        }
+        
+        TestPreviewView {
+            AvatarView(imageUrl: nil, initials: "PP")
+        }
+        
+        TestPreviewView {
+            AvatarView(imageUrl: nil, initials: nil)
+        }
+    }
+    .environmentObject(ChatStyle())
+}
+// swiftlint:enable orientation_outside_layout_context

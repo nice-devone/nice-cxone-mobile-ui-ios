@@ -27,24 +27,24 @@ internal enum A11y {
         return A11y.tr("Accessibility", "announcement.attachment.removed", String(describing: p1), fallback: "%1$@ removed")
       }
     }
-    internal enum AttachmentsView {
+    internal enum AttachmentGalleryView {
       /// %1$@ deselected
       internal static func deselected(_ p1: Any) -> String {
-        return A11y.tr("Accessibility", "announcement.attachments_view.deselected", String(describing: p1), fallback: "%1$@ deselected")
+        return A11y.tr("Accessibility", "announcement.attachment_gallery_view.deselected", String(describing: p1), fallback: "%1$@ deselected")
       }
       /// All attachments deselected
-      internal static var deselectedAll: String { return A11y.tr("Accessibility", "announcement.attachments_view.deselected_all", fallback: "All attachments deselected") }
+      internal static var deselectedAll: String { return A11y.tr("Accessibility", "announcement.attachment_gallery_view.deselected_all", fallback: "All attachments deselected") }
       /// %1$@ selected
       internal static func selected(_ p1: Any) -> String {
-        return A11y.tr("Accessibility", "announcement.attachments_view.selected", String(describing: p1), fallback: "%1$@ selected")
+        return A11y.tr("Accessibility", "announcement.attachment_gallery_view.selected", String(describing: p1), fallback: "%1$@ selected")
       }
       /// All attachments selected
-      internal static var selectedAll: String { return A11y.tr("Accessibility", "announcement.attachments_view.selected_all", fallback: "All attachments selected") }
+      internal static var selectedAll: String { return A11y.tr("Accessibility", "announcement.attachment_gallery_view.selected_all", fallback: "All attachments selected") }
       internal enum SelectionMode {
         /// Selection mode disabled
-        internal static var disabled: String { return A11y.tr("Accessibility", "announcement.attachments_view.selection_mode.disabled", fallback: "Selection mode disabled") }
+        internal static var disabled: String { return A11y.tr("Accessibility", "announcement.attachment_gallery_view.selection_mode.disabled", fallback: "Selection mode disabled") }
         /// Selection mode enabled
-        internal static var enabled: String { return A11y.tr("Accessibility", "announcement.attachments_view.selection_mode.enabled", fallback: "Selection mode enabled") }
+        internal static var enabled: String { return A11y.tr("Accessibility", "announcement.attachment_gallery_view.selection_mode.enabled", fallback: "Selection mode enabled") }
       }
     }
     internal enum Conversation {
@@ -84,104 +84,104 @@ internal enum A11y {
       }
     }
   }
-  internal enum AttachmentsView {
+  internal enum AttachmentGalleryView {
     internal enum ButtonCancel {
       /// Double-tap to exit selection mode
-      internal static var hint: String { return A11y.tr("Accessibility", "attachments_view.button_cancel.hint", fallback: "Double-tap to exit selection mode") }
+      internal static var hint: String { return A11y.tr("Accessibility", "attachment_gallery_view.button_cancel.hint", fallback: "Double-tap to exit selection mode") }
       /// Cancel
-      internal static var label: String { return A11y.tr("Accessibility", "attachments_view.button_cancel.label", fallback: "Cancel") }
+      internal static var label: String { return A11y.tr("Accessibility", "attachment_gallery_view.button_cancel.label", fallback: "Cancel") }
     }
     internal enum ButtonDeselect {
       /// Double-tap to deselect all attachments
-      internal static var hint: String { return A11y.tr("Accessibility", "attachments_view.button_deselect.hint", fallback: "Double-tap to deselect all attachments") }
+      internal static var hint: String { return A11y.tr("Accessibility", "attachment_gallery_view.button_deselect.hint", fallback: "Double-tap to deselect all attachments") }
       /// Deselect all
-      internal static var label: String { return A11y.tr("Accessibility", "attachments_view.button_deselect.label", fallback: "Deselect all") }
+      internal static var label: String { return A11y.tr("Accessibility", "attachment_gallery_view.button_deselect.label", fallback: "Deselect all") }
     }
     internal enum ButtonSelect {
       /// Double-tap to enter selection mode
-      internal static var hint: String { return A11y.tr("Accessibility", "attachments_view.button_select.hint", fallback: "Double-tap to enter selection mode") }
+      internal static var hint: String { return A11y.tr("Accessibility", "attachment_gallery_view.button_select.hint", fallback: "Double-tap to enter selection mode") }
       /// Select
-      internal static var label: String { return A11y.tr("Accessibility", "attachments_view.button_select.label", fallback: "Select") }
+      internal static var label: String { return A11y.tr("Accessibility", "attachment_gallery_view.button_select.label", fallback: "Select") }
     }
     internal enum ButtonSelectAll {
       /// Double-tap to select all attachments
-      internal static var hint: String { return A11y.tr("Accessibility", "attachments_view.button_select_all.hint", fallback: "Double-tap to select all attachments") }
+      internal static var hint: String { return A11y.tr("Accessibility", "attachment_gallery_view.button_select_all.hint", fallback: "Double-tap to select all attachments") }
       /// Select all
-      internal static var label: String { return A11y.tr("Accessibility", "attachments_view.button_select_all.label", fallback: "Select all") }
+      internal static var label: String { return A11y.tr("Accessibility", "attachment_gallery_view.button_select_all.label", fallback: "Select all") }
     }
     internal enum ButtonShare {
       /// Share
-      internal static var label: String { return A11y.tr("Accessibility", "attachments_view.button_share.label", fallback: "Share") }
+      internal static var label: String { return A11y.tr("Accessibility", "attachment_gallery_view.button_share.label", fallback: "Share") }
       internal enum Hint {
         /// Double-tap to share %1$@ selected attachments
         internal static func multiple(_ p1: Any) -> String {
-          return A11y.tr("Accessibility", "attachments_view.button_share.hint.multiple", String(describing: p1), fallback: "Double-tap to share %1$@ selected attachments")
+          return A11y.tr("Accessibility", "attachment_gallery_view.button_share.hint.multiple", String(describing: p1), fallback: "Double-tap to share %1$@ selected attachments")
         }
         /// Select attachments to share
-        internal static var `none`: String { return A11y.tr("Accessibility", "attachments_view.button_share.hint.none", fallback: "Select attachments to share") }
+        internal static var `none`: String { return A11y.tr("Accessibility", "attachment_gallery_view.button_share.hint.none", fallback: "Select attachments to share") }
         /// Double-tap to share selected attachment
-        internal static var single: String { return A11y.tr("Accessibility", "attachments_view.button_share.hint.single", fallback: "Double-tap to share selected attachment") }
+        internal static var single: String { return A11y.tr("Accessibility", "attachment_gallery_view.button_share.hint.single", fallback: "Double-tap to share selected attachment") }
       }
     }
     internal enum Item {
       internal enum Document {
         /// Document: %1$@
         internal static func label(_ p1: Any) -> String {
-          return A11y.tr("Accessibility", "attachments_view.item.document.label", String(describing: p1), fallback: "Document: %1$@")
+          return A11y.tr("Accessibility", "attachment_gallery_view.item.document.label", String(describing: p1), fallback: "Document: %1$@")
         }
         internal enum Hint {
           /// Double-tap to open
-          internal static var browse: String { return A11y.tr("Accessibility", "attachments_view.item.document.hint.browse", fallback: "Double-tap to open") }
+          internal static var browse: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.document.hint.browse", fallback: "Double-tap to open") }
           /// Double-tap to toggle selection
-          internal static var select: String { return A11y.tr("Accessibility", "attachments_view.item.document.hint.select", fallback: "Double-tap to toggle selection") }
+          internal static var select: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.document.hint.select", fallback: "Double-tap to toggle selection") }
         }
         internal enum Value {
           /// Not selected
-          internal static var notSelected: String { return A11y.tr("Accessibility", "attachments_view.item.document.value.not_selected", fallback: "Not selected") }
+          internal static var notSelected: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.document.value.not_selected", fallback: "Not selected") }
           /// Selected
-          internal static var selected: String { return A11y.tr("Accessibility", "attachments_view.item.document.value.selected", fallback: "Selected") }
+          internal static var selected: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.document.value.selected", fallback: "Selected") }
         }
       }
       internal enum Image {
         /// Image: %1$@
         internal static func label(_ p1: Any) -> String {
-          return A11y.tr("Accessibility", "attachments_view.item.image.label", String(describing: p1), fallback: "Image: %1$@")
+          return A11y.tr("Accessibility", "attachment_gallery_view.item.image.label", String(describing: p1), fallback: "Image: %1$@")
         }
         internal enum Hint {
           /// Double-tap to view
-          internal static var browse: String { return A11y.tr("Accessibility", "attachments_view.item.image.hint.browse", fallback: "Double-tap to view") }
+          internal static var browse: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.image.hint.browse", fallback: "Double-tap to view") }
           /// Double-tap to toggle selection
-          internal static var select: String { return A11y.tr("Accessibility", "attachments_view.item.image.hint.select", fallback: "Double-tap to toggle selection") }
+          internal static var select: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.image.hint.select", fallback: "Double-tap to toggle selection") }
         }
         internal enum Value {
           /// Not selected
-          internal static var notSelected: String { return A11y.tr("Accessibility", "attachments_view.item.image.value.not_selected", fallback: "Not selected") }
+          internal static var notSelected: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.image.value.not_selected", fallback: "Not selected") }
           /// Selected
-          internal static var selected: String { return A11y.tr("Accessibility", "attachments_view.item.image.value.selected", fallback: "Selected") }
+          internal static var selected: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.image.value.selected", fallback: "Selected") }
         }
       }
       internal enum Value {
         /// Failed to load
-        internal static var failed: String { return A11y.tr("Accessibility", "attachments_view.item.value.failed", fallback: "Failed to load") }
+        internal static var failed: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.value.failed", fallback: "Failed to load") }
         /// Loading
-        internal static var loading: String { return A11y.tr("Accessibility", "attachments_view.item.value.loading", fallback: "Loading") }
+        internal static var loading: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.value.loading", fallback: "Loading") }
       }
       internal enum Video {
         /// Video: %1$@
         internal static func label(_ p1: Any) -> String {
-          return A11y.tr("Accessibility", "attachments_view.item.video.label", String(describing: p1), fallback: "Video: %1$@")
+          return A11y.tr("Accessibility", "attachment_gallery_view.item.video.label", String(describing: p1), fallback: "Video: %1$@")
         }
         internal enum Hint {
           /// Double-tap to play
-          internal static var browse: String { return A11y.tr("Accessibility", "attachments_view.item.video.hint.browse", fallback: "Double-tap to play") }
+          internal static var browse: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.video.hint.browse", fallback: "Double-tap to play") }
           /// Double-tap to toggle selection
-          internal static var select: String { return A11y.tr("Accessibility", "attachments_view.item.video.hint.select", fallback: "Double-tap to toggle selection") }
+          internal static var select: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.video.hint.select", fallback: "Double-tap to toggle selection") }
         }
         internal enum Value {
           /// Not selected
-          internal static var notSelected: String { return A11y.tr("Accessibility", "attachments_view.item.video.value.not_selected", fallback: "Not selected") }
+          internal static var notSelected: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.video.value.not_selected", fallback: "Not selected") }
           /// Selected
-          internal static var selected: String { return A11y.tr("Accessibility", "attachments_view.item.video.value.selected", fallback: "Selected") }
+          internal static var selected: String { return A11y.tr("Accessibility", "attachment_gallery_view.item.video.value.selected", fallback: "Selected") }
         }
       }
     }
@@ -189,17 +189,17 @@ internal enum A11y {
       internal enum SelectedCount {
         /// %1$@ selected
         internal static func label(_ p1: Any) -> String {
-          return A11y.tr("Accessibility", "attachments_view.status.selected_count.label", String(describing: p1), fallback: "%1$@ selected")
+          return A11y.tr("Accessibility", "attachment_gallery_view.status.selected_count.label", String(describing: p1), fallback: "%1$@ selected")
         }
       }
       internal enum SelectionMode {
         /// Selection mode
-        internal static var label: String { return A11y.tr("Accessibility", "attachments_view.status.selection_mode.label", fallback: "Selection mode") }
+        internal static var label: String { return A11y.tr("Accessibility", "attachment_gallery_view.status.selection_mode.label", fallback: "Selection mode") }
       }
     }
     internal enum Title {
       /// Attachments
-      internal static var label: String { return A11y.tr("Accessibility", "attachments_view.title.label", fallback: "Attachments") }
+      internal static var label: String { return A11y.tr("Accessibility", "attachment_gallery_view.title.label", fallback: "Attachments") }
     }
   }
   internal enum ChatContainer {
@@ -224,12 +224,6 @@ internal enum A11y {
         internal enum ButtonConfirm {
           /// Double-tap to end conversation
           internal static var hint: String { return A11y.tr("Accessibility", "chat_container.alert.end_conversation.button_confirm.hint", fallback: "Double-tap to end conversation") }
-        }
-      }
-      internal enum FeatureUnavailable {
-        internal enum ButtonDisconnect {
-          /// Double-tap to close the chat
-          internal static var hint: String { return A11y.tr("Accessibility", "chat_container.alert.feature_unavailable.button_disconnect.hint", fallback: "Double-tap to close the chat") }
         }
       }
       internal enum GenericError {
@@ -584,6 +578,14 @@ internal enum A11y {
       }
     }
   }
+  internal enum DocumentViewer {
+    internal enum ButtonClose {
+      /// Double-tap to close document viewer
+      internal static var hint: String { return A11y.tr("Accessibility", "document_viewer.button_close.hint", fallback: "Double-tap to close document viewer") }
+      /// Close
+      internal static var label: String { return A11y.tr("Accessibility", "document_viewer.button_close.label", fallback: "Close") }
+    }
+  }
   internal enum EndConversationPopup {
     internal enum ButtonBack {
       /// Double-tap to return to the current conversation
@@ -633,22 +635,18 @@ internal enum A11y {
         internal static func label(_ p1: Any, _ p2: Any) -> String {
           return A11y.tr("Accessibility", "form.list_field_view.content.label", String(describing: p1), String(describing: p2), fallback: "%1$@, %2$@")
         }
-      }
-      internal enum Sheet {
-        internal enum Option {
-          /// Double-tap to select %1$@ as the %2$@ option
-          internal static func hint(_ p1: Any, _ p2: Any) -> String {
-            return A11y.tr("Accessibility", "form.list_field_view.sheet.option.hint", String(describing: p1), String(describing: p2), fallback: "Double-tap to select %1$@ as the %2$@ option")
+        internal enum Value {
+          /// %1$@, collapsed
+          internal static func collapsed(_ p1: Any) -> String {
+            return A11y.tr("Accessibility", "form.list_field_view.content.value.collapsed", String(describing: p1), fallback: "%1$@, collapsed")
           }
-          internal enum Cancel {
-            /// Double-tap to cancel %1$@ selection
-            internal static func hint(_ p1: Any) -> String {
-              return A11y.tr("Accessibility", "form.list_field_view.sheet.option.cancel.hint", String(describing: p1), fallback: "Double-tap to cancel %1$@ selection")
-            }
-            /// Cancel %1$@ selection
-            internal static func label(_ p1: Any) -> String {
-              return A11y.tr("Accessibility", "form.list_field_view.sheet.option.cancel.label", String(describing: p1), fallback: "Cancel %1$@ selection")
-            }
+          /// %1$@, expanded
+          internal static func expanded(_ p1: Any) -> String {
+            return A11y.tr("Accessibility", "form.list_field_view.content.value.expanded", String(describing: p1), fallback: "%1$@, expanded")
+          }
+          /// %1$@, invalid
+          internal static func invalid(_ p1: Any) -> String {
+            return A11y.tr("Accessibility", "form.list_field_view.content.value.invalid", String(describing: p1), fallback: "%1$@, invalid")
           }
         }
       }
@@ -663,10 +661,24 @@ internal enum A11y {
             internal static var hint: String { return A11y.tr("Accessibility", "form.tree_field_view.content.leaf.selected.hint", fallback: "Double-tap to deselect") }
           }
         }
+        internal enum ParentHint {
+          /// Double-tap to expand
+          internal static var collapsed: String { return A11y.tr("Accessibility", "form.tree_field_view.content.parent_hint.collapsed", fallback: "Double-tap to expand") }
+          /// Double-tap to collapse
+          internal static var expanded: String { return A11y.tr("Accessibility", "form.tree_field_view.content.parent_hint.expanded", fallback: "Double-tap to collapse") }
+        }
+        internal enum ParentState {
+          /// Collapsed
+          internal static var collapsed: String { return A11y.tr("Accessibility", "form.tree_field_view.content.parent_state.collapsed", fallback: "Collapsed") }
+          /// Collapsed, contains selection
+          internal static var collapsedWithSelection: String { return A11y.tr("Accessibility", "form.tree_field_view.content.parent_state.collapsed_with_selection", fallback: "Collapsed, contains selection") }
+          /// Expanded
+          internal static var expanded: String { return A11y.tr("Accessibility", "form.tree_field_view.content.parent_state.expanded", fallback: "Expanded") }
+          /// Expanded, contains selection
+          internal static var expandedWithSelection: String { return A11y.tr("Accessibility", "form.tree_field_view.content.parent_state.expanded_with_selection", fallback: "Expanded, contains selection") }
+        }
       }
       internal enum Title {
-        /// Double-tap to select an option from the list
-        internal static var hint: String { return A11y.tr("Accessibility", "form.tree_field_view.title.hint", fallback: "Double-tap to select an option from the list") }
         /// %1$@, %2$@
         internal static func label(_ p1: Any, _ p2: Any) -> String {
           return A11y.tr("Accessibility", "form.tree_field_view.title.label", String(describing: p1), String(describing: p2), fallback: "%1$@, %2$@")
@@ -688,6 +700,12 @@ internal enum A11y {
       internal static var hint: String { return A11y.tr("Accessibility", "image_viewer.button_close.hint", fallback: "Double-tap to close image viewer") }
       /// Close
       internal static var label: String { return A11y.tr("Accessibility", "image_viewer.button_close.label", fallback: "Close") }
+    }
+    internal enum ButtonShare {
+      /// Double-tap to share the image
+      internal static var hint: String { return A11y.tr("Accessibility", "image_viewer.button_share.hint", fallback: "Double-tap to share the image") }
+      /// Share
+      internal static var label: String { return A11y.tr("Accessibility", "image_viewer.button_share.label", fallback: "Share") }
     }
     internal enum Content {
       /// Pinch to zoom
@@ -862,6 +880,14 @@ internal enum A11y {
       internal static var hint: String { return A11y.tr("Accessibility", "offline_view.button_close.hint", fallback: "Double-tap to close the chat session") }
     }
   }
+  internal enum SatisfactionSurvey {
+    internal enum ButtonClose {
+      /// Double-tap to close the satisfaction survey
+      internal static var hint: String { return A11y.tr("Accessibility", "satisfaction_survey.button_close.hint", fallback: "Double-tap to close the satisfaction survey") }
+      /// Close satisfaction survey
+      internal static var label: String { return A11y.tr("Accessibility", "satisfaction_survey.button_close.label", fallback: "Close satisfaction survey") }
+    }
+  }
   internal enum ThreadList {
     internal enum Cell {
       /// Double-tap to navigate to the conversation
@@ -911,6 +937,10 @@ internal enum A11y {
     internal static func hint(_ p1: Any) -> String {
       return A11y.tr("Accessibility", "validated_text_field.hint", String(describing: p1), fallback: "Enter %1$@")
     }
+    /// %1$@, %2$@
+    internal static func requiredLabel(_ p1: Any, _ p2: Any) -> String {
+      return A11y.tr("Accessibility", "validated_text_field.required_label", String(describing: p1), String(describing: p2), fallback: "%1$@, %2$@")
+    }
     internal enum Validation {
       internal enum Invalid {
         /// %1$@, invalid
@@ -932,6 +962,26 @@ internal enum A11y {
           internal static var value: String { return A11y.tr("Accessibility", "validated_text_field.validation.valid.empty.value", fallback: "Empty, valid") }
         }
       }
+    }
+  }
+  internal enum VideoViewer {
+    internal enum ButtonClose {
+      /// Double-tap to close video player
+      internal static var hint: String { return A11y.tr("Accessibility", "video_viewer.button_close.hint", fallback: "Double-tap to close video player") }
+      /// Close
+      internal static var label: String { return A11y.tr("Accessibility", "video_viewer.button_close.label", fallback: "Close") }
+    }
+    internal enum ButtonShare {
+      /// Double-tap to share the video
+      internal static var hint: String { return A11y.tr("Accessibility", "video_viewer.button_share.hint", fallback: "Double-tap to share the video") }
+      /// Share
+      internal static var label: String { return A11y.tr("Accessibility", "video_viewer.button_share.label", fallback: "Share") }
+    }
+    internal enum Content {
+      /// Use the on-screen controls to play the video
+      internal static var hint: String { return A11y.tr("Accessibility", "video_viewer.content.hint", fallback: "Use the on-screen controls to play the video") }
+      /// Full screen video
+      internal static var label: String { return A11y.tr("Accessibility", "video_viewer.content.label", fallback: "Full screen video") }
     }
   }
 }

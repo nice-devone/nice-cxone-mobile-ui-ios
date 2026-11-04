@@ -45,24 +45,22 @@ struct SendTranscriptFormView: View, Themed {
     // MARK: - Content
 
     var body: some View {
-        FormView(viewModel: viewModel, title: L10n.SendTranscript.title, subtitle: L10n.SendTranscript.subtitle) {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: Constants.Spacing.contentVertical) {
-                    TextFieldView(
-                        entity: viewModel.emailEntity,
-                        placeholder: L10n.SendTranscript.Email.placeholder,
-                        onChange: viewModel.validateForm
-                    )
-                    
-                    TextFieldView(
-                        entity: viewModel.confirmationEntity,
-                        placeholder: L10n.SendTranscript.ConfirmEmail.placeholder,
-                        compareWith: $viewModel.emailEntity.value,
-                        onChange: viewModel.validateForm
-                    )
-                    
-                    Spacer(minLength: Constants.Spacing.contentMinGap)
-                }
+        FormView(viewModel: viewModel, title: L10n.SendTranscript.title, subtitle: L10n.SendTranscript.subtitle) { _ in
+            VStack(spacing: Constants.Spacing.contentVertical) {
+                TextFieldView(
+                    entity: viewModel.emailEntity,
+                    placeholder: L10n.SendTranscript.Email.placeholder,
+                    onChange: viewModel.validateForm
+                )
+
+                TextFieldView(
+                    entity: viewModel.confirmationEntity,
+                    placeholder: L10n.SendTranscript.ConfirmEmail.placeholder,
+                    compareWith: $viewModel.emailEntity.value,
+                    onChange: viewModel.validateForm
+                )
+
+                Spacer(minLength: Constants.Spacing.contentMinGap)
             }
         }
         .fullScreenCover(isPresented: viewModel.isOverlayDisplayed) {
@@ -106,7 +104,9 @@ struct SendTranscriptFormView: View, Themed {
     
     Color.clear
         .sheet(isPresented: .constant(true)) {
-            SendTranscriptFormView(viewModel: viewModel)
+            NavigationStack {
+                SendTranscriptFormView(viewModel: viewModel)
+            }
         }
         .environmentObject(ChatStyle())
 }

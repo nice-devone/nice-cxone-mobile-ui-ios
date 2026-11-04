@@ -39,6 +39,23 @@ custom_rules:
     message: "Avoid hardcoded strings. Use localization instead."
     severity: warning
 
+  orientation_outside_layout_context:
+    included: "Sources/.*\\.swift"
+    name: "Orientation Read Outside ChatLayoutContext"
+    regex: 'UIDevice\.(isLandscape|isCompactHeight)|UIDevice\.current\.orientation|UIScreen\.currentBounds|UIScreen\.main\.bounds|StyleGuide\.screenBoundsProvider|StyleGuide\.Sizing\.Attachment\.(smallCompactDimension|smallDimension|regularDimension|largeWidth|largeHeight)|StyleGuide\.Sizing\.Message\.maxWidth|[a-zA-Z]*[mM]ode\.size|[mM]ode\.(small|smallCompact|regular|large)\.size'
+    match_kinds:
+      - identifier
+      - typeidentifier
+    message: "Read orientation-dependent layout through `LayoutAware` (`isLandscape`, `isCompactHeight`, `screenBounds`, `messageMaxWidth`, `attachmentSize(for:)`), not a global. A global gives SwiftUI nothing to invalidate on, so the view keeps the previous orientation's layout after a rotation. See ChatLayoutContext."
+    severity: error
+    excluded:
+      - 'Sources/UI/ChatLayoutContext.swift'
+      - 'Sources/UI/Protocol/LayoutAware.swift'
+      - 'Sources/UI/StyleGuide.swift'
+      - 'Sources/UI/Extensions/UIDevice\+Extensions\.swift'
+      - 'Sources/UI/Protocol/ScreenBoundsProviding\.swift'
+      - 'Sources/Domain/Model/AttachmentThumbnailDisplayMode\.swift'
+
   sf_symbol_key_in_image:
     included: ".*\\.swift"
     name: "SFSymbol's key in Image(systemName:)"

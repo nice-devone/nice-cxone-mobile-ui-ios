@@ -22,82 +22,96 @@ private enum Constants {
     
     enum Spacing {
         static let bodyVertical: CGFloat = 0
-        static let headerVertical: CGFloat = 4
+        static let contentVertical: CGFloat = 16
         static let controlButtonsVertical: CGFloat = 12
     }
     
     enum Padding {
-        static let headerBottom: CGFloat = 16
-        static let contentTop: CGFloat = 24
-        static let controlButtonsHorizontal: CGFloat = 16
         static let controlButtonsBottom: CGFloat = 26
-        static let contentHorizontal: CGFloat = 16
-        static let bodyTop: CGFloat = 48
+        /// Horizontal inset for the scrollable content: edge-to-edge in landscape, where the extra
+        /// width is worth more than the margin; inset in portrait.
+        ///
+        /// Takes the orientation as a parameter rather than reading it: a `static` can only reach
+        /// orientation through a global, which SwiftUI cannot invalidate on. The caller reads it from
+        /// ``LayoutAware`` — that read is the dependency — and the value itself stays here.
+        static func contentHorizontal(isLandscape: Bool) -> CGFloat {
+            isLandscape ? 0 : 16
+        }
+        // Fixed margin for the Cancel/Submit row in every orientation, so the buttons
+        // never sit flush against the screen edge / bezel even when the scrollable
+        // content goes edge-to-edge (0) in landscape.
+        static let controlButtonsHorizontal: CGFloat = 16
     }
 }
 
 // MARK: - FormView
 
-struct FormView<Content: View, FormType: Any>: View, Themed {
+struct FormView<Content: View, FormType: Any>: View, Themed, LayoutAware {
 
     // MARK: - Properties
 
     @EnvironmentObject var style: ChatStyle
     
     @SwiftUI.Environment(\.colorScheme) var scheme
+
+    @SwiftUI.Environment(\.chatLayout) var chatLayout
     
     @ObservedObject var viewModel: FormViewModel<FormType>
     
     let title: String
     let subtitle: String
-    let content: () -> Content
+    /// Overrides the subtitle's accessibility label with different text than what's shown.
+    ///
+    /// `nil` (the default) reads the visible `subtitle` text as-is. Pass an override when the
+    /// visible text contains something VoiceOver shouldn't read literally — e.g. a "*" character,
+    /// which its default punctuation verbosity won't speak, producing a nonsensical announcement.
+    var subtitleAccessibilityLabel: String?
+    let content: (ScrollViewProxy) -> Content
 
     // MARK: - Content
 
     var body: some View {
-        // swiftlint:disable:next accessibility_trait_for_button
         VStack(alignment: .leading, spacing: Constants.Spacing.bodyVertical) {
-            header
-                .padding(.horizontal, Constants.Padding.contentHorizontal)
+            ScrollViewReader { proxy in
+                ScrollView(showsIndicators: true) {
+                    VStack(alignment: .leading, spacing: Constants.Spacing.contentVertical) {
+                        Text(subtitle)
+                            .font(.subheadline)
+                            .foregroundStyle(colors.content.secondary)
+                            .padding(.horizontal, Constants.Padding.contentHorizontal(isLandscape: isLandscape))
+                            .accessibilityLabel(subtitleAccessibilityLabel ?? subtitle)
+                            .accessibilityIdentifier(A11y.Form.Header.subtitleIdentifier)
+                            .accessibilityAddTraits(.isStaticText)
 
-            ColoredDivider(colors.border.default)
-                .accessibilityHidden(true)
-
-            content()
-                .padding(.top, Constants.Padding.contentTop)
-                .padding(.horizontal, Constants.Padding.contentHorizontal)
+                        content(proxy)
+                            .padding(.horizontal, Constants.Padding.contentHorizontal(isLandscape: isLandscape))
+                    }
+                }
+            }
 
             controlButtons
         }
         .interactiveDismissDisabled()
-        .onTapGesture(perform: hideKeyboard)
-        .padding(.top, Constants.Padding.bodyTop)
+        // Not `dismissKeyboardOnTap()`: the form is full of text fields, and a simultaneous tap would
+        // resign the field the user just tapped into.
+        .dismissKeyboardOnUnhandledTap()
         .background(colors.background.default)
-    }
-
-    @ViewBuilder
-    private var header: some View {
-        VStack(alignment: .leading, spacing: Constants.Spacing.headerVertical) {
-            Text(title)
-                .font(.title3)
-                .fontWeight(.bold)
-                .foregroundStyle(colors.content.primary)
-                .accessibilityIdentifier(A11y.Form.Header.titleIdentifier)
-                .accessibilityAddTraits(.isStaticText)
-
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundStyle(colors.content.secondary)
-                .padding(.bottom, Constants.Padding.headerBottom)
-                .accessibilityIdentifier(A11y.Form.Header.subtitleIdentifier)
-                .accessibilityAddTraits(.isStaticText)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundStyle(colors.content.primary)
+                    .accessibilityIdentifier(A11y.Form.Header.titleIdentifier)
+                    .accessibilityAddTraits(.isHeader)
+            }
         }
-        .accessibilityAddTraits(.isHeader)
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var controlButtons: some View {
         VStack(spacing: Constants.Spacing.controlButtonsVertical) {
             ColoredDivider(colors.border.default)
+                .ignoresSafeArea(.all)
                 .accessibilityHidden(true)
 
             HStack {
@@ -136,14 +150,14 @@ struct FormView<Content: View, FormType: Any>: View, Themed {
 
     Color.clear
         .sheet(isPresented: .constant(true)) {
-            FormView<VStack, [String: String]>(viewModel: viewModel, title: "Title", subtitle: "Subtitle") {
-                VStack {
-                    TextFieldView(entity: MockData.textFieldEntity()) {
+            NavigationStack {
+                FormView<VStack, [String: String]>(viewModel: viewModel, title: "Title", subtitle: "Subtitle") { _ in
+                    VStack(spacing: 0) {
+                        TextFieldView(entity: MockData.textFieldEntity(), placeholder: "Enter your First Name") { }
+
+                        ListFieldView(entity: MockData.listFieldEntity(isRequired: true)) { }
                         
-                    }
-                    
-                    ListFieldView(entity: MockData.listFieldEntity(isRequired: true)) {
-                        
+                        TreeFieldView(entity: MockData.treeFieldEntity()) { }
                     }
                 }
             }

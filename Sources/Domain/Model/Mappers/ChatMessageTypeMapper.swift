@@ -51,14 +51,14 @@ private extension Attachment {
                 return nil
             }
 
-            switch attachment.mimeType {
-            case _ where attachment.mimeType.contains("image"):
+            switch AttachmentMediaType(mimeType: attachment.mimeType) {
+            case .image:
                 return .image(attachmentItem)
-            case _ where attachment.mimeType.contains("video"):
+            case .video:
                 return .video(attachmentItem)
-            case _ where attachment.mimeType.contains("audio"):
+            case .audio:
                 return .audio(attachmentItem)
-            default:
+            case .document:
                 return .documentPreview(attachmentItem)
             }
         }

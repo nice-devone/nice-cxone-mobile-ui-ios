@@ -2,6 +2,85 @@
 # [Unreleased]
 
 
+<a name="4.1.0"></a>
+# [4.1.0] - 2026-11-04
+
+## Features
+- Satisfaction Survey plugin events are now presented by the standard UI in a blocking in-app WebView with restricted navigation and explicit dismissal. In multithread channels, a survey for a conversation the customer is not viewing is held until they open that conversation, and a local notification that opens it is scheduled. Its title can be localized with the `chat.satisfaction_survey.notification_title` key, exposed as `ChatLocalization.chatSatisfactionSurveyNotificationTitle`.
+- Tapping anywhere in the conversation now dismisses the keyboard, in addition to the existing swipe-to-dismiss gesture. Tapping inside the message input bar keeps the keyboard up.
+- The thread list's Current/Archived segmented control no longer stretches to the full screen width in landscape.
+- Added `ChatCoordinator.onSessionExpired`, called instead of the generic connection-error alert when an explicit OAuth (PKCE) session's refresh-grant recovery fails during connect (`CXoneChatError.invalidRefreshToken`) and no further automatic recovery is possible. Integrators should set it before calling `content(...)` to route the customer to a new authorization flow rather than let them retry a rejected credential against the same connection-error alert. A refresh-grant rejection during a message send surfaces as a regular send error, not through this handler. If it is not set, the connection-error alert is shown as before.
+- The live chat position-in-queue view and the loading overlay before it are no longer shown while the conversation is handled by a bot (`ChatThread.contactHandler` is `.cognigy` or an unrecognized handler). They return as usual once the bot hands the conversation over to CXone routing.
+
+## Changes
+- **Migration required:** The attachments overview's accessibility identifiers and `Accessibility.strings` keys now use the `attachment_gallery_view.*` prefix instead of `attachments_view.*` (e.g. `attachments_view.title` → `attachment_gallery_view.title`, `attachments_view.button_select` → `attachment_gallery_view.button_select`), matching the view's name. UI tests referencing the old identifiers, and custom `Accessibility.strings` files or a `ChatAccessibility.provider` keyed on the old strings, need the new prefix; an override keyed on the old prefix no longer applies. See [Accessibility customization](docs/cs-accessibility.md).
+- The closed/archived thread banner's divider now spans the full width of the screen in landscape instead of stopping at the safe-area inset, with the banner's background filling the same width, and adjusted spacing around it. The decorative archive icon next to the status text is now hidden from VoiceOver.
+- Removed the targeted alert previously shown when a connection attempt failed with `CXoneChatError.featureUnavailable(_:)`. That case is now deprecated and never thrown by the SDK; a failed connection surfaces through the existing generic disconnect alert instead. `ChatLocalization.alertFeatureUnavailableMessage` is deprecated for the same reason.
+- The `Mockable` dependency is now pinned to exactly `0.6.2`. Mockable `0.6.3` and later restrict `xctest-dynamic-overlay` to versions before `1.10.0`, which cannot be resolved alongside packages that depend on `swift-issue-reporting` (for example `swift-snapshot-testing` or `swift-custom-dump`) when building with Swift 6. Swift Package Manager reported this as duplicate `IssueReporting` targets. If your app depends on Mockable directly, use a version requirement that allows `0.6.2`.
+
+## Fixes
+- Picking a non-PDF document (such as a `.docx`, `.xlsx` or `.mp3` file) through "Choose from files" no longer shows a generic error alert. The composer, message and attachments-overview thumbnails tried to render every document as a PDF; they now do so only for PDFs. Files picked this way are also read with the access the Files picker grants, so a picked PDF no longer logs an "Operation not permitted" error.
+- An image picked from iCloud Drive or another location outside the app through "Choose from files" now shows its thumbnail in the message input. Previously the thumbnail kept showing a loading indicator indefinitely; a thumbnail that cannot be loaded now shows the failed-attachment placeholder instead.
+- An optional e-mail field left empty in the pre-chat survey no longer blocks submitting the form. Its format is now validated only when a value is entered; required fields are still enforced as before.
+- Received attachments are now classified as image, video or audio by the top-level part of their MIME type (`image/…`, `video/…`, `audio/…`), the rule the message input preview already used. Previously a MIME type merely containing one of those words elsewhere could be shown as media.
+- In the attachment gallery, the VoiceOver hint on the Share button now describes what Share actually shares. Outside selection mode it previously announced that no attachments were selected, although the button shares all of them.
+- A document attachment is now recognised as a PDF the same way in the message bubble, the message input preview and the attachment gallery (file name, then URL, then MIME type). Previously the bubble and the input preview looked only at the MIME type, so a file whose name and MIME type disagreed could render as a PDF in one place and as a generic document in another.
+- The VoiceOver announcement when an agent is assigned to a thread now uses the agent's nickname when one is set, matching the thread title, instead of always using the full name.
+- An agent nickname made only of whitespace now counts as not set, so the agent's full name is shown instead of a blank thread title, avatar name and VoiceOver announcement. A nickname with surrounding whitespace is shown trimmed.
+- The send button's VoiceOver hint now reports the button as disabled while a message is being sent.
+- In pre-chat and edit pre-chat forms, VoiceOver no longer reads "Double-tap to select an option from the list" on a hierarchical field's title. The title is a heading, not a control; the options below it keep their own hints. The `form.tree_field_view.title.hint` key has been removed from `Accessibility.strings`, along with the unused `form.list_field_view.sheet.option.*` keys, which the system option sheet never read. An override of these keys in a custom `Accessibility.strings` file or `ChatAccessibility.provider` can be deleted.
+- An open attachment preview — image, video, PDF or other document — is no longer dismissed when the device is rotated or when the conversation reflows. Previews are now presented above the conversation and the attachments overview rather than by the individual message cell, which the list discards as it scrolls. A document preview could also re-open by itself once the cell it belonged to came back on screen; it no longer does. The PDF preview now has its own close button, and document previews open full screen on iPad instead of as a centered card.
+- Rotating the device now updates the whole conversation, not just the parts of it that happened to be redrawn for another reason. Message bubble widths, attachment thumbnail sizes, the attachment grid inside a bubble, quick reply and rich link card widths, form margins and the message input's insets previously kept the dimensions of the orientation that was active when they were last laid out — most visibly when rotating with a conversation already on screen. Message tooltips were sized for whichever orientation the first tooltip in the session was opened in and never changed afterwards.
+- The navigation title no longer disappears in landscape light mode, on the thread list and in a conversation (including one with an AI Assistant).
+- Focusing the message input with attachments selected no longer leaves a gap above the input bar and slides it behind the keyboard; the attachment strip now follows keyboard avoidance like the rest of the input.
+- On a landscape phone, the attachment strip now shrinks to a compact layout — smaller thumbnails, no filename labels — while the keyboard is open, so the message input stays visible and you can see what you type. The strip returns to its full size once the keyboard closes, and portrait is unchanged.
+- The attachment strip no longer clips the spacing below the filename labels, and the button that removes a staged attachment now has a full-size touch target.
+- The conversation now scrolls to show the agent's typing indicator, both when the agent starts typing and when you open a conversation while they are already typing. Previously the view could stay where it was and leave the indicator off screen.
+- Image and video attachment viewers now open full screen on iPad instead of a small centered card.
+- Video playback now stops when its full-screen viewer is closed, so audio no longer keeps playing over the conversation.
+- Opening a thread no longer shows an error alert when a video attachment fails to load in the background; the error is surfaced only when you tap the attachment to retry.
+- A video opened from the attachments overview now uses the same viewer as the conversation, with a close button, the attachment name as title, and a share action — previously it presented a bare player with no controls.
+- Toggling selection in the attachments overview no longer discards the loading state of the visible attachments and restarts their downloads.
+- The attachments overview no longer loses the current selection when the conversation behind it updates.
+- The elapsed-time label of a voice message no longer freezes when playback is resumed after a pause; it keeps counting until the clip ends. Replaying a clip also restarts the label from zero instead of continuing from the previous playthrough.
+- Received audio attachments now load and play in the iOS Simulator. The cell skipped its whole preparation step there, so it showed `00:00 / 00:00` and never played; only builds on a physical device worked.
+- An audio attachment scrolling into view no longer interrupts a voice message that is being recorded. The audio session is now claimed when playback actually starts instead of when the cell appears.
+- Playing an audio message while a voice message is being recorded no longer discards the recording. The recording is finalized instead, so the customer keeps what they captured and can still send it. Starting a recording likewise stops any audio message that is playing, and playing a second audio message stops the first.
+- A voice message interrupted by the system — an incoming call, Siri, or another app taking over audio — is now kept and remains ready to send, instead of being deleted with a generic error.
+- An in-progress voice message is no longer discarded when the conversation around the input bar updates, for example when a new agent message arrives while the customer is still recording.
+- Leaving a conversation while a voice message is being recorded now releases the microphone and the audio session instead of leaving them active. A voice message that has already been captured is kept, so it is still there if the input bar comes back.
+- The message input bar drops its horizontal inset in landscape so it lines up with the edge-to-edge message list, and now updates on rotation instead of keeping the previous orientation's inset.
+- An audio attachment that cannot be downloaded no longer pops an error alert on its own while the customer scrolls through the conversation. The error is reported when they tap play, and an attachment that failed to load no longer interrupts audio playing in other apps.
+- Tapping play while an audio attachment is still downloading now starts playback as soon as the download finishes, instead of reporting an error for a request that had not failed. Scrolling the message away cancels that pending playback rather than starting it unprompted later.
+- Audio playing in other apps now resumes as soon as a voice message or an audio attachment finishes playing, instead of staying interrupted until the customer paused it or left the conversation.
+- Playing a captured voice message after an interruption — or after another audio message was played — now produces sound. The audio session is reactivated and reclaimed for the voice message first.
+- Moving between conversations no longer stops audio-message playback from finalizing an in-progress voice message, so the recording survives in the newly opened conversation too.
+- Voice messages captured but never sent are no longer kept indefinitely. They are written to a dedicated cache directory and swept a day later, once no conversation can reach them.
+- The play and pause icons for audio message playback and voice message recording now use flat symbols instead of circled ones.
+- A selected list picker option's background no longer bleeds into the horizontal safe-area insets in landscape.
+- Quick reply options no longer stretch to the full screen width in landscape; they are now constrained to the same maximum width as other message bubbles.
+- A time picker message bubble no longer stretches to nearly the full screen width in landscape; it is now capped at 60% of the screen width like other message bubbles.
+- An image or video attachment that is still loading, or failed to load, in a conversation now matches the rounded-corner shape of its position within the message group, instead of always showing a plain uniform-corner placeholder.
+- Image and video attachments waiting to be sent now show a border around their thumbnail in the message input, matching document attachments.
+- A video attachment in a conversation now shows a border around its thumbnail once it finishes loading, matching image and document attachments.
+- A video attachment could briefly show a mismatched border shape while its preview frame was still being generated, even after the video itself had already downloaded. It now matches the same rounded-corner shape as the rest of the attachment.
+- A video attachment whose preview frame can never be generated (an unsupported codec, a truncated file) no longer shows a spinner indefinitely; it now settles on the same failed-attachment placeholder used elsewhere.
+- A standalone (non-PDF) document attachment sent or received in a conversation now shows a border around its thumbnail, matching PDF, image, and video attachments.
+- Image and video attachments in the attachments overview now show a border around their thumbnail, matching document attachments in the same view.
+- A document attachment that is still loading, or failed to load, in a conversation now matches the rounded-corner shape of its position within the message group, instead of always showing a plain uniform-corner placeholder.
+- An image attachment waiting to be sent no longer loses its solid background while it's still loading, so content behind the message input can no longer show through the placeholder.
+- A non-PDF document attachment shown as part of multiple attachments in one message now shows the same sender-tinted background as a standalone document attachment.
+- A non-PDF document thumbnail in the attachments overview had a slightly different border width than image, video, and PDF thumbnails in the same grid; it now matches.
+- A PDF attachment that is still loading, or failed to load, in a conversation could show a second, wrongly-shaped border underneath its actual bubble border. It now shows a single, correctly-shaped border, matching image, video, and non-PDF document attachments.
+- An image attachment waiting to be sent could show a second border stroked on top of itself while still loading. It now shows a single border.
+- A non-PDF document attachment in the attachments overview that failed to load showed no border, unlike an image, video, or PDF attachment failing at the same grid position. It now shows the same border as its siblings.
+- Backgrounding the app while `ChatCoordinator.content(...)` was still connecting no longer shows a connection-error alert on the next foreground. The in-flight connect is now cancelled when the app enters the background, and a cancelled connect is no longer treated as a real failure.
+- A bottom sheet overlay (inactivity popup, end-conversation confirmation) could show its dimmed background at the wrong opacity right after appearing, before settling to its final look a moment later. It now shows the correct dimmed background immediately.
+- Leading and trailing whitespace is now ignored when the pre-chat survey and the send-transcript form are validated and submitted. An e-mail address with a trailing space — commonly added when it is picked from the keyboard suggestions — is no longer rejected as invalid, a required field containing only spaces is no longer accepted as filled in, and the submitted values no longer carry the surrounding whitespace.
+- On iOS 26, the inactivity popup's countdown no longer stays frozen at its starting value. The popup still closed when the time ran out, but the remaining seconds were not redrawn while it was shown; the end-conversation sheet was affected in the same way.
+- Tapping just outside an image, video, or PDF thumbnail, or the image of a rich link, no longer opens it. A thumbnail is cropped to fill its frame, and the cropped-off part — invisible, but still extending past the thumbnail — kept responding to taps. This applied in the conversation, the attachments overview, and the message input, where the overflow of one attachment could block the remove button of the attachment next to it.
+
+
 <a name="4.0.0"></a>
 # [4.0.0] - 2026-08-05
 
@@ -507,7 +586,8 @@
   - typing start/end
 
 
-[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/4.0.0...HEAD
+[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/4.1.0...HEAD
+[4.1.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/4.0.0...4.1.0
 [4.0.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.3.1...4.0.0
 [3.3.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.3.0...3.3.1
 [3.3.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.2.0...3.3.0

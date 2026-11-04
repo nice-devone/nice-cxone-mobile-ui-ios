@@ -37,7 +37,7 @@ struct PrechatSurveyFormView: View, Themed {
     @ObservedObject var viewModel: PrechatSurveyFormViewModel
 
     private let title: String
-    
+
     // MARK: - Init
 
     init(viewModel: PrechatSurveyFormViewModel, title: String) {
@@ -48,37 +48,53 @@ struct PrechatSurveyFormView: View, Themed {
     // MARK: - Content
 
     var body: some View {
-        FormView(viewModel: viewModel, title: title, subtitle: L10n.PreChatSurvey.subtitle) {
-            ScrollViewReader { proxy in
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: Constants.Spacing.contentVertical) {
-                        ForEach(viewModel.customFields) { entity in
-                            switch entity {
-                            case let entity as TreeFieldEntity:
-                                TreeFieldView(entity: entity, onChange: viewModel.validateForm)
-                            case let entity as ListFieldEntity:
-                                ListFieldView(entity: entity, onChange: viewModel.validateForm)
-                            default:
-                                TextFieldView(entity: entity, onChange: viewModel.validateForm)
-                            }
-                        }
-
-                        Spacer(minLength: Constants.Spacing.contentMinGap)
+        FormView(viewModel: viewModel, title: title, subtitle: subtitle, subtitleAccessibilityLabel: L10n.PreChatSurvey.subtitle) { proxy in
+            VStack(spacing: Constants.Spacing.contentVertical) {
+                ForEach(viewModel.customFields) { entity in
+                    switch entity {
+                    case let entity as TreeFieldEntity:
+                        TreeFieldView(entity: entity, onChange: viewModel.validateForm)
+                    case let entity as ListFieldEntity:
+                        ListFieldView(entity: entity, onChange: viewModel.validateForm)
+                    default:
+                        TextFieldView(entity: entity, onChange: viewModel.validateForm)
                     }
                 }
-                .onChange(of: viewModel.firstInvalidFieldID) { target in
-                    guard let target else {
-                        return
-                    }
 
-                    withAnimation {
-                        proxy.scrollTo(target, anchor: .center)
-                    }
-
-                    A11y.announce(A11y.Announcement.Form.Validation.Invalid.argument)
+                Spacer(minLength: Constants.Spacing.contentMinGap)
+            }
+            .onChange(of: viewModel.firstInvalidFieldID) { target in
+                guard let target else {
+                    return
                 }
+
+                withAnimation {
+                    proxy.scrollTo(target, anchor: .center)
+                }
+
+                A11y.announce(A11y.Announcement.Form.Validation.Invalid.argument)
             }
         }
+    }
+}
+
+// MARK: - Private Methods
+
+private extension PrechatSurveyFormView {
+
+    /// Appends the required-fields legend to the base subtitle when the form has at least one
+    /// required field — sighted users otherwise have no explanation for what "*" means on a field
+    /// label. VoiceOver users already hear "Required" explicitly on each field's own accessibility
+    /// label/value, so this is meant to be a visual-only addition — enforced by always passing the
+    /// base subtitle as `FormView`'s `subtitleAccessibilityLabel`, since the legend text itself
+    /// contains a bare "*" that VoiceOver's default punctuation verbosity wouldn't speak, and the
+    /// `Text` isn't otherwise hidden from accessibility.
+    var subtitle: String {
+        viewModel.customFields.contains { entity in
+            entity.isRequired
+        }
+            ? L10n.PreChatSurvey.subtitleWithRequiredFieldsLegend(L10n.PreChatSurvey.subtitle, L10n.PreChatSurvey.requiredFieldsLegend)
+            : L10n.PreChatSurvey.subtitle
     }
 }
 
@@ -99,7 +115,9 @@ struct PrechatSurveyFormView: View, Themed {
     
     Color.clear
         .sheet(isPresented: .constant(true)) {
-            PrechatSurveyFormView(viewModel: viewModel, title: "Pre-chat survey")
+            NavigationStack {
+                PrechatSurveyFormView(viewModel: viewModel, title: "Pre-chat survey")
+            }
         }
         .environmentObject(ChatStyle())
 }

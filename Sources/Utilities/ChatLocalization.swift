@@ -94,7 +94,15 @@ public class ChatLocalization: ObservableObject {
     public lazy var alertGenericErrorMessage = lookup(key: "alert.generic_error.message")
     /// "Oops! The chat encountered an issue and will disconnect. Please try again later."
     public lazy var alertDisconnectErrorMessage = lookup(key: "alert.disconnect_error.message")
-    /// "The chat is not available because the '%1$@' feature is not implemented. Check the documentation for more information."
+    /// "The chat is not available because the '%1$@' feature could not be enabled. Check your channel configuration or contact support for more information."
+    @available(
+        *, deprecated,
+        message: """
+        The default UI no longer presents this alert now that CXoneChatError.featureUnavailable is never \
+        thrown by the SDK. There is no replacement — the alert it backed was removed, and a failed \
+        connection surfaces through the generic disconnect alert instead. Will be removed in 5.0.0.
+        """
+    )
     public lazy var alertFeatureUnavailableMessage = lookup(key: "alert.feature_unavailable.message")
     /// "Are you sure you want to end this conversation?"
     public lazy var alertEndConversationMessage = lookup(key: "alert.end_conversation.message")
@@ -268,15 +276,26 @@ public class ChatLocalization: ObservableObject {
     /// "This conversation will now end due to inactivity"
     public lazy var liveChatInactivityTimeoutText = lookup(key: "live_chat.inactivity_popup.session_timeout.text")
 
+    // MARK: - Chat - Satisfaction Survey
+
+    /// "Satisfaction survey"
+    public lazy var chatSatisfactionSurveyNotificationTitle = lookup(key: "chat.satisfaction_survey.notification_title")
+
     // MARK: - Form
 
     /// "%@ *"
     public lazy var formRequiredLabel = lookup(key: "form.required_label")
+    /// "%1$@, %2$@"
+    public lazy var formFieldError = lookup(key: "form.field_error")
 
     // MARK: - Form - Pre-contact Survey
 
     /// "Please fill out all fields and submit the form."
     public lazy var prechatSurveySubtitle = lookup(key: "pre_chat_survey.subtitle")
+    /// "Fields marked with * are required."
+    public lazy var prechatSurveyRequiredFieldsLegend = lookup(key: "pre_chat_survey.required_fields_legend")
+    /// "%1$@ %2$@"
+    public lazy var prechatSurveySubtitleWithRequiredFieldsLegend = lookup(key: "pre_chat_survey.subtitle_with_required_fields_legend")
 
     // MARK: - Form - Send Transcript
 

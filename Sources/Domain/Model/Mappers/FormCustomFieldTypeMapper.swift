@@ -16,6 +16,7 @@
 import CXoneChatSDK
 import Foundation
 
+@MainActor
 enum FormCustomFieldTypeMapper {
     
     static func map(_ customField: PreChatSurveyCustomField, with customFieldValues: [String: String]) -> FormCustomFieldType {

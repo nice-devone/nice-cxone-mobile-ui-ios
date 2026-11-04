@@ -1,4 +1,4 @@
-![](https://img.shields.io/badge/min_iOS-16.0%2B-orange?style=flat) ![](https://img.shields.io/badge/Swift-5.10%2B-orange?style=flat) ![](https://img.shields.io/badge/Framework-SwiftUI-orange?style=flat) ![](https://img.shields.io/badge/Licence-NICE-orange?style=flat)
+![](https://img.shields.io/badge/min_iOS-16.0%2B-orange?style=flat) ![](https://img.shields.io/badge/Swift-6.0%2B-orange?style=flat) ![](https://img.shields.io/badge/Framework-SwiftUI-orange?style=flat) ![](https://img.shields.io/badge/Licence-NICE-orange?style=flat)
 
 # CXoneChatUI
 
@@ -10,12 +10,8 @@ The CXoneChatUI module provides a default implementation of a Chat User Interfac
 ## Requirements
 
 - iOS 16.0+
-- Swift 5.10+
+- Swift 6.0+ (Xcode 16 or later)
 
-
-## Limitations
-
-- The CXoneChatUI does not support phone landscape orientation
 
 ## Modules
 
@@ -30,7 +26,7 @@ The CXoneChatUI module provides a default implementation of a Chat User Interfac
 To integrate the CXoneChatUI module into your project, follow these steps:
 
 1. Open Xcode.
-2. Navigate to `File > Swift Packages > Add Package Dependency...`
+2. Navigate to `File > Add Package Dependencies...`
 3. Enter the SDK repository URL to the search bar.
 4. Select a **Dependency Rule** and specify where you want to save the project. Select your new Xcode project in  **Add to Project**.
 5. Finish package import process with click on **Add Package**.
@@ -55,7 +51,7 @@ let chatProvider = CXoneChat()                          // hold this for app lif
 let chatCoordinator = ChatCoordinator(chatProvider: chatProvider)
 ```
 
-> 📖 **Upgrading from an earlier version that used `CXoneChat.shared` + `CXoneChatDelegate`?** The SDK [Migration Guide](../cxone-chat-sdk/docs/migration-from-singleton.md) walks through every breaking change, including a delegate-method → `ChatEvent`-case mapping table, `signOut()` semantics, and `@MainActor` rules. UI-module integrators are affected too — the snippets below all assume the singleton-free pattern.
+> 📖 **Upgrading from an earlier version that used `CXoneChat.shared` + `CXoneChatDelegate`?** The SDK [Migration Guide](https://github.com/nice-devone/nice-cxone-mobile-sdk-ios/blob/main/docs/migration-from-singleton.md) walks through every breaking change, including a delegate-method → `ChatEvent`-case mapping table, `signOut()` semantics, and `@MainActor` rules. UI-module integrators are affected too — the snippets below all assume the singleton-free pattern.
 
 When initializing, you must specify the presentation style using the 'presentModally' parameter. This determines whether the chat interface appears as a modal overlay or in full-screen mode. The core functionality remains the same in both presentation styles, with each supporting native iOS gestures - swipe down to dismiss for modal presentation, or swipe from left edge to return to the previous screen in full-screen mode.
 
@@ -76,17 +72,21 @@ var body: some View {
 
         ...
     }
-    .sheet(isPresented: viewModel.isChatVisible) {
+    .sheet(isPresented: $viewModel.isChatVisible) {
         viewModel.chatContentView()
     }
 }
 ...
 let chatCoordinator = ChatCoordinator(chatProvider: chatProvider)
+@Published var isChatVisible = false
 ...
 func chatContentView() -> some View {
     ...
     
-    return chatCoordinator.content(presentModally: true)
+    // The chat never dismisses its own host — close the sheet when it finishes
+    return chatCoordinator.content(presentModally: true) { [weak self] in
+        self?.isChatVisible = false
+    }
 }
 ```
 
@@ -94,67 +94,59 @@ Additionally, this method supports custom scenarios through its optional paramet
 
 #### Deeplinking
 
-The `content(presentModally:)` method supports deeplinking capabilities, allowing users to navigate directly to a specific thread in multi-threaded channel configurations.
+The `content(threadId:presentModally:onFinish:)` method supports deeplinking capabilities, allowing users to navigate directly to a specific thread in multi-threaded channel configurations.
 
 > ⚠️ Important: Deeplinking is only relevant for multi-threaded channel configurations. For live chat or single-threaded configurations, deeplinking is unnecessary as users will always be directed to the single valid thread. 
 
 ```swift
 ...
-chatCoordinator.content(deeplinkOption: .thread(threadIdOnExternalPlatform), presentModally: true)
+chatCoordinator.content(threadId: threadIdOnExternalPlatform, presentModally: true)
 ```
 
 #### Completion Handler
 
 The `ChatCoordinator` provides a completion handler that is executed when the chat session ends. This allows you to perform any necessary cleanup or UI updates after the chat is dismissed.
 
-In the sample application, the completion handler is used to reset the appearance of UI components. This ensures that the app's UI returns to its default state after the chat session.
+The chat never dismisses its own host, so use the completion handler to close it — the sample application passes its presenter's `dismiss` here.
 
 ```swift
-chatCoordinator.content(presentModally: modally) { [weak self] in
-    // Reset UI appearance after chat ends
-    self?.navigationController.navigationBar.defaultAppearance()
-    UISegmentedControl.defaultAppearance()
-    UIAlertController.defaultAppearance()
+// In a SwiftUI view that presents the chat with `.sheet(isPresented: $isChatPresented)`
+chatCoordinator.content(threadId: nil, presentModally: true) {
+    // Close the chat and restore any app state changed while it was shown
+    isChatPresented = false
+}
+```
+
+#### Explicit OAuth Session Expiry
+
+Set `ChatCoordinator.onSessionExpired` before calling `content(...)` to be notified when an explicit OAuth (PKCE) session's refresh-grant recovery fails during connect (`CXoneChatError.invalidRefreshToken`) and no further automatic recovery is possible. It is called instead of the generic connection-error alert, so you can route the customer to a new authorization flow rather than let them retry a rejected credential. A refresh-grant rejection during a message send surfaces as a regular send error, not through this handler. If you don't set it, the connection-error alert is shown as before.
+
+```swift
+chatCoordinator.onSessionExpired = { [weak self] in
+    self?.startNewAuthorizationFlow()
 }
 ```
 
 #### UIKit Integration
 
-The chat can be integrated with UIKit using the method `public func start(threadId: String? = nil, in parentViewController: UIViewController, presentModally: Bool, onFinish: (() -> Void)? = nil)`. This method requires a `UINavigationController` to control the navigation flow and presentation style.
+There is no UIKit-specific entry point — host the SwiftUI view returned by `content(threadId:presentModally:onFinish:)` in a `UIHostingController`. The chat does not dismiss its own host, so dismiss it from the `onFinish` closure. `ChatCoordinator` is `@MainActor`, so call it from the main actor (for example, from a view controller).
 
 ```swift
 let chatCoordinator = ChatCoordinator(chatProvider: chatProvider)
 ...
-chatCoordinator.start(in: navigationController, presentModally: true)
-```
+func openChat(threadId: String? = nil) {
+    let content = chatCoordinator.content(threadId: threadId, presentModally: true) { [weak self] in
+        // Chat session ended - dismiss the hosting controller
+        self?.dismiss(animated: true)
+    }
 
-Additionally, this method supports custom scenarios through its optional parameters.
-
-#### Deeplinking
-
-The `start(in:)` method supports deeplinking capabilities, allowing users to navigate directly to a specific thread in multi-threaded channel configurations.
-
-> ⚠️ Important: Deeplinking is only relevant for multi-threaded channel configurations. For live chat or single-threaded configurations, deeplinking is unnecessary as users will always be directed to the single valid thread.
-
-```swift
-...
-chatCoordinator.start(deeplinkOption: .thread(threadIdOnExternalPlatform), in: navigationController, presentModally: true)
-```
-
-#### Completion Handler
-
-The `ChatCoordinator` provides a completion handler that is executed when the chat session ends. This allows you to perform any necessary cleanup or UI updates after the chat is dismissed.
-
-In the sample application, the completion handler is used to reset the appearance of UI components. This ensures that the app's UI returns to its default state after the chat session.
-
-```swift
-chatCoordinator.start(with: deeplinkOption, modally: modally, in: navigationController) { [weak self] in
-    // Reset UI appearance after chat ends
-    self?.navigationController.navigationBar.defaultAppearance()
-    UISegmentedControl.defaultAppearance()
-    UIAlertController.defaultAppearance()
+    present(UIHostingController(rootView: content), animated: true)
 }
 ```
+
+> ⚠️ Important: With `presentModally: true` the chat provides its own navigation stack and close button. With `presentModally: false` the chat expects to be pushed onto an existing SwiftUI `NavigationStack`, so prefer modal presentation when hosting the chat from UIKit.
+
+Deeplinking works the same way as in SwiftUI — pass `threadId` to `content(threadId:presentModally:onFinish:)`.
 
 
 ## Features
@@ -187,17 +179,26 @@ You can customize the color scheme of the chat interface to match your brand. Se
 
 ### Localization
 
-The UI module comes with default English localization strings. However, you can customize these strings by providing your own `chatLocalization` parameter when initializing the `ChatCoordinator`.
+The UI module comes with default English localization strings. You can override them by passing a `ChatLocalization` built with your own `LocalizationStringProvider` (or a custom strings file) when initializing the `ChatCoordinator`.
 
 ```swift
-let chatCoordinator: ChatCoordinator
-...
-let localization = ChatLocalization()
-// Override `commonConfirm`
-localization.commonConfirm = "👌"
-        
+struct MyStrings: LocalizationStringProvider {
+    func localizationString(forKey key: String) -> String? {
+        switch key {
+        case "common.confirm":
+            return "👌"
+        default:
+            return nil // Fall back to the SDK default
+        }
+    }
+}
+
+let localization = ChatLocalization(provider: MyStrings())
+
 self.chatCoordinator = ChatCoordinator(chatProvider: chatProvider, chatLocalization: localization)
 ```
+
+See [CS: Localization](docs/cs-localization.md) for the custom strings file option and multiple languages. Every key and its default value is listed in [`CXOneChatUI.strings`](Sources/Resources/en.lproj/CXOneChatUI.strings). Assigning to `ChatLocalization` properties directly (e.g. `localization.commonConfirm = "OK"`) no longer changes what the UI displays.
 
 ### Additional Configuration
 

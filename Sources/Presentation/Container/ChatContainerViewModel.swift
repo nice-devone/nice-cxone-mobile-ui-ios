@@ -12,7 +12,6 @@
 // OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
 //
-// swiftlint:disable file_length
 
 import CXoneChatSDK
 import SwiftUI
@@ -22,16 +21,73 @@ class ChatContainerViewModel: ObservableObject, Overlayable, AlertableViewModel 
 
     // MARK: - Properties
 
-    @Published var overlay: (() -> AnyView)?
+    // Every overlay writer shares this one slot - loading, offline, inactivity, End Conversation and the
+    // transcript form (through a binding) - and none of them knows about the satisfaction survey. The SDK
+    // never re-emits a survey, so once it is installed only its own dismissal or teardown may clear it.
+    var overlay: (() -> AnyView)? {
+        get { overlayContent }
+        set {
+            guard newValue != nil || !isSatisfactionSurveyOverlayInstalled else {
+                LogManager.trace("Satisfaction survey owns the overlay slot, ignoring request to hide it")
+                return
+            }
+
+            overlayContent = newValue
+        }
+    }
+    @Published private(set) var overlayContent: (() -> AnyView)?
     @Published var sheet: (() -> AnyView)?
+    @Published var isSheetDismissing = false
     @Published var alertType: ChatAlertType?
     @Published var safariURL: IdentifiableURL?
     @Published var isRecoveringThread = false
-    
+    // Owned here rather than on `ThreadViewModel` - the survey can be shown while
+    // `cachedThreadViewModel` is nil (e.g. on the thread list), and this container outlives
+    // every `ThreadViewModel` it creates, so it is the only state that can't silently no-op.
+    // Tied to `activeSatisfactionSurvey` via `didSet` so every writer - including
+    // `ThreadViewModel.isShowingSatisfactionSurvey`'s forwarding setter - keeps both in sync
+    // without having to remember the pairing.
+    @Published var isSatisfactionSurveyActive = false {
+        didSet {
+            if !isSatisfactionSurveyActive {
+                activeSatisfactionSurvey = nil
+                isSatisfactionSurveyOverlayInstalled = false
+            }
+        }
+    }
+    // Set only while the survey's own view sits in the overlay slot, which locks the slot against
+    // `overlay = nil` from anyone else. Cleared by `dismissSatisfactionSurvey()` before it hides the survey,
+    // and by `isSatisfactionSurveyActive` turning false, so every teardown path releases it first.
+    var isSatisfactionSurveyOverlayInstalled = false
+    // Belt-and-braces only - the SDK delivers a given thread's survey once and never re-emits it,
+    // so this should never actually catch anything. Compared by `==` (prompt, url and thread) rather
+    // than identity since `SatisfactionSurvey` has no identifier of its own.
+    var activeSatisfactionSurvey: SatisfactionSurvey?
+    // The last survey `showSatisfactionSurvey(_:)` took on, kept after it is dismissed. `ThreadViewModel` reads its own
+    // event stream, which can reach `.chatUpdated(.ready)` before this container's stream has handled the survey sent
+    // just before it - comparing against this tells it whether a survey it received is still on its way here.
+    var lastActivatedSatisfactionSurvey: SatisfactionSurvey?
+    // Bumped by `tearDownSatisfactionSurvey()`, which every teardown path calls synchronously before awaiting its own
+    // `hideOverlay()` - lets work started for the survey (e.g. restoring End Conversation) stop once a teardown has begun.
+    var satisfactionSurveyTeardownGeneration = 0
+    // The waiting part of handling the latest survey event, run off the event loop. A presentation ends on its own once
+    // a teardown clears `isSatisfactionSurveyActive`, so this isn't cancelled - it is kept so the work can be awaited.
+    var satisfactionSurveyTask: Task<Void, Never>?
+    // Multithread only: surveys for threads the customer wasn't viewing when they arrived, keyed by thread id.
+    // Each is shown once its thread is opened (`showPendingSatisfactionSurveyIfNeeded(for:)`); the SDK never
+    // re-emits a survey, so this container session is the only place it survives until then.
+    // Published so the thread list can mark those threads as unread.
+    @Published var pendingSatisfactionSurveys = [String: SatisfactionSurvey]()
+
     let chatProvider: ChatProvider
     let chatConfiguration: ChatConfiguration
     let presentModally: Bool
     let onDismiss: (() -> Void)?
+    /// Invoked instead of the generic connection-error alert when `connect()`'s explicit-PKCE
+    /// refresh-grant recovery fails and no further automatic recovery is possible - the host app
+    /// must start a new authorization flow rather than let the customer retry a rejected credential.
+    let onSessionExpired: (() -> Void)?
+    let satisfactionSurveyNotificationScheduler: SatisfactionSurveyNotificationScheduling
 
     // Used to determine if the chat should be refreshed,
     // for example after when a thread is open but client disconnect via entering background
@@ -40,14 +96,20 @@ class ChatContainerViewModel: ObservableObject, Overlayable, AlertableViewModel 
     var disconnecting = false
     var processingDeeplink = false
 
-    private weak var cachedListViewModel: ThreadListViewModel?
+    private(set) weak var cachedListViewModel: ThreadListViewModel?
     private(set) weak var cachedThreadViewModel: ThreadViewModel?
+    // The thread view model whose inactivity popup currently holds the overlay slot - may differ from
+    // `cachedThreadViewModel` after a thread switch, so a survey taking the slot must clear this one's flag.
+    weak var inactivityPopupOwner: ThreadViewModel?
 
     // Observe notification taps to navigate to the correct thread
     private var directNavigationToken: NSObjectProtocol?
     // To be able to handle receiving new messages from different thread, it is necessary to cache current thread list
     private var cachedThreadMessageCount = [String: Int]()
     private var eventTask: Task<Void, Never>?
+    // Tracks the in-flight `connect()` triggered by `willEnterForeground`, so `didEnterBackground`
+    // can cancel it explicitly instead of letting it race to a self-inflicted connection error.
+    private var connectTask: Task<Void, Never>?
     
     // MARK: - Init
 
@@ -56,13 +118,17 @@ class ChatContainerViewModel: ObservableObject, Overlayable, AlertableViewModel 
         threadToOpen: String? = nil,
         chatConfiguration: ChatConfiguration,
         presentModally: Bool,
-        onDismiss: (() -> Void)? = nil
+        onDismiss: (() -> Void)? = nil,
+        onSessionExpired: (() -> Void)? = nil,
+        satisfactionSurveyNotificationScheduler: SatisfactionSurveyNotificationScheduling = DefaultSurveyNotificationScheduler()
     ) {
         self.chatProvider = chatProvider
         self.threadToOpen = threadToOpen
         self.chatConfiguration = chatConfiguration
         self.presentModally = presentModally
         self.onDismiss = onDismiss
+        self.onSessionExpired = onSessionExpired
+        self.satisfactionSurveyNotificationScheduler = satisfactionSurveyNotificationScheduler
 
         directNavigationToken = NotificationCenter.default.threadDeeplinkObserver { [weak self] notification in
             guard let threadId = notification.userInfo?["threadId"] as? String else {
@@ -148,7 +214,22 @@ class ChatContainerViewModel: ObservableObject, Overlayable, AlertableViewModel 
         Task { @MainActor in
             await self.hideOverlay()
         }
-        
+
+        // Multithread full screen calls this for every push to a thread - in-session navigation, not the chat closing
+        // (see the early return below). An open survey stays open across it (its overlay slot is locked, so the hide
+        // above leaves it), and its own dismissal later drains any recovery deferred meanwhile.
+        let isFullScreenThreadNavigation = chatProvider.state.isChatAvailable
+            && !presentModally
+            && chatProvider.mode == .multithread
+            && cachedThreadViewModel != nil
+
+        // Otherwise the overlay is gone above, so this state must not outlive it - a stale `isSatisfactionSurveyActive`
+        // would block `shouldRecover` from consuming a deeplink navigation's `shouldRefreshThread`, and a stale
+        // deferral latch would be mistaken for a real one by a later, unrelated survey dismissal.
+        if !isFullScreenThreadNavigation {
+            tearDownSatisfactionSurvey()
+        }
+
         // Do not continue if chat services are not available
         guard chatProvider.state.isChatAvailable else {
             return
@@ -156,11 +237,11 @@ class ChatContainerViewModel: ObservableObject, Overlayable, AlertableViewModel 
         
         // For multithread presented in full-screen, the `ChatContainerView's `onDisappear` is called when a ThreadView appears
         // and we don't want to trigger removal of the ChatContainerViewModel's delegate and disconnect from the chat services
-        if !presentModally, chatProvider.mode == .multithread, cachedThreadViewModel != nil {
+        if isFullScreenThreadNavigation {
             return
         }
         
-        cachedThreadViewModel?.isShowingInactivityPopup = false
+        releaseInactivityPopupOwnership()
         disconnecting = true
 
         stopObservingEvents()
@@ -194,21 +275,32 @@ extension ChatContainerViewModel {
         do {
             try await chatProvider.connection.connect()
         } catch {
-            error.logError()
-
-            await hideOverlay()
-
-            if case CXoneChatError.featureUnavailable(let feature) = error {
-                alertType = .featureUnavailableAlert(featureName: feature) {
-                    Task { [weak self] in
-                        await self?.disconnect()
-                    }
-                }
+            // Backgrounding cancels this task from `didEnterBackground` while `connect()` is still
+            // in flight, which surfaces here as a connection failure even though nothing is actually
+            // wrong - the app just isn't in the foreground to see the result anymore. Foregrounding
+            // again will trigger a fresh `connect()`, so there is nothing to recover here.
+            guard !Task.isCancelled else {
+                LogManager.trace("Connect cancelled, most likely by backgrounding mid-connect -> not surfacing an error")
                 return
             }
 
-            alertType = .connectionErrorAlert {
-                Task { [weak self] in
+            error.logError()
+
+            // Connection failed, so any survey or inactivity popup the previous session left showing is gone with it.
+            tearDownSatisfactionSurvey()
+            releaseInactivityPopupOwnership()
+            await hideOverlay()
+
+            if case CXoneChatError.invalidRefreshToken = error, let onSessionExpired {
+                LogManager.trace("Explicit OAuth refresh-grant recovery failed -> a new authorization flow is required")
+
+                onSessionExpired()
+
+                return
+            }
+
+            alertType = .connectionErrorAlert { [weak self] in
+                Task {
                     await self?.disconnect()
                 }
             }
@@ -218,9 +310,12 @@ extension ChatContainerViewModel {
     @MainActor
     func disconnect() async {
         LogManager.trace("Disconnecting from chat services")
-        
+
+        // The session is going away, so a survey or inactivity popup it was showing (or a deferral latched for one) goes with it.
+        tearDownSatisfactionSurvey()
+        releaseInactivityPopupOwnership()
         await hideOverlay()
-        
+
         disconnecting = true
 
         stopObservingEvents()
@@ -249,6 +344,9 @@ extension ChatContainerViewModel {
     ///
     /// - Returns: An optional `ChatThreadProvider` instance representing the created thread, or `nil` if the thread creation process is interrupted.
     func createThread() async throws -> ChatThreadProvider? {
+        // A new thread supersedes any survey or inactivity popup left on screen; release them before hiding the overlay
+        tearDownSatisfactionSurvey()
+        releaseInactivityPopupOwnership()
         // Hide overlay so a pre-chat form or empty thread can be presented
         await hideOverlay()
         
@@ -296,7 +394,7 @@ extension ChatContainerViewModel {
             LogManager.trace("Skipping thread refresh on foreground - no active thread")
         }
         
-        Task { @MainActor in
+        connectTask = Task { @MainActor in
             await self.connect()
         }
     }
@@ -304,82 +402,24 @@ extension ChatContainerViewModel {
     // periphery:ignore:parameters output - for inline usage in the view
     func didEnterBackground(_ output: NotificationCenter.Publisher.Output) {
         LogManager.trace("Enter background")
-   
+
         // Stop inactivity popup if any is being shown to be able to present it again next time
-        cachedThreadViewModel?.isShowingInactivityPopup = false
-        
+        releaseInactivityPopupOwnership()
+
+        // A satisfaction survey deliberately survives backgrounding - the SDK never re-emits it, so tearing
+        // it down here would lose it for good. Its overlay slot is locked, so hideOverlay() below leaves it
+        // in place, and the reconnect on foreground follows the same deferred path as a recovered survey.
+
+        // Cancel a foreground-triggered connect that's still in flight so `connect()`'s catch
+        // block can tell "we backgrounded mid-connect" apart from a real connection failure.
+        connectTask?.cancel()
+        connectTask = nil
+
         Task { @MainActor in
             await self.hideOverlay()
         }
 
         chatProvider.connection.disconnect()
-    }
-}
-
-// MARK: - Sheets
-
-extension ChatContainerViewModel {
-    
-    @MainActor
-    func showPrechatSurveyForm(title: String, fields: [FormCustomFieldType]) async -> [String: String]? {
-        await withCheckedContinuation { continuation in
-            let formViewModel = PrechatSurveyFormViewModel(customFields: fields) { fields in
-                Task { @MainActor [weak self] in
-                    await self?.hideSheet()
-                }
-                
-                continuation.resume(returning: fields)
-            } onCancel: {
-                Task { @MainActor [weak self] in
-                    await self?.hideSheet()
-                }
-                
-                continuation.resume(returning: nil)
-            }
-
-            Task { @MainActor [weak self] in
-                await self?.showSheet {
-                    PrechatSurveyFormView(viewModel: formViewModel, title: title)
-                }
-            }
-        }
-    }
-
-    @MainActor
-    func showSendTranscriptForm(for thread: ChatThread) async -> Bool? {
-        await withCheckedContinuation { continuation in
-            let binding = Binding<(() -> AnyView)?> { [weak self] in
-                self?.overlay ?? nil
-            } set: { [weak self] newValue in
-                self?.overlay = newValue
-            }
-
-            let sendTranscriptViewModel = SendTranscriptFormViewModel(
-                chatThread: thread,
-                chatProvider: chatProvider,
-                overlay: binding
-            ) { result in
-                Task { @MainActor [weak self] in
-                    await self?.hideSheet()
-                    
-                    // Return Bool to indicate the form has been sent (either successfully or with a failure result)
-                    continuation.resume(returning: result)
-                }
-            } onCancel: {
-                Task { @MainActor [weak self] in
-                    await self?.hideSheet()
-                    
-                    // Return nil if user cancelled.
-                    continuation.resume(returning: nil)
-                }
-            }
-            
-            Task { @MainActor [weak self] in
-                await self?.showSheet {
-                    SendTranscriptFormView(viewModel: sendTranscriptViewModel)
-                }
-            }
-        }
     }
 }
 
@@ -391,9 +431,9 @@ extension ChatContainerViewModel {
     func showLoading(file: StaticString = #file, line: UInt = #line) async {
         LogManager.trace("Showing loading overlay", file: file, line: line)
 
-        await showOverlay({
+        await showOverlay({ [weak self] in
             ChatLoadingOverlay(text: L10n.Common.loading) {
-                Task { @MainActor [weak self] in
+                Task { @MainActor in
                     await self?.disconnect()
                 }
             }
@@ -404,44 +444,12 @@ extension ChatContainerViewModel {
     func showOffline(file: StaticString = #file, line: UInt = #line) async {
         LogManager.trace("Showing offline view overlay", file: file, line: line)
         
-        await showOverlay({
+        await showOverlay({ [weak self] in
             OfflineView {
-                Task { @MainActor [weak self] in
+                Task { @MainActor in
                     await self?.disconnect()
                 }
             }
-        }, file: file, line: line)
-    }
-
-    @MainActor
-    func showInactivityPopup(popup: InactivityPopup, file: StaticString = #file, line: UInt = #line) async {
-        LogManager.trace("Showing inactivity popup overlay with countdown: \(popup.numberOfSeconds) seconds", file: file, line: line)
-        
-        await showOverlay({
-            InactivityPopupView(
-                title: popup.title,
-                message: popup.message,
-                startedAt: popup.startedAt,
-                numberOfSeconds: popup.numberOfSeconds,
-                refreshButtonText: popup.refreshButton.text,
-                expireButtonText: popup.expireButton.text,
-                onRefresh: { [weak self] in
-                    Task { @MainActor in
-                        await self?.handleInactivityPopupResponse(refreshSession: true, popup: popup)
-                    }
-                },
-                onExpire: { [weak self] in
-                    Task { @MainActor in
-                        await self?.handleInactivityPopupResponse(refreshSession: false, popup: popup)
-                    }
-                },
-                onTimeout: { [weak self] in
-                    Task { @MainActor in
-                        await self?.hideOverlay()
-                        self?.cachedThreadViewModel?.isShowingInactivityPopup = false
-                    }
-                }
-            )
         }, file: file, line: line)
     }
 }
@@ -516,19 +524,23 @@ private extension ChatContainerViewModel {
             // Handle additional configuration if needed
             await handleAdditionalConfigurationIfNeeded()
         case .offline:
+            // Going offline moots any survey it was showing (or a deferral latched for one), same as
+            // handleUnexpectedDisconnect() - clear it before hiding the overlay so it isn't left blocking
+            // recovery for the rest of the session.
+            tearDownSatisfactionSurvey()
+            releaseInactivityPopupOwnership()
             // Hide any existing overlays before showing the offline view
             await self.hideOverlay()
             // Show the offline view
             await self.showOffline()
         case .ready:
             // Cache to be able to handle local notifications
-            chatProvider.threads.get().forEach { thread in
-                self.cachedThreadMessageCount[thread.id] = thread.messages.count
-            }
+            self.refreshCachedThreadMessageCounts()
             
             if cachedThreadViewModel == nil {
-                // The thread view is not ready yet but there is a thread to be opened so don't hide the overlay to share the loading indicator
-                if threadToOpen == nil {
+                // The thread view is not ready yet but there is a thread to be opened so don't hide the overlay to share the loading indicator.
+                // A recovered survey can also arrive before this `.ready` update (the SDK sends the proactive event first), so don't evict it either.
+                if threadToOpen == nil, !isSatisfactionSurveyActive {
                     await self.hideOverlay()
                 }
             } else {
@@ -546,6 +558,12 @@ private extension ChatContainerViewModel {
         }
     }
 
+    func refreshCachedThreadMessageCounts() {
+        chatProvider.threads.get().forEach { thread in
+            cachedThreadMessageCount[thread.id] = thread.messages.count
+        }
+    }
+
     func handleThreadUpdated(_ chatThread: CXoneChatSDK.ChatThread) {
         guard chatProvider.mode == .multithread else {
             // Skip local notification handling for singlethread and livechat mode because it's not supported
@@ -560,13 +578,11 @@ private extension ChatContainerViewModel {
         if cachedThreadViewModel?.thread?.id == chatThread.id {
             LogManager.trace("The thread is the currently one so it will be handled in the ThreadViewModel, just update the cache")
             
-            chatProvider.threads.get().forEach { thread in
-                self.cachedThreadMessageCount[thread.id] = thread.messages.count
-            }
+            self.refreshCachedThreadMessageCounts()
         } else if !processingDeeplink {
             LogManager.trace("The thread is not the currently displayed one = try to schedule a local notification")
             
-            guard chatThread.messages.last?.customerStatistics?.seenAt == nil else {
+            guard chatThread.messages.last?.isSeenByCustomer != true else {
                 LogManager.trace("The message is already seen by a customer")
                 return
             }
@@ -574,9 +590,7 @@ private extension ChatContainerViewModel {
             // Store the previous message count before updating the cache
             let cachedThreadMessageCount = self.cachedThreadMessageCount
             // Update the cache for future thread updates
-            chatProvider.threads.get().forEach { thread in
-                self.cachedThreadMessageCount[thread.id] = thread.messages.count
-            }
+            self.refreshCachedThreadMessageCounts()
             
             // Check if count of threads has been changed (=> new message for different thread)
             guard let count = cachedThreadMessageCount[chatThread.id], count != chatThread.messages.count else {
@@ -604,27 +618,15 @@ private extension ChatContainerViewModel {
 
         LogManager.trace("Disconnected unexpectedly")
 
+        // The socket just dropped, so any survey or inactivity popup it was showing (or a deferral latched for one) is moot.
+        tearDownSatisfactionSurvey()
+        releaseInactivityPopupOwnership()
         await hideOverlay()
 
         alertType = .connectionErrorAlert {
             Task { @MainActor in
                 await self.disconnect()
             }
-        }
-    }
-
-    func handleProactiveActionTypeReceived(_ type: ProactiveActionType) async {
-        switch type {
-        case .inactivityPopup(let entity):
-            guard cachedThreadViewModel?.isShowingInactivityPopup == false else {
-                LogManager.trace("Inactivity popup is already being shown, ignoring new one")
-                return
-            }
-
-            cachedThreadViewModel?.isShowingInactivityPopup = true
-
-            await hideOverlay()
-            await showInactivityPopup(popup: entity)
         }
     }
 
@@ -639,26 +641,6 @@ private extension ChatContainerViewModel {
         }
     }
     
-    func handleInactivityPopupResponse(refreshSession: Bool, popup: InactivityPopup) async {
-        LogManager.trace("Handling inactivity popup response: refreshSession = \(refreshSession)")
-        
-        do {
-            if refreshSession {
-                try await chatProvider.proactiveAction.trigger(.refreshSession(popup))
-            } else {
-                try await chatProvider.proactiveAction.trigger(.expireSession(popup))
-            }
-
-            await hideOverlay()
-            
-            cachedThreadViewModel?.isShowingInactivityPopup = false
-        } catch {
-            error.logError()
-
-            alertType = .genericError
-        }
-    }
-
     func handleAdditionalConfigurationIfNeeded() async {
         do {
             if !chatConfiguration.additionalCustomerCustomFields.isEmpty {
@@ -724,5 +706,3 @@ private extension ChatContainerViewModel {
         processingDeeplink = false
     }
 }
-
-// swiftlint:enable file_length

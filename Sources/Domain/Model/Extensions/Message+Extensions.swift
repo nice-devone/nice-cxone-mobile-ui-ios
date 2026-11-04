@@ -17,6 +17,11 @@ import CXoneChatSDK
 
 extension Message {
 
+    /// Whether the customer has already seen this message.
+    var isSeenByCustomer: Bool {
+        customerStatistics?.seenAt != nil
+    }
+
     @MainActor
     func getLocalizedContentOrFallbackText(useFallback: Bool = false) -> String? {
         switch self.contentType {

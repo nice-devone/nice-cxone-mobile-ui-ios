@@ -46,7 +46,7 @@ final class DefaultAudioFileDownloader: AudioFileDownloading, Sendable {
                         return
                     }
 
-                    guard let response = response as? HTTPURLResponse, (200 ... 299) ~= response.statusCode, let location else {
+                    guard let response = response as? HTTPURLResponse, response.isSuccess, let location else {
                         continuation.resume(throwing: CommonError.failed("Server error"))
                         return
                     }
@@ -85,8 +85,8 @@ private extension DefaultAudioFileDownloader {
             let nameWithoutExtension = (lastPathComponent as NSString).deletingPathExtension
             let truncatedName = String(nameWithoutExtension.prefix(90))
             return truncatedName + (fileExtension.isEmpty ? "" : "." + fileExtension)
+        } else {
+            return lastPathComponent
         }
-
-        return lastPathComponent
     }
 }

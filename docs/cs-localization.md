@@ -6,12 +6,12 @@ The CXone Chat UI module provides full localization support, allowing you to cus
 
 ## How Localization Works
 
-The SDK exposes two complementary mechanisms for accessing and overriding localized strings:
+All strings shown by the chat UI are configured through a `ChatLocalization` instance that you pass to `ChatCoordinator(chatProvider:chatLocalization:)`. `ChatLocalization(bundle:tablename:provider:)` exposes two complementary override mechanisms:
 
-- **`L10n` enum** — a SwiftGen-generated static enum that provides type-safe access to every string. This is the recommended approach for new integrations.
-- **`ChatLocalization` class** — the original instance-based API, still fully supported. Useful when you need the `@EnvironmentObject` injection model or direct property assignment.
+- **`LocalizationStringProvider`** — a protocol you implement to override individual strings in code.
+- **Custom strings file** — your own `CXOneChatUI.strings` file (optionally localized into multiple languages) in your app bundle.
 
-Both mechanisms share the same underlying override chain, so whichever you use, the same integrator-supplied strings are resolved.
+Both mechanisms share the same override chain, and every string key not covered by your overrides falls back to the SDK's built-in English default.
 
 
 ## How String Resolution Works
@@ -24,26 +24,10 @@ Every string resolves through the following chain — the first match wins:
 | 2 | Integrator's bundle (`CXOneChatUI.strings`) | Full localization via `.lproj` files |
 | 3 (lowest) | SDK's own `Bundle.module` | Built-in English defaults |
 
-The provider and bundle are set on `ChatLocalization` and automatically propagated to the `L10n` static enum by `ChatCoordinator` before the chat UI appears.
+The provider and bundle are set on `ChatLocalization`; `ChatCoordinator` applies them to the whole chat UI when `content(threadId:presentModally:onFinish:)` is called.
 
 
-## Option 1: `L10n` Enum (Recommended)
-
-The `L10n` enum is generated from `CXOneChatUI.strings` by SwiftGen and provides type-safe static access to every string — the same pattern used for accessibility strings (`A11y`).
-
-```swift
-L10n.Common.ok                         // "Ok"
-L10n.Common.cancel                     // "Cancel"
-L10n.ChatList.title                    // "Conversations"
-L10n.Alert.Disconnect.confirm          // "Disconnect"
-L10n.Alert.InvalidFileSize.message(5)  // "Unable to upload... greater than 5 MB"
-L10n.LiveChat.Queue.title(3)           // "You are number 3 in line"
-```
-
-To override strings, use one of the approaches below and pass a configured `ChatLocalization` to your `ChatCoordinator`. The `L10n` enum picks up the overrides automatically.
-
-
-## Option 2: Programmatic Provider
+## Option 1: Programmatic Provider
 
 Use `LocalizationStringProvider` when you need to override strings in code without creating a `.strings` file, or when strings need to be resolved dynamically at runtime.
 
@@ -95,7 +79,7 @@ let localization = ChatLocalization(
 ```
 
 
-## Option 3: Custom Strings File
+## Option 2: Custom Strings File
 
 For comprehensive localization or multiple language support, create your own `CXOneChatUI.strings` file in your app bundle.
 
@@ -167,18 +151,20 @@ To support multiple languages:
 
 3. **The SDK Automatically Uses the Correct Language**
 
-   `ChatLocalization` (and through it, `L10n`) will use the appropriate language based on the user's device settings.
+   `ChatLocalization` will use the appropriate language based on the user's device settings.
 
 
 ---
 
 ## Deprecated Approaches
 
-The following approaches still work and remain supported, but are superseded by the options above.
+The following approaches are superseded by the options above.
 
 ### ⚠️ Deprecated — Direct Property Assignment
 
-You can assign directly to any `lazy var` on a `ChatLocalization` instance. This is still valid for quick one-off overrides but bypasses the type-safe `L10n` enum and does not support multi-language files.
+> **No longer has any effect.** The UI resolves every string through the provider and strings-file chain described above, so values assigned to a `ChatLocalization` property are never displayed. Move each override to a [`LocalizationStringProvider`](#option-1-programmatic-provider) or a [custom strings file](#option-2-custom-strings-file), keyed by the string key (e.g. `common.confirm`).
+
+Older integrations assigned directly to a `lazy var` on a `ChatLocalization` instance:
 
 ```swift
 class MyChatCoordinator: ChatCoordinator {
@@ -193,7 +179,7 @@ class MyChatCoordinator: ChatCoordinator {
 }
 ```
 
-**Limitation:** Values assigned this way are cached on the instance. They do not flow through the `L10n` enum's override chain and will not appear when accessing `L10n.X.y` directly.
+The assigned values are only stored on the instance; replace them with the equivalent provider entries, e.g. `"common.confirm": "OK"`, `"chat_list.title": "My Chats"`, `"common.cancel": "Go Back"`.
 
 ### ⚠️ Deprecated — Old Key Format (`chatui_` prefix)
 

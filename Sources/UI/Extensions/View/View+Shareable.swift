@@ -17,107 +17,8 @@ import SwiftUI
 
 extension View {
     
-    func shareable(_ message: ChatMessage, attachments: [AttachmentItem], spacerLength: CGFloat) -> some View {
-        modifier(ShareableModifier(message: message, attachments: attachments, spacerLength: spacerLength))
-    }
-}
-
-// MARK: - ShareableModifier
-
-private struct ShareableModifier: ViewModifier, Themed {
-
-    // MARK: - Constants
-    
-    private enum Constants {
-        
-        enum Sizing {
-            static let shareButtonStrokeWidth: CGFloat = 1
-        }
-        
-        enum Spacing {
-            static let contentHorizontal: CGFloat = 16
-            static let shareButtonOffset: CGFloat = -1
-        }
-        
-        enum Padding {
-            static let icon: CGFloat = 8
-        }
-    }
-    
-    // MARK: - Properties
-
-    @State private var showShareSheet = false
-
-    @EnvironmentObject var style: ChatStyle
-
-    @Environment(\.colorScheme) var scheme
-
-    let message: ChatMessage
-    let attachments: [AttachmentItem]
-    let spacerLength: CGFloat
-
-    // MARK: - Builder
-
-    func body(content: Content) -> some View {
-        HStack(spacing: Constants.Spacing.contentHorizontal) {
-            if !message.isUserAgent {
-                Spacer(minLength: spacerLength)
-
-                shareButton
-            }
-
-            content
-
-            if message.isUserAgent {
-                shareButton
-
-                Spacer(minLength: spacerLength)
-            }
-        }
-        .sheet(isPresented: $showShareSheet) {
-            ShareSheet(activityItems: attachments.map(\.url))
-        }
-    }
-}
-
-// MARK: - Subviews
-
-private extension ShareableModifier {
-
-    var shareButton: some View {
-        let attachmentDescription = attachments.count == 1
-            ? attachments.first?.fileName ?? A11y.Conversation.MessageCell.Attachment.ButtonShare.fallback
-            : A11y.Conversation.MessageCell.MultipleAttachments.ButtonShare.fallback
-
-        return Button {
-            showShareSheet = true
-        } label: {
-            Asset.share
-                .font(.subheadline.bold())
-                .foregroundStyle(colors.brand.primary)
-                .offset(y: Constants.Spacing.shareButtonOffset)
-        }
-        .padding(Constants.Padding.icon)
-        .background(
-            Circle()
-                .strokeBorder(colors.border.default, lineWidth: Constants.Sizing.shareButtonStrokeWidth)
-                .background(
-                    Circle()
-                        .fill(colors.background.surface.default)
-                )
-        )
-        .accessibilityElement(children: .ignore)
-        .accessibilityIdentifier(A11y.Conversation.MessageCell.Attachment.ButtonShare.identifier)
-        .accessibilityLabel(
-            attachments.count == 1
-                ? A11y.Conversation.MessageCell.Attachment.ButtonShare.label
-                : A11y.Conversation.MessageCell.MultipleAttachments.ButtonShare.label
-        )
-        .accessibilityHint(
-            attachments.count == 1
-                ? A11y.Conversation.MessageCell.Attachment.ButtonShare.hint(attachmentDescription)
-                : A11y.Conversation.MessageCell.MultipleAttachments.ButtonShare.hint(attachmentDescription)
-        )
+    func shareable(_ message: ChatMessage, attachments: [AttachmentItem]) -> some View {
+        modifier(ShareableModifier(message: message, attachments: attachments))
     }
 }
 
@@ -127,14 +28,14 @@ private extension ShareableModifier {
     VStack(spacing: 4) {
         ImageMessageCell(
             message: MockData.imageMessage(user: MockData.agent),
-            item: MockData.imageItem,
+            item: MockData.imageItem(),
             position: .single,
             alertType: .constant(nil)
         )
         
         ImageMessageCell(
             message: MockData.imageMessage(user: MockData.customer),
-            item: MockData.imageItem,
+            item: MockData.imageItem(),
             position: .single,
             alertType: .constant(nil)
         )

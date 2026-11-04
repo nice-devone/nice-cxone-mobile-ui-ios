@@ -32,9 +32,9 @@ internal enum L10n {
       internal static let message = L10n.tr("CXOneChatUI", "alert.end_conversation.message", fallback: "Are you sure you want to end this conversation?")
     }
     internal enum FeatureUnavailable {
-      /// The chat is not available because the '%1$@' feature is not implemented. Check the documentation for more information.
+      /// The chat is not available because the '%1$@' feature could not be enabled. Check your channel configuration or contact support for more information.
       internal static func message(_ p1: Any) -> String {
-        return L10n.tr("CXOneChatUI", "alert.feature_unavailable.message", String(describing: p1), fallback: "The chat is not available because the '%1$@' feature is not implemented. Check the documentation for more information.")
+        return L10n.tr("CXOneChatUI", "alert.feature_unavailable.message", String(describing: p1), fallback: "The chat is not available because the '%1$@' feature could not be enabled. Check your channel configuration or contact support for more information.")
       }
     }
     internal enum FileValidation {
@@ -193,6 +193,10 @@ internal enum L10n {
         internal static let recording = L10n.tr("CXOneChatUI", "chat.message_input.audio_recorder.recording", fallback: "Recording")
       }
     }
+    internal enum SatisfactionSurvey {
+      /// Satisfaction survey
+      internal static let notificationTitle = L10n.tr("CXOneChatUI", "chat.satisfaction_survey.notification_title", fallback: "Satisfaction survey")
+    }
   }
   internal enum ChatList {
     /// No conversations
@@ -265,6 +269,10 @@ internal enum L10n {
     internal static let unassignedAgent = L10n.tr("CXOneChatUI", "common.unassigned_agent", fallback: "No agent")
   }
   internal enum Form {
+    /// %1$@, %2$@
+    internal static func fieldError(_ p1: Any, _ p2: Any) -> String {
+      return L10n.tr("CXOneChatUI", "form.field_error", String(describing: p1), String(describing: p2), fallback: "%1$@, %2$@")
+    }
     /// %@ *
     internal static func requiredLabel(_ p1: Any) -> String {
       return L10n.tr("CXOneChatUI", "form.required_label", String(describing: p1), fallback: "%@ *")
@@ -321,8 +329,14 @@ internal enum L10n {
     }
   }
   internal enum PreChatSurvey {
+    /// Fields marked with * are required.
+    internal static let requiredFieldsLegend = L10n.tr("CXOneChatUI", "pre_chat_survey.required_fields_legend", fallback: "Fields marked with * are required.")
     /// Please fill out all fields and submit the form.
     internal static let subtitle = L10n.tr("CXOneChatUI", "pre_chat_survey.subtitle", fallback: "Please fill out all fields and submit the form.")
+    /// %1$@ %2$@
+    internal static func subtitleWithRequiredFieldsLegend(_ p1: Any, _ p2: Any) -> String {
+      return L10n.tr("CXOneChatUI", "pre_chat_survey.subtitle_with_required_fields_legend", String(describing: p1), String(describing: p2), fallback: "%1$@ %2$@")
+    }
   }
   internal enum SendTranscript {
     /// We do not share submitted emails with any 3rd party affiliate marketing or offer programs

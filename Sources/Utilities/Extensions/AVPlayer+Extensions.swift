@@ -41,18 +41,14 @@ private extension AVPlayerItem {
     /// `currentTime` in seconds with a finite-and-non-negative guarantee. Non-finite or
     /// negative `CMTime` values (e.g. before the asset is ready) collapse to `0`.
     var currentDuration: Double {
-        let seconds = CMTimeGetSeconds(currentTime())
-
-        return seconds.isFinite && seconds >= 0 ? seconds : 0
+        CMTimeGetSeconds(currentTime()).finiteNonNegative
     }
 
     /// Total `duration` in seconds. `AVPlayerItem.duration` is `CMTime.indefinite` until
     /// the underlying asset finishes loading, which produces `NaN` through
     /// `CMTimeGetSeconds`; this guard ensures callers never see `NaN` or negative values.
     var totalDuration: Double {
-        let seconds = CMTimeGetSeconds(duration)
-
-        return seconds.isFinite && seconds >= 0 ? seconds : 0
+        CMTimeGetSeconds(duration).finiteNonNegative
     }
 
     /// `currentDuration / totalDuration`, normalised so an unloaded asset returns `0`
