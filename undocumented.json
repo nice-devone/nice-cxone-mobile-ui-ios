@@ -1,0 +1,54 @@
+{
+  "warnings": [
+    {
+      "file": "/Users/runner/work/nice-cxone-mobile-ui-ios/nice-cxone-mobile-ui-ios/Sources/Domain/Model/RichContent/TimePickerItem.swift",
+      "line": 26,
+      "symbol": "TimePickerItem.title",
+      "symbol_kind": "source.lang.swift.decl.var.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/nice-cxone-mobile-ui-ios/nice-cxone-mobile-ui-ios/Sources/Domain/Model/RichContent/TimePickerItem.swift",
+      "line": 28,
+      "symbol": "TimePickerItem.sheetTitle",
+      "symbol_kind": "source.lang.swift.decl.var.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/nice-cxone-mobile-ui-ios/nice-cxone-mobile-ui-ios/Sources/Domain/Model/RichContent/TimePickerItem.swift",
+      "line": 30,
+      "symbol": "TimePickerItem.timeSlots",
+      "symbol_kind": "source.lang.swift.decl.var.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/nice-cxone-mobile-ui-ios/nice-cxone-mobile-ui-ios/Sources/Presentation/Form/FormViewModel.swift",
+      "line": 19,
+      "symbol": "FormViewModel",
+      "symbol_kind": "source.lang.swift.decl.class",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/nice-cxone-mobile-ui-ios/nice-cxone-mobile-ui-ios/Sources/Presentation/Form/FormViewModel.swift",
+      "line": 39,
+      "symbol": "FormViewModel.onSubmit()",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/nice-cxone-mobile-ui-ios/nice-cxone-mobile-ui-ios/Sources/Presentation/Form/FormViewModel.swift",
+      "line": 43,
+      "symbol": "FormViewModel.validateForm()",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/nice-cxone-mobile-ui-ios/nice-cxone-mobile-ui-ios/Sources/Utilities/ChatLocalization.swift",
+      "line": 21,
+      "symbol": "ChatLocalization",
+      "symbol_kind": "source.lang.swift.decl.class",
+      "warning": "undocumented"
+    }
+  ],
+  "source_directory": "/Users/runner/work/nice-cxone-mobile-ui-ios/nice-cxone-mobile-ui-ios"
+}

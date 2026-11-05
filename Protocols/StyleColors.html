@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>StyleColors Protocol Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+    <script src="../js/lunr.min.js" defer></script>
+    <script src="../js/typeahead.jquery.js" defer></script>
+    <script src="../js/jazzy.search.js" defer></script>
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Protocol/StyleColors" class="dashAnchor"></a>
+    <a title="StyleColors Protocol Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="../index.html">CXoneChatUI 4.1.0 Docs</a> (97% documented)</p>
+        <p class="header-right"><a href="https://github.com/nice-devone/nice-cxone-mobile-ui-ios"><img src="../img/gh.png" alt="GitHub"/>View on GitHub</a></p>
+        <div class="header-right">
+          <form role="search" action="../search.json">
+            <input type="text" placeholder="Search documentation" data-typeahead>
+          </form>
+        </div>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="../index.html">CXoneChatUI</a>
+        <img id="carat" src="../img/carat.png" alt=""/>
+        <a href="../Protocols.html">Protocols</a>
+        <img id="carat" src="../img/carat.png" alt=""/>
+        StyleColors Protocol Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Classes/ChatAccessibility.html">ChatAccessibility</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/ChatCoordinator.html">ChatCoordinator</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/ChatLocalization.html">ChatLocalization</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/ChatStyle.html">ChatStyle</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/FormViewModel.html">FormViewModel</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Enums.html">Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Enums/LogManager.html">LogManager</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Extensions.html">Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Extensions.html#/AppKit">AppKit</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Extensions/NotificationCenter.html">NotificationCenter</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Extensions.html#/c:objc(cs)PDFDocument">PDFDocument</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Extensions.html#/SatisfactionSurveyWebView">SatisfactionSurveyWebView</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Protocols/AccessibilityStringProvider.html">AccessibilityStringProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/BackgroundStyleColors.html">BackgroundStyleColors</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/BackgroundSurfaceStyleColors.html">BackgroundSurfaceStyleColors</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/BorderStyleColors.html">BorderStyleColors</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/BrandStyleColors.html">BrandStyleColors</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/ContentStyleColors.html">ContentStyleColors</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/LocalizationStringProvider.html">LocalizationStringProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/StatusStyleColors.html">StatusStyleColors</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/StyleColors.html">StyleColors</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Structs.html">Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Structs/BackgroundStyleColorsImpl.html">BackgroundStyleColorsImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/BackgroundSurfaceStyleColorsImpl.html">BackgroundSurfaceStyleColorsImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/BorderStyleColorsImpl.html">BorderStyleColorsImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/BrandStyleColorsImpl.html">BrandStyleColorsImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/CXoneChatUIModule.html">CXoneChatUIModule</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/ChatConfiguration.html">ChatConfiguration</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/ContentStyleColorsImpl.html">ContentStyleColorsImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/RichMessageTimeSlot.html">RichMessageTimeSlot</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/StatusStyleColorsImpl.html">StatusStyleColorsImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/StyleColorsImpl.html">StyleColorsImpl</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/StyleColorsManager.html">StyleColorsManager</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/TimePickerItem.html">TimePickerItem</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>StyleColors</h1>
+              <div class="declaration">
+                <div class="language">
+                  
+                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">StyleColors</span> <span class="p">:</span> <span class="kt">Sendable</span></code></pre>
+
+                </div>
+              </div>
+            <p>Protocol defining the required color style groups for the chat UI.</p>
+
+<p>Conforming types provide grouped color styles for background, content, brand, border, and status elements.</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:11CXoneChatUI11StyleColorsP10backgroundAA010BackgrounddE0_pvp"></a>
+                    <a name="//apple_ref/swift/Property/background" class="dashAnchor"></a>
+                    <a class="token" href="#/s:11CXoneChatUI11StyleColorsP10backgroundAA010BackgrounddE0_pvp">background</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The background color style group.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">background</span><span class="p">:</span> <span class="kt"><a href="../Protocols/BackgroundStyleColors.html">BackgroundStyleColors</a></span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:11CXoneChatUI11StyleColorsP7contentAA07ContentdE0_pvp"></a>
+                    <a name="//apple_ref/swift/Property/content" class="dashAnchor"></a>
+                    <a class="token" href="#/s:11CXoneChatUI11StyleColorsP7contentAA07ContentdE0_pvp">content</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The content color style group.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">content</span><span class="p">:</span> <span class="kt"><a href="../Protocols/ContentStyleColors.html">ContentStyleColors</a></span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:11CXoneChatUI11StyleColorsP5brandAA05BranddE0_pvp"></a>
+                    <a name="//apple_ref/swift/Property/brand" class="dashAnchor"></a>
+                    <a class="token" href="#/s:11CXoneChatUI11StyleColorsP5brandAA05BranddE0_pvp">brand</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The brand color style group.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">brand</span><span class="p">:</span> <span class="kt"><a href="../Protocols/BrandStyleColors.html">BrandStyleColors</a></span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:11CXoneChatUI11StyleColorsP6borderAA06BorderdE0_pvp"></a>
+                    <a name="//apple_ref/swift/Property/border" class="dashAnchor"></a>
+                    <a class="token" href="#/s:11CXoneChatUI11StyleColorsP6borderAA06BorderdE0_pvp">border</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The border color style group.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">border</span><span class="p">:</span> <span class="kt"><a href="../Protocols/BorderStyleColors.html">BorderStyleColors</a></span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:11CXoneChatUI11StyleColorsP6statusAA06StatusdE0_pvp"></a>
+                    <a name="//apple_ref/swift/Property/status" class="dashAnchor"></a>
+                    <a class="token" href="#/s:11CXoneChatUI11StyleColorsP6statusAA06StatusdE0_pvp">status</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The status color style group.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">status</span><span class="p">:</span> <span class="kt"><a href="../Protocols/StatusStyleColors.html">StatusStyleColors</a></span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>© 2026 NiCE</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.5</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</html>
