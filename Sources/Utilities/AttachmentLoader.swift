@@ -61,11 +61,7 @@ final class AttachmentLoader: ObservableObject {
             }
 
             do {
-                let (data, response) = try await URLSession.shared.data(from: url)
-
-                if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
-                    throw URLError(.badServerResponse)
-                }
+                let data = try await fetchData()
 
                 // Fire-and-forget cache write to avoid blocking main actor
                 let cacheKey = self.cacheKey
@@ -88,5 +84,33 @@ final class AttachmentLoader: ObservableObject {
             }
         }
 
+    }
+}
+
+// MARK: - Private Methods
+
+private extension AttachmentLoader {
+
+    /// A file picked from Files is security-scoped, and `URLSession` never starts the scope, so reading it
+    /// that way fails with "Operation not permitted". Local files are read directly instead, off the main actor.
+    func fetchData() async throws -> Data {
+        if url.isFileURL {
+            let url = self.url
+
+            return try await Task.detached(priority: .userInitiated) {
+                try url.accessSecurelyScopedResource { url in
+                    try Data(contentsOf: url)
+                }
+            }
+            .value
+        } else {
+            let (data, response) = try await URLSession.shared.data(from: url)
+
+            if response.isHTTPFailure {
+                throw URLError(.badServerResponse)
+            }
+
+            return data
+        }
     }
 }

@@ -43,13 +43,22 @@ open class ChatCoordinator {
     public var chatAccessibility: ChatAccessibility
     /// Indicates whether the chat is currently active (i.e., a chat session is ongoing).
     public private(set) var isActive = false
+    /// A closure that is executed when an explicit-PKCE session's refresh-grant recovery fails
+    /// during connect and no further automatic recovery is possible — the host app must start a new
+    /// authorization flow. Called instead of showing the generic connection-error alert.
+    ///
+    /// - Note: This callback covers connect-time failures only. A refresh-grant rejection during
+    ///   a message send surfaces as a regular send error, not through this handler.
+    ///
+    /// Set this before calling ``content(threadId:presentModally:onFinish:)``.
+    public var onSessionExpired: (() -> Void)?
 
     // MARK: - Init
 
     /// Initializes a new instance of `ChatCoordinator`.
     ///
     /// - Parameters:
-    ///   - chatProvider: The ``ChatProvider`` instance (typically ``CXoneChat``) that manages the chat session.
+    ///   - chatProvider: The `ChatProvider` instance (typically `CXoneChat`) that manages the chat session.
     ///   - chatStyle: An instance of ``ChatStyle`` that defines the visual style and appearance settings for a chat interface.
     ///   - chatLocalization: An instance of ``ChatLocalization`` to handle language and locale-specific text and behavior.
     ///   - chatConfiguration: An instance of ``ChatConfiguration`` to handle additional configuration parameters
@@ -92,29 +101,33 @@ open class ChatCoordinator {
     /// - Returns: A `View` representing the chat UI to be displayed.
     ///
     /// This view is may be used within a `UIHostingController` for integration into a UIKit-based app.
+    ///
+    /// - SeeAlso: ``onSessionExpired`` for handling an unrecoverable explicit-PKCE session.
     public func content(
         threadId: String? = nil,
         presentModally: Bool,
         onFinish: (() -> Void)? = nil
     ) -> some View {
         isActive = true
-        
+
         let viewModel = ChatContainerViewModel(
             chatProvider: chatProvider,
             threadToOpen: threadId,
             chatConfiguration: chatConfiguration,
-            presentModally: presentModally
-        ) { [weak self] in
-            self?.isActive = false
+            presentModally: presentModally,
+            onDismiss: { [weak self] in
+                self?.isActive = false
 
-            L10n.overrideBundle = nil
-            L10n.overrideProvider = nil
+                L10n.overrideBundle = nil
+                L10n.overrideProvider = nil
 
-            A11y.overrideBundle = nil
-            A11y.overrideProvider = nil
+                A11y.overrideBundle = nil
+                A11y.overrideProvider = nil
 
-            onFinish?()
-        }
+                onFinish?()
+            },
+            onSessionExpired: onSessionExpired
+        )
 
         L10n.overrideBundle = chatLocalization.bundle
         L10n.overrideProvider = chatLocalization.provider

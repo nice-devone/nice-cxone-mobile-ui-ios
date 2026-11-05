@@ -37,6 +37,7 @@ struct ThreadView: View, Themed {
     var body: some View {
         ChatView(
             messageGroups: $viewModel.messageGroups,
+            attachments: $viewModel.attachments,
             hasMoreMessagesToLoad: $viewModel.hasMoreMessagesToLoad,
             typingAgent: $viewModel.typingAgent,
             isUserTyping: $viewModel.isUserTyping,
@@ -56,11 +57,9 @@ struct ThreadView: View, Themed {
         .background(colors.background.default)
         .onAppear(perform: viewModel.onAppear)
         .onDisappear(perform: viewModel.onDisappear)
-        .modifier(
-            ChatNavigationTitle(
-                title: viewModel.thread?.titleForConversation ?? L10n.Common.unassignedAgent,
-                isAiAssistant: viewModel.thread?.isAiAssistant == true
-            )
+        .chatNavigationTitle(
+            viewModel.thread?.titleForConversation ?? L10n.Common.unassignedAgent,
+            isAiAssistant: viewModel.thread?.isAiAssistant == true
         )
         .chatToolbarBackground()
         .toolbar {
@@ -95,7 +94,7 @@ struct ThreadView: View, Themed {
                 return
             }
 
-            if let name = viewModel.thread?.assignedAgent?.fullName {
+            if let name = viewModel.thread?.assignedAgent?.displayName {
                 A11y.announce(A11y.Announcement.AgentAssignment.assigned(name))
             } else {
                 A11y.announce(A11y.Announcement.AgentAssignment.Assigned.unknown)
@@ -111,51 +110,87 @@ extension Notification.Name {
     static let colorSchemeChanged = Notification.Name("colorSchemeChanged")
 }
 
+// MARK: - Preview
+
 #Preview {
-    let threadId = "preview-thread"
+    NavigationStack {
+        ThreadView(viewModel: makeThreadViewPreviewModel())
+    }
+    .environmentObject(ChatStyle())
+}
+
+@MainActor
+private func makeThreadViewPreviewModel() -> ThreadViewModel { // swiftlint:disable:this function_body_length
+    let threadId = "preview-thread-001"
     let agent = MockChatProvider.mockAgent
-    let messages: [Message] = [
+    let customer = CustomerIdentity(id: "preview-customer", firstName: "Peter", lastName: "Parker")
+
+    // Builds a deterministic SDK message; attachments drive the image/video/document/audio cells.
+    func message(_ text: String, attachments: [Attachment] = [], fromAgent: Bool, secondsOffset: TimeInterval) -> Message {
         Message(
-            id: "1",
+            id: LowercaseUUID().uuidString,
             threadId: threadId,
-            contentType: .text(MessagePayload(text: "Hello, how can I help you today?", postback: nil)),
-            createdAt: MockData.fixedDate,
-            attachments: [],
-            direction: .toClient,
+            contentType: .text(MessagePayload(text: text)),
+            createdAt: MockData.fixedDate.addingTimeInterval(secondsOffset),
+            attachments: attachments,
+            direction: fromAgent ? .toClient : .toAgent,
             agentStatistics: nil,
             customerStatistics: nil,
-            authorUser: agent,
-            authorEndUserIdentity: nil,
-            status: .seen,
-            isAiGenerated: true
-        ),
-        Message(
-            id: "2",
-            threadId: threadId,
-            contentType: .text(MessagePayload(text: "I have a question about my order.", postback: nil)),
-            createdAt: MockData.fixedDate.addingTimeInterval(60),
-            attachments: [],
-            direction: .toAgent,
-            agentStatistics: nil,
-            customerStatistics: nil,
-            authorUser: nil,
-            authorEndUserIdentity: CustomerIdentity(id: "customer-1", firstName: "Peter", lastName: "Parker"),
+            authorUser: fromAgent ? agent : nil,
+            authorEndUserIdentity: fromAgent ? nil : customer,
             status: .seen
-        ),
-        Message(
-            id: "3",
-            threadId: threadId,
-            contentType: .text(MessagePayload(text: "Of course — please share your order number.", postback: nil)),
-            createdAt: MockData.fixedDate.addingTimeInterval(120),
-            attachments: [],
-            direction: .toClient,
-            agentStatistics: nil,
-            customerStatistics: nil,
-            authorUser: agent,
-            authorEndUserIdentity: nil,
-            status: .seen,
-            isAiGenerated: true
         )
+    }
+
+    let messages: [Message] = [
+        message("Hi! How can I help you today?", fromAgent: true, secondsOffset: 0),
+        message("I'd like to share a few files. It's going to be a video, photo, audio, and a document.", fromAgent: false, secondsOffset: 60),
+        message(
+            "",
+            attachments: [Attachment(url: MockData.imageUrl().absoluteString, friendlyName: "photo.jpg", mimeType: "image/jpeg", fileName: "photo.jpg")],
+            fromAgent: false,
+            secondsOffset: 120
+        ),
+        message(
+            "",
+            attachments: [
+                Attachment(
+                    url: MockData.videoUrl.absoluteString,
+                    friendlyName: "Big Buck Bunny",
+                    mimeType: "video/mp4",
+                    fileName: MockData.videoUrl.lastPathComponent
+                )
+            ],
+            fromAgent: false,
+            secondsOffset: 180
+        ),
+        message(
+            "",
+            attachments: [
+                Attachment(
+                    url: MockData.pdfPreviewUrl.absoluteString,
+                    friendlyName: "lorem-ipsum.pdf",
+                    mimeType: "application/pdf",
+                    fileName: "lorem-ipsum.pdf"
+                )
+            ],
+            fromAgent: false,
+            secondsOffset: 240
+        ),
+        message(
+            "",
+            attachments: [
+                Attachment(
+                    url: MockData.audioUrl.absoluteString,
+                    friendlyName: "voice memo",
+                    mimeType: "audio/mpeg",
+                    fileName: "voice-memo.mp3"
+                )
+            ],
+            fromAgent: false,
+            secondsOffset: 300
+        ),
+        message("Got them — thanks!", fromAgent: true, secondsOffset: 360)
     ]
 
     let sdkThread = CXoneChatSDK.ChatThread(
@@ -163,38 +198,27 @@ extension Notification.Name {
         state: .ready,
         name: "Customer Support",
         messages: messages,
-        assignedAgent: agent,
-        ownerAssignee: nil
+        assignedAgent: agent
     )
 
-    let viewModel: ThreadViewModel = {
-        let container = ChatContainerViewModel(
-            chatProvider: MockChatProvider(initialThreads: [sdkThread]),
-            chatConfiguration: ChatConfiguration(),
-            presentModally: false
-        )
-        let uiThread = CXoneChatUI.ChatThread(
-            id: threadId,
-            name: "Customer Support",
-            messages: messages,
-            assignedAgent: agent,
-            lastAssignedAgent: nil,
-            ownerAssignee: nil,
-            scrollToken: "",
-            state: .ready,
-            positionInQueue: nil
-        )
-        let viewModel = ThreadViewModel(thread: uiThread, containerViewModel: container)
-        viewModel.messageGroups = messages
-            .map(ChatMessageMapper.map)
-            .groupMessages(interval: MessageGroup.defaultGroupingInterval)
-        viewModel.isInputEnabled = true
+    // Mock provider — never connects to a real chat.
+    let container = ChatContainerViewModel(
+        chatProvider: MockChatProvider(initialThreads: [sdkThread]),
+        chatConfiguration: ChatConfiguration(),
+        presentModally: false
+    )
 
-        return viewModel
-    }()
+    let uiThread = CXoneChatUI.ChatThread(
+        id: threadId,
+        name: "Customer Support",
+        messages: messages,
+        assignedAgent: agent,
+        lastAssignedAgent: nil,
+        ownerAssignee: nil,
+        scrollToken: "",
+        state: .ready,
+        positionInQueue: nil
+    )
 
-    return NavigationStack {
-        ThreadView(viewModel: viewModel)
-    }
-    .environmentObject(ChatStyle())
+    return ThreadViewModel(thread: uiThread, containerViewModel: container)
 }

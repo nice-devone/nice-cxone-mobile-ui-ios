@@ -55,11 +55,12 @@ class PrechatSurveyFormViewModel: FormViewModel<[String: String]> {
         self.firstInvalidFieldID = customFields
             .first { field in
                 // Check if the custom field is an e-mail with valid value
-                if let textfield = field as? TextFieldEntity, textfield.isEmail, !field.value.isValidEmail {
+                if let textfield = field as? TextFieldEntity, textfield.hasInvalidEmail {
                     return true
+                } else {
+                    // Required fields must be non-empty
+                    return field.isMissingRequiredValue
                 }
-                // Required fields must be non-empty
-                return field.isRequired ? field.value.isEmpty : false
             }?
             .id
 
@@ -75,7 +76,7 @@ private extension PrechatSurveyFormViewModel {
         var result = [String: String]()
 
         customFields.forEach { type in
-            result[type.ident] = type.value
+            result[type.ident] = type.submissionValue
         }
         
         return result

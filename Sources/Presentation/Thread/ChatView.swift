@@ -16,28 +16,37 @@
 import SwiftUI
 
 struct ChatView: View, Themed {
-
+    
     // MARK: - Constants
     
     private enum Constants {
         
         static let bottomID = "bottom"
-        
+
         enum Spacing {
             static let bodyVertical: CGFloat = 0
             static let messageGroupsMinLength: CGFloat = 16
-            static let archivedChatMessage: CGFloat = 10
-            static let archivedChatElementsVertical: CGFloat = 2
+            static let archivedChatMessage: CGFloat = 14
+            static let archivedChatElementsHorizontal: CGFloat = 12
         }
         
         enum Padding {
             static let positionInQueueVertical: CGFloat = 32
             static let positionInQueueHorizontal: CGFloat = 16
             static let typingIndicatorLeading: CGFloat = 16
-            static let archivedChatMessageDividerHorizontal: CGFloat = 24
-            @MainActor
-            static var archivedChatMessageBottom: CGFloat {
-                UIDevice.hasHomeButton ? 10 : 0
+            /// Clearance below the archived-chat message on home-button devices, which have no bottom
+            /// safe-area inset to keep it off the screen edge.
+            ///
+            /// Takes the measured bottom inset rather than reading `UIDevice.hasHomeButton`, whose
+            /// key-window `safeAreaInsets` query can re-enter the SwiftUI graph mid-update on iOS 26
+            /// (see `BottomSheetView.Constants.Padding.contentBottomMinimum`). `nil` — not measured
+            /// yet — resolves to no padding, the value on the Face ID devices most users have.
+            static func archivedChatMessageBottom(bottomSafeAreaInset: CGFloat?) -> CGFloat {
+                guard let bottomSafeAreaInset, bottomSafeAreaInset.isNegligibleSafeAreaInset else {
+                    return .zero
+                }
+
+                return 14
             }
         }
     }
@@ -45,7 +54,7 @@ struct ChatView: View, Themed {
     // MARK: - Properties
     
     @EnvironmentObject var style: ChatStyle
-
+    
     @SwiftUI.Environment(\.colorScheme) var scheme
     
     @Binding private var hasMoreMessagesToLoad: Bool
@@ -56,6 +65,18 @@ struct ChatView: View, Themed {
     @Binding private var alertType: ChatAlertType?
     @Binding private var messageGroups: [MessageGroup]
     @Binding private var isSendingMessage: Bool
+    @Binding private var attachments: [AttachmentItem]
+
+    /// Whether a keyboard raised by the message input is taking enough height away from the conversation
+    /// for the attachment strip — inset at the bottom of it — to shrink.
+    @State private var keyboardCoverage = KeyboardCoverageState()
+
+    /// Whether the message input is the first responder. Mirrored out of `MessageInputView` because a
+    /// keyboard notification alone doesn't say whose keyboard it is.
+    @State private var isInputFocused = false
+
+    /// Bottom safe-area inset below the archived-chat message, measured by `bottomSafeAreaInsetReader`.
+    @State private var bottomSafeAreaInset: CGFloat?
 
     private let attachmentRestrictions: AttachmentRestrictions
     private let isLiveChat: Bool
@@ -67,9 +88,10 @@ struct ChatView: View, Themed {
     static let packageIdentifier = "CXoneChatUI"
     
     // MARK: - Init
-
+    
     init(
         messageGroups: Binding<[MessageGroup]>,
+        attachments: Binding<[AttachmentItem]>,
         hasMoreMessagesToLoad: Binding<Bool>,
         typingAgent: Binding<ChatUser?>,
         isUserTyping: Binding<Bool>,
@@ -85,6 +107,7 @@ struct ChatView: View, Themed {
         onRichMessageElementSelected: @escaping (RichMessageSubElementType) -> Void
     ) {
         self._messageGroups = messageGroups
+        self._attachments = attachments
         self._hasMoreMessagesToLoad = hasMoreMessagesToLoad
         self._typingAgent = typingAgent
         self._isUserTyping = isUserTyping
@@ -99,14 +122,14 @@ struct ChatView: View, Themed {
         self.loadMoreMessages = loadMoreMessages
         self.onRichMessageElementSelected = onRichMessageElementSelected
     }
-
+    
     // MARK: - Builder
-
+    
     var body: some View {
         VStack(spacing: Constants.Spacing.bodyVertical) {
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
+                    LazyVStack(spacing: .zero, pinnedViews: .sectionHeaders) {
                         Section {
                             ForEach(messageGroups) { group in
                                 MessageGroupView(
@@ -116,6 +139,11 @@ struct ChatView: View, Themed {
                                     onRichMessageElementSelected: onRichMessageElementSelected
                                 )
                                 .id(group.id)
+                            }
+                        
+                            if let typingAgent {
+                                typingIndicator(agent: typingAgent)
+                                    .padding(.leading, Constants.Padding.typingIndicatorLeading)
                             }
                         } header: {
                             if let queuePosition {
@@ -135,15 +163,40 @@ struct ChatView: View, Themed {
                             }
                         }
                     }
+                    .onChange(of: typingAgent?.id) { newValue in
+                        guard newValue != nil else {
+                            return
+                        }
+
+                        if let name = typingAgent?.userName {
+                            A11y.announce(A11y.Announcement.Conversation.TypingIndicator.started(name))
+                        } else {
+                            A11y.announce(A11y.Announcement.Conversation.TypingIndicator.Started.unknown)
+                        }
+
+                        // Driven from the agent rather than the indicator's own `onAppear`, which the
+                        // enclosing `LazyVStack` only runs once the indicator is near the viewport —
+                        // reading history would otherwise leave the conversation where it was. The
+                        // deferred scroll is the same iOS 16 timing quirk as above. DE-175228.
+                        Task { @MainActor in
+                            withAnimation {
+                                proxy.scrollTo(Constants.bottomID, anchor: .bottom)
+                            }
+                        }
+                    }
                     .task { @MainActor in
-                        proxy.scrollTo(messageGroups.last?.id, anchor: .bottom)
+                        // `onChange` above never fires for the value the view starts with, so an agent
+                        // already typing when a conversation opens is handled here. `bottomID` would
+                        // serve both cases, but the no-indicator path keeps its existing anchor on the
+                        // last group so the initial offset — and every reference recorded against it —
+                        // stays put.
+                        if typingAgent == nil {
+                            proxy.scrollTo(messageGroups.last?.id, anchor: .bottom)
+                        } else {
+                            proxy.scrollTo(Constants.bottomID, anchor: .bottom)
+                        }
                     }
 
-                    if let typingAgent {
-                        typingIndicator(agent: typingAgent, proxy: proxy)
-                            .padding(.leading, Constants.Padding.typingIndicatorLeading)
-                    }
-                    
                     Spacer(minLength: Constants.Spacing.messageGroupsMinLength)
                         .id(Constants.bottomID)
                 }
@@ -153,15 +206,36 @@ struct ChatView: View, Themed {
                     }
                 }
                 .scrollDismissesKeyboard(.interactively)
+                .dismissKeyboardOnTap()
+                // The staged attachments belong to the conversation's space, not the input bar's: their
+                // height comes out of the scroll area, so the bar's height — and therefore whether it
+                // clears the keyboard — never depends on how many attachments are staged or how large
+                // the Dynamic Type setting is.
+                .safeAreaInset(edge: .bottom, spacing: Constants.Spacing.bodyVertical) {
+                    if !attachments.isEmpty, !isThreadClosed {
+                        MessageInputAttachmentListView(
+                            attachments: $attachments,
+                            alertType: $alertType,
+                            isKeyboardVisible: keyboardCoverage.isCoveringConversation
+                        )
+                        // Opaque — the conversation scrolls underneath the inset. No tap-to-dismiss
+                        // here: as a simultaneous gesture it would fire for the remove buttons too, so
+                        // deleting an attachment would also resign the input the user is typing in.
+                        .background(colors.background.default)
+                    }
+                }
             }
 
             if isThreadClosed {
                 archivedChatMessage
-                    .padding(.bottom, Constants.Padding.archivedChatMessageBottom)
+                    .padding(.bottom, Constants.Padding.archivedChatMessageBottom(bottomSafeAreaInset: bottomSafeAreaInset))
+                    .background(bottomSafeAreaInsetReader)
             } else {
                 MessageInputView(
                     attachmentRestrictions: attachmentRestrictions,
+                    attachments: $attachments,
                     isEditing: $isUserTyping,
+                    isInputFocused: $isInputFocused,
                     isInputEnabled: $isInputEnabled,
                     isSendingMessage: $isSendingMessage,
                     alertType: $alertType,
@@ -170,16 +244,20 @@ struct ChatView: View, Themed {
             }
         }
         .background(colors.background.default)
-        .onChange(of: typingAgent?.id) { newValue in
-            guard newValue != nil else {
-                return
-            }
+        // Hosted here, above the conversation's `LazyVStack`, so an attachment preview survives its cell
+        // being unloaded — which the stack does routinely, and which a rotation provokes by reflowing
+        // every bubble to the new width. See `AttachmentPreviewHost`.
+        .attachmentPreviewHost(alertType: $alertType)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
+            let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
 
-            if let name = typingAgent?.userName {
-                A11y.announce(A11y.Announcement.Conversation.TypingIndicator.started(name))
-            } else {
-                A11y.announce(A11y.Announcement.Conversation.TypingIndicator.Started.unknown)
-            }
+            keyboardCoverage.keyboardWillShow(height: frame?.height)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardCoverage.keyboardWillHide()
+        }
+        .onChange(of: isInputFocused) { isFocused in
+            keyboardCoverage.inputFocusChanged(to: isFocused)
         }
     }
 }
@@ -188,32 +266,43 @@ struct ChatView: View, Themed {
 
 private extension ChatView {
 
-    func typingIndicator(agent: ChatUser?, proxy: ScrollViewProxy) -> some View {
+    func typingIndicator(agent: ChatUser?) -> some View {
         HStack {
             TypingIndicator(agent: agent)
-                .onAppear {
-                    // Same iOS 16 timing quirk as the `.onChange` above: `.onAppear` runs
-                    // before the newly inserted indicator has laid out, so a synchronous
-                    // `scrollTo` targets the previous bottom. DE-175228.
-                    Task { @MainActor in
-                        withAnimation {
-                            proxy.scrollTo(Constants.bottomID)
-                        }
-                    }
-                }
 
             Spacer()
         }
+    }
+
+    /// Reports the bottom safe-area inset into `bottomSafeAreaInset`.
+    ///
+    /// The reader must respect the safe area: its proxy then reports the inset it borders. Adding
+    /// `ignoresSafeArea` would make it report zero for that edge instead. Assigned from
+    /// `onAppear`/`onChange` rather than during the reader's own body, which would be a state mutation
+    /// inside a layout pass.
+    var bottomSafeAreaInsetReader: some View {
+        GeometryReader { proxy in
+            Color.clear
+                .onAppear {
+                    bottomSafeAreaInset = proxy.safeAreaInsets.bottom
+                }
+                .onChange(of: proxy.safeAreaInsets.bottom) { newInset in
+                    bottomSafeAreaInset = newInset
+                }
+        }
+        .accessibilityHidden(true)
     }
     
     var archivedChatMessage: some View {
         VStack(spacing: Constants.Spacing.archivedChatMessage) {
             ColoredDivider(colors.border.default)
-                .padding(.horizontal, Constants.Padding.archivedChatMessageDividerHorizontal)
-            
-            HStack(spacing: Constants.Spacing.archivedChatElementsVertical) {
+                .ignoresSafeArea(.container, edges: .horizontal)
+                .accessibilityHidden(true)
+
+            HStack(spacing: Constants.Spacing.archivedChatElementsHorizontal) {
                 Asset.Message.archiveFill
-                
+                    .accessibilityHidden(true)
+
                 Text(
                     isLiveChat
                         ? L10n.Chat.MessageInput.closed
@@ -222,7 +311,7 @@ private extension ChatView {
             }
             .foregroundStyle(colors.content.tertiary)
         }
-        .background(colors.background.default)
+        .background(colors.background.default, ignoresSafeAreaEdges: .horizontal)
     }
 }
 
@@ -239,6 +328,7 @@ private extension ChatView {
     NavigationStack {
         ChatView(
             messageGroups: .constant(messageGroups),
+            attachments: .constant([MockData.imageItem(imageIndex: 1)]),
             hasMoreMessagesToLoad: .constant(true),
             typingAgent: .constant(MockData.agent),
             isUserTyping: .constant(false),

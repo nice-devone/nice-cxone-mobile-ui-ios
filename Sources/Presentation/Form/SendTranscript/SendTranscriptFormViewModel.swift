@@ -81,9 +81,9 @@ class SendTranscriptFormViewModel: FormViewModel<Bool>, Overlayable {
     override func validateForm() {
         LogManager.trace("Validating form")
         
-        let isEmailValid = !emailEntity.value.isEmpty && emailEntity.value.isValidEmail
-        let isConfirmationEmailValid = !confirmationEntity.value.isEmpty && confirmationEntity.value.isValidEmail
-        let isConfirmed = emailEntity.value == confirmationEntity.value
+        let isEmailValid = emailEntity.hasValidEmail
+        let isConfirmationEmailValid = confirmationEntity.hasValidEmail
+        let isConfirmed = emailEntity.submissionValue == confirmationEntity.submissionValue
 
         isFormValid = isEmailValid && isConfirmationEmailValid && isConfirmed
 
@@ -115,7 +115,7 @@ private extension SendTranscriptFormViewModel {
         
         do {
             let provider = try chatProvider.threads.provider(for: chatThread.id)
-            try await provider.sendTranscript(to: emailEntity.value)
+            try await provider.sendTranscript(to: emailEntity.submissionValue)
             
             LogManager.trace("Chat transcript successfully sent")
         } catch {

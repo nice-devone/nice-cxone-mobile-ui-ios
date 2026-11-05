@@ -15,7 +15,7 @@
 
 import Foundation
 
-/// A single selectable time slot used by ``MessageTimePicker``
+/// A single selectable time slot used by `MessageTimePicker`
 ///
 /// It contains an identifier, duration, and the start date/time for the slot
 public struct RichMessageTimeSlot: Hashable, Equatable, Sendable {

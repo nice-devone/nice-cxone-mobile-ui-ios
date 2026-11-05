@@ -18,8 +18,9 @@ import UniformTypeIdentifiers
 
 extension UTType {
     
-    static let imagePreffix = "image/"
-    static let videoPreffix = "video/"
+    static let imagePrefix = "image/"
+    static let videoPrefix = "video/"
+    static let audioPrefix = "audio/"
     
     static func resolve(for mimeType: String) -> UTType? {
         guard mimeType.contains("*") else {
@@ -37,7 +38,11 @@ extension UTType {
     static func resolve(for allowedFileType: [String]) -> [UTType] {
         var result = allowedFileType.compactMap(UTType.resolve)
         
-        if allowedFileType.contains(where: { $0.contains(UTType.videoPreffix) }) {
+        let allowsVideo = allowedFileType.contains { fileType in
+            fileType.contains(UTType.videoPrefix)
+        }
+
+        if allowsVideo {
             result.append(UTType.movie)
         }
         

@@ -51,6 +51,7 @@ import Foundation
 ///     ...
 /// }
 /// ```
+@MainActor
 class TreeNodeFieldEntity: ObservableObject, Identifiable {
     
     // MARK: - Properties
@@ -67,9 +68,6 @@ class TreeNodeFieldEntity: ObservableObject, Identifiable {
     /// An array of `TreeNodeFieldEntity` objects, representing child nodes within the tree.
     let children: [TreeNodeFieldEntity]?
     
-    /// A boolean flag indicating whether the tree node is currently selected.
-    var isSelected: Bool
-    
     // MARK: - Init
     
     /// Initialization of the ListFieldEntity
@@ -78,18 +76,15 @@ class TreeNodeFieldEntity: ObservableObject, Identifiable {
     /// - `label`: The label or name associated with the tree node.
     /// - `value`: The value or unique identifier of the tree node.
     /// - `children`: An array of `TreeNodeFieldEntity` objects, representing child nodes within the tree.
-    /// - `isSelected`: A boolean flag indicating whether the tree node is currently selected.
     init(
         id: String = LowercaseUUID().uuidString,
         label: String,
         value: String,
-        children: [TreeNodeFieldEntity]? = nil,
-        isSelected: Bool = false
+        children: [TreeNodeFieldEntity]? = nil
     ) {
         self.id = id
         self.label = label
         self.value = value
         self.children = children
-        self.isSelected = isSelected
     }
 }

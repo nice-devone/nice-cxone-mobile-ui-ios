@@ -24,24 +24,29 @@ struct DisclosureGroupView<Label, Content>: View, Themed where Label: View, Cont
     @Environment(\.colorScheme) var scheme
     
     @State private var isExpanded: Bool
-    
+
+    /// Whether the currently selected leaf lives somewhere in this group's subtree — announced on
+    /// the collapsed group so VoiceOver users don't have to expand every branch to find it.
+    let containsSelection: Bool
+
     var content: () -> Content
     var label: () -> Label
-    
+
     // MARK: - Init
-    
-    init(isExpanded: Bool, content: @escaping () -> Content, label: @escaping () -> Label) {
+
+    init(isExpanded: Bool, containsSelection: Bool = false, content: @escaping () -> Content, label: @escaping () -> Label) {
         self.isExpanded = isExpanded
+        self.containsSelection = containsSelection
         self.content = content
         self.label = label
     }
-    
+
     // MARK: - Builder
-    
+
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded, content: content, label: label)
             .foregroundStyle(isExpanded ? colors.brand.primary : colors.content.tertiary)
-            .disclosureGroupStyle(.custom)
+            .disclosureGroupStyle(.custom(containsSelection: containsSelection))
     }
 }
 
@@ -49,7 +54,9 @@ struct DisclosureGroupView<Label, Content>: View, Themed where Label: View, Cont
 
 extension DisclosureGroupStyle where Self == CustomDisclosureGroupStyle {
 
-    static var custom: CustomDisclosureGroupStyle { CustomDisclosureGroupStyle() }
+    static func custom(containsSelection: Bool) -> CustomDisclosureGroupStyle {
+        CustomDisclosureGroupStyle(containsSelection: containsSelection)
+    }
 }
 
 private struct CustomDisclosureGroupStyle: DisclosureGroupStyle, Themed {
@@ -68,13 +75,15 @@ private struct CustomDisclosureGroupStyle: DisclosureGroupStyle, Themed {
     }
     
     // MARK: - Properties
-    
+
     @Environment(\.colorScheme) var scheme
-    
+
     @EnvironmentObject var style: ChatStyle
-    
+
+    let containsSelection: Bool
+
     // MARK: - Methods
-    
+
     func makeBody(configuration: Configuration) -> some View {
         VStack(alignment: .leading, spacing: .zero) {
             Button {
@@ -93,7 +102,13 @@ private struct CustomDisclosureGroupStyle: DisclosureGroupStyle, Themed {
                 }
                 .background(colors.background.default)
             }
-            
+            .accessibilityValue(accessibilityValue(isExpanded: configuration.isExpanded))
+            .accessibilityHint(
+                configuration.isExpanded
+                    ? A11y.Form.TreeFieldView.Content.ParentHint.expanded
+                    : A11y.Form.TreeFieldView.Content.ParentHint.collapsed
+            )
+
             ColoredDivider(colors.border.default)
                 .accessibilityHidden(true)
             
@@ -102,6 +117,24 @@ private struct CustomDisclosureGroupStyle: DisclosureGroupStyle, Themed {
             }
         }
         .animation(.easeInOut(duration: StyleGuide.animationDuration), value: configuration.isExpanded)
+    }
+}
+
+// MARK: - Private Methods
+
+private extension CustomDisclosureGroupStyle {
+
+    func accessibilityValue(isExpanded: Bool) -> String {
+        switch (isExpanded, containsSelection) {
+        case (true, true):
+            A11y.Form.TreeFieldView.Content.ParentState.expandedWithSelection
+        case (true, false):
+            A11y.Form.TreeFieldView.Content.ParentState.expanded
+        case (false, true):
+            A11y.Form.TreeFieldView.Content.ParentState.collapsedWithSelection
+        case (false, false):
+            A11y.Form.TreeFieldView.Content.ParentState.collapsed
+        }
     }
 }
 

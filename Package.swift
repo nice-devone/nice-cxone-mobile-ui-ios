@@ -31,9 +31,12 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
         .package(url: "https://github.com/airbnb/lottie-spm.git", from: "4.5.2"),
-        .package(url: "https://github.com/Kolos65/Mockable", from: "0.0.11"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "4.0.0"),
-        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios.git", from: "4.0.0")
+        // Pinned exactly: Mockable 0.6.3+ caps xctest-dynamic-overlay below 1.10.0 (its manifest checks `swift(>=6.0)`
+        // instead of `compiler(>=6.0)`), which clashes with swift-issue-reporting pulled in by swift-custom-dump.
+        // Revisit once Mockable fixes the check upstream.
+        .package(url: "https://github.com/Kolos65/Mockable", exact: "0.6.2"),
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-sdk-ios.git", from: "4.1.0"),
+        .package(url: "https://github.com/nice-devone/nice-cxone-mobile-guide-utility-ios.git", from: "4.1.0")
     ],
     targets: [
         .target(
@@ -52,8 +55,6 @@ let package = Package(
             ],
             swiftSettings: [
                 .define("MOCKING", .when(configuration: .debug))
-            ],
-            plugins: [
             ]
         )
     ]

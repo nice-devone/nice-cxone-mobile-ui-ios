@@ -135,79 +135,9 @@ final class Lorem {
     class func paragraph(nbSentences: Int = 3, variable: Bool = true) -> String {
         if nbSentences <= 0 {
             return ""
-        }
-        
-        return sentences(nbSentences: variable ? nbSentences.randomize(variation: 40) : nbSentences).joined(separator: " ")
-    }
-    
-    /**
-     Generate an array of random paragraphs.
-     - parameter nbParagraphs: The number of paragraphs to generate.
-     - returns: Returns an array of `nbParagraphs` paragraphs.
-     */
-    class func paragraphs(nbParagraphs: Int = 3) -> [String] {
-        return (0..<nbParagraphs).map { _ in paragraph() }
-    }
-    
-    /**
-     Generate a string of random paragrahs.
-     - parameter nbParagraphs: The number of paragraphs to generate.
-     - returns: Returns a string of random paragraphs.
-     */
-    class func paragraphs(nbParagraphs: Int = 3) -> String {
-        return paragraphs(nbParagraphs: nbParagraphs).joined(separator: "\n\n")
-    }
-    
-    /**
-     Generate a string of at most `maxNbChars` characters.
-     - parameter maxNbChars: The maximum number of characters the string
-     should contain.
-     - returns: Returns a string of at most `maxNbChars` characters.
-     */
-    class func text(maxNbChars: Int = 200) -> String {
-        var result: [String] = []
-        
-        if maxNbChars < 5 {
-            return ""
-        } else if maxNbChars < 25 {
-            while result.isEmpty {
-                var size = 0
-                
-                while size < maxNbChars {
-                    let w = (size != 0 ? " " : "") + word()
-                    result.append(w)
-                    size += w.count
-                }
-                
-                _ = result.popLast()
-            }
-        } else if maxNbChars < 100 {
-            while result.isEmpty {
-                var size = 0
-                
-                while size < maxNbChars {
-                    let s = (size != 0 ? " " : "") + sentence()
-                    result.append(s)
-                    size += s.count
-                }
-                
-                _ = result.popLast()
-            }
         } else {
-            while result.isEmpty {
-                var size = 0
-                
-                while size < maxNbChars {
-                    let p = (size != 0 ? "\n" : "") + paragraph()
-                    result.append(p)
-                    size += p.count
-                }
-                
-                _ = result.popLast()
-            }
+            return sentences(nbSentences: variable ? nbSentences.randomize(variation: 40) : nbSentences).joined(separator: " ")
         }
-        
-        return result.joined(separator: "")
     }
 }
 

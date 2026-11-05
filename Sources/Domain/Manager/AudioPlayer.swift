@@ -24,6 +24,20 @@ import SwiftUI
 @MainActor
 class AudioPlayer: NSObject, ObservableObject {
 
+    // MARK: - Objects
+
+    /// How far `prepare()` has got with fetching the attachment and loading it into the player.
+    enum PreparationState: Equatable {
+        /// `prepare()` has not run yet.
+        case idle
+        /// The attachment is being downloaded — playback is possible, just not yet.
+        case preparing
+        /// The attachment is loaded and playback can start.
+        case ready
+        /// The attachment could not be fetched or loaded.
+        case failed
+    }
+
     // MARK: - Properties
 
     /// Binding to the alert presented by the parent view when an error occurs.
@@ -39,6 +53,7 @@ class AudioPlayer: NSObject, ObservableObject {
     private let audioSession: AudioSessionProviding
     private let audioPlayback: AudioPlaybackProviding
     private let audioFileDownloader: AudioFileDownloading
+    private let audioSessionCoordinator: AudioSessionCoordinator
     /// Pre-computed zero-time string used as the initial and reset value for progress/duration labels.
     private let formattedZeroDuration: String
     private let formatter: DateComponentsFormatter = {
@@ -55,6 +70,12 @@ class AudioPlayer: NSObject, ObservableObject {
     /// ensuring `invalidate()` runs on the same run loop thread that scheduled the timer.
     nonisolated(unsafe) private var timer: Timer?
     private var fileName: String
+    /// How far `prepare()` has got with the attachment.
+    private var preparationState: PreparationState = .idle
+    /// Whether the customer asked for playback while `prepare()` was still downloading.
+    private var shouldPlayWhenReady = false
+    /// Bumped by every `prepare()`, so a superseded run cannot write state that belongs to a newer one.
+    private var preparationGeneration = 0
 
     /// The remote URL of the audio attachment.
     private(set) var url: URL
@@ -80,7 +101,8 @@ class AudioPlayer: NSObject, ObservableObject {
         alertType: Binding<ChatAlertType?>,
         audioSession: AudioSessionProviding = AVAudioSession.sharedInstance(),
         audioPlayback: AudioPlaybackProviding = DefaultAudioPlaybackProvider(),
-        audioFileDownloader: AudioFileDownloading = DefaultAudioFileDownloader()
+        audioFileDownloader: AudioFileDownloading = DefaultAudioFileDownloader(),
+        audioSessionCoordinator: AudioSessionCoordinator = .shared
     ) {
         self.url = url
         self.fileName = fileName
@@ -88,6 +110,7 @@ class AudioPlayer: NSObject, ObservableObject {
         self.audioSession = audioSession
         self.audioPlayback = audioPlayback
         self.audioFileDownloader = audioFileDownloader
+        self.audioSessionCoordinator = audioSessionCoordinator
 
         self.formattedZeroDuration = formatter.string(from: 0) ?? ""
         self.formattedDuration = formattedZeroDuration
@@ -106,17 +129,43 @@ class AudioPlayer: NSObject, ObservableObject {
 
     /// Downloads the audio file (if not already cached) and prepares the player for playback.
     ///
-    /// Activates the `AVAudioSession` with `.playback` category and updates `formattedDuration`
-    /// once the file is ready. Shows a generic error alert and resets state on failure.
+    /// Updates `formattedDuration` once the file is ready. Runs from `.task` on every appearance, so a
+    /// failure resets the labels and fails quietly — `play()` surfaces it when the customer asks for the
+    /// audio. The shared `AVAudioSession` is deliberately left untouched here — see `play()`.
     @MainActor
     func prepare() async {
         LogManager.trace("Preparing audio player")
 
+        // A pending tap is only dropped when this call supersedes a preparation that is still in flight: that
+        // tap belongs to an appearance which is already gone, and keeping it would start playback on its own
+        // when the cell scrolls back into view. A tap made while `.idle` — between the cell appearing and
+        // `.task` getting here — is a live request, so it survives and is honoured below
+        if preparationState == .preparing, shouldPlayWhenReady {
+            shouldPlayWhenReady = false
+            isPlaying = false
+        }
+
+        preparationGeneration += 1
+        let generation = preparationGeneration
+        preparationState = .preparing
+
         do {
             let fileUrl = try await audioFileDownloader.downloadAudioFile(from: url, fileName: fileName)
+
+            // Both boundaries that write player state are guarded the same way: superseded runs return
+            // silently because the newer run owns that state now, while a cancelled run throws so the `catch`
+            // below can reset it. Checked before the first mutation, not just before the state transition, so
+            // neither can reset the item or the progress label of a playback a newer run has already started
+            guard isCurrent(generation) else {
+                return
+            }
+
+            // Cancellation is asserted rather than relied on to surface as a throw: `DefaultAudioFileDownloader`
+            // resumes its continuation normally when the `URLSession` download completes, and the cached branch
+            // never suspends at all
+            try Task.checkCancellation()
+
             audioPlayback.replaceCurrentItem(with: fileUrl)
-            try audioSession.setCategory(.playback, mode: .default, options: [])
-            try audioSession.setActive(true, options: [])
 
             formattedProgress = safeFormatTimeInterval(0)
             // Awaiting the asset's loaded duration here is required: the synchronous
@@ -124,26 +173,116 @@ class AudioPlayer: NSObject, ObservableObject {
             // metadata, which happens after `replaceCurrentItem`. Reading it inline would
             // freeze `formattedDuration` at "00:00".
             let total = try await audioPlayback.loadTotalDuration()
+
+            // The same pair again — a newer run can have taken over, or this one been cancelled, while the
+            // duration was loading. Without the cancellation half, a latched tap on a cell that has since
+            // scrolled away would fall through to `play()` below: audio starting unprompted
+            guard isCurrent(generation) else {
+                return
+            }
+
+            try Task.checkCancellation()
+
             formattedDuration = safeFormatTimeInterval(total)
+
+            preparationState = .ready
+
+            // The customer tapped play while the download was still running — honour it now
+            if shouldPlayWhenReady {
+                shouldPlayWhenReady = false
+
+                play()
+            }
         } catch {
+            // Same as above: a superseded run must not undo the newer one's state
+            guard isCurrent(generation) else {
+                return
+            }
+
+            // A cancelled `.task` means the cell scrolled away, not that anything failed: no alert, and
+            // `.idle` rather than `.failed` so the next appearance can prepare (and play) normally
+            if Task.isCancelled || error is CancellationError {
+                LogManager.trace("Audio preparation was cancelled")
+
+                preparationState = .idle
+                shouldPlayWhenReady = false
+                isPlaying = false
+                return
+            }
+
             error.logError()
 
+            preparationState = .failed
+
             reset()
-            alertType = .genericError
+
+            // Usually nothing here is user-initiated — this runs whenever the cell appears — so it fails
+            // quietly: an alert would pop over the conversation on its own, once per audio cell in a
+            // thread full of them. The exception is a customer already waiting on this playback.
+            if shouldPlayWhenReady {
+                shouldPlayWhenReady = false
+
+                alertType = .genericError
+            }
         }
     }
 
     /// Starts or resumes playback from the current position.
     ///
-    /// Seeks to the beginning when the previous playback reached the end.
-    /// Creates the progress timer if it is not already running.
+    /// Activates the `AVAudioSession` with the `.playback` category, seeks to the beginning when the
+    /// previous playback reached the end, and creates the progress timer if it is not already running.
+    /// While the attachment is still downloading the request is remembered and starts once it lands.
+    /// Shows a generic error alert and does nothing when the audio failed to load or the session is refused.
     func play() {
         LogManager.trace("Playing audio")
+
+        switch preparationState {
+        case .ready:
+            break
+        case .idle, .preparing:
+            // Nothing has failed — the download is in flight, or `.task` is about to start it — so remember
+            // the request and start as soon as `prepare()` lands. `isPlaying` flips now so the button
+            // reflects the pending playback rather than looking like a dead tap
+            LogManager.trace("Audio is still being prepared - playback is pending")
+
+            shouldPlayWhenReady = true
+            isPlaying = true
+            return
+        case .failed:
+            // Without a loaded item, claiming the session would interrupt the customer's other audio for
+            // a playback that cannot produce sound
+            LogManager.error(.failed("Audio is not ready to be played"))
+
+            isPlaying = false
+            alertType = .genericError
+            return
+        }
+
+        // Let the current owner step aside first: a voice message being recorded is finalized (and stays
+        // sendable) instead of being destroyed by the category flip below
+        audioSessionCoordinator.claimForPlayback(self)
+
+        // Claim the shared session here rather than in `prepare()`: a cell merely scrolling into view
+        // must not take the session away from an in-progress voice-message recording
+        do {
+            try audioSession.setCategory(.playback, mode: .default, options: [])
+            try audioSession.setActive(true, options: [])
+        } catch {
+            error.logError()
+
+            // Bail out instead of falling through: `AVPlayer` cannot output on a session it was refused,
+            // so continuing would leave the cell showing the pause icon with no sound and no way back.
+            // `isPlaying` is cleared rather than left alone because a deferred playback already set it —
+            // `prepare()` calls this itself once a latched tap resolves
+            isPlaying = false
+            alertType = .genericError
+            return
+        }
 
         isPlaying = true
 
         // Restart from the beginning when the previous playback completed
-        if audioPlayback.playProgress == 1 {
+        if isPlaybackFinished {
             audioPlayback.seekToZero()
         }
 
@@ -155,8 +294,13 @@ class AudioPlayer: NSObject, ObservableObject {
     }
 
     /// Pauses playback, invalidates the progress timer, and deactivates the audio session.
+    ///
+    /// Also cancels a playback still waiting on `prepare()`, so a download that lands after the customer
+    /// changed their mind doesn't start playing on its own.
     func pause() {
         LogManager.trace("Pausing audio")
+
+        shouldPlayWhenReady = false
 
         timer?.invalidate()
         audioPlayback.pause()
@@ -185,7 +329,7 @@ class AudioPlayer: NSObject, ObservableObject {
         }
 
         let rawCurrent = audioPlayback.currentDuration
-        let currentSeconds = rawCurrent.isFinite ? max(0, rawCurrent) : 0
+        let currentSeconds = rawCurrent.finiteNonNegative
         let targetTime = currentSeconds + Double(value)
         let clampedTargetTime = max(0.0, min(targetTime, duration))
         audioPlayback.seek(to: clampedTargetTime)
@@ -206,11 +350,32 @@ private extension AudioPlayer {
     ///
     /// - Returns: A formatted string or `formattedZeroDuration` when input is invalid.
     func safeFormatTimeInterval(_ interval: TimeInterval) -> String {
-        let clamped: TimeInterval = interval.isFinite && interval >= 0 ? interval : 0
+        let clamped: TimeInterval = interval.finiteNonNegative
         
         return formatter.string(from: clamped) ?? formattedZeroDuration
     }
     
+    /// Whether the playback has reached the end of the clip.
+    var isPlaybackFinished: Bool {
+        audioPlayback.playProgress >= 1
+    }
+
+    /// Whether `generation` is still the newest `prepare()` run.
+    ///
+    /// A run that has been superseded must not write player state — the newer one owns it now.
+    ///
+    /// - Parameter generation: The generation captured when the run started.
+    /// - Returns: `true` while this run is still the current one.
+    func isCurrent(_ generation: Int) -> Bool {
+        guard generation == preparationGeneration else {
+            LogManager.trace("Discarding a superseded audio preparation")
+
+            return false
+        }
+
+        return true
+    }
+
     func reset() {
         LogManager.trace("Resetting AudioPlayer")
 
@@ -221,7 +386,9 @@ private extension AudioPlayer {
         formattedDuration = formattedZeroDuration
         audioPlayback.pause()
         timer?.invalidate()
-        try? audioSession.setActive(false, options: [])
+        // The session is deliberately not deactivated here: `reset()` runs from a failed `prepare()`,
+        // which never claimed it, and deactivating would cut off whoever does own it — an in-progress
+        // voice-message recording or another cell's playback
     }
 
     /// Repeating timer callback that updates `formattedProgress` and stops playback when complete.
@@ -233,9 +400,11 @@ private extension AudioPlayer {
     func timerAction() {
         formattedProgress = safeFormatTimeInterval(TimeInterval(audioPlayback.currentDuration))
 
-        if audioPlayback.playProgress >= 1 {
+        if isPlaybackFinished {
             isPlaying = false
             timer?.invalidate()
+            // Mirrors `pause()`: hand the session back when the clip ends, so other audio sources resume
+            try? audioSession.setActive(false, options: [])
         }
     }
 }

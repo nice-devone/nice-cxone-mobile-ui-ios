@@ -32,12 +32,6 @@ struct TextFieldView: View {
         (entity as? TextFieldEntity)?.isEmail ?? false
     }
 
-    private var fieldTitle: String {
-        entity.isRequired
-            ? L10n.Form.requiredLabel(entity.label)
-            : entity.label
-    }
-
     private var fieldValidator: (String) -> String? {
         allOf(
             entity.isRequired ? required : any,
@@ -59,7 +53,8 @@ struct TextFieldView: View {
 
     var body: some View {
         ValidatedTextField(
-            fieldTitle,
+            entity.label,
+            isRequired: entity.isRequired,
             text: $entity.value,
             placeholder: placeholder,
             validator: fieldValidator,
@@ -85,7 +80,7 @@ struct TextFieldView: View {
                 currentError = newError
                 // Announce immediately when error appears
                 if let error = newError {
-                    A11y.announce("\(fieldTitle), \(error)")
+                    A11y.announce(L10n.Form.fieldError(entity.label, error))
                 }
             }
         }

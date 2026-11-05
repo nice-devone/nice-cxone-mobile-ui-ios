@@ -45,7 +45,6 @@ struct TreeFieldView: View, Themed {
     @ObservedObject var entity: TreeFieldEntity
 
     @State private var error: String?
-    @State private var selectedNode: TreeNodeFieldEntity?
 
     let onChange: () -> Void
     
@@ -65,27 +64,29 @@ struct TreeFieldView: View, Themed {
                 .bold()
                 .foregroundStyle(error != nil ? colors.status.error : colors.content.primary)
                 .accessibilityLabel(entity.isRequired ? A11y.Form.TreeFieldView.Title.label(entity.label, L10n.Common.required) : entity.label)
-                .accessibilityValue(selectedNode?.label ?? L10n.Common.noSelection)
-                .accessibilityHint(A11y.Form.TreeFieldView.Title.hint)
+                .accessibilityValue(selectedNodeLabel ?? L10n.Common.noSelection)
                 .accessibilityIdentifier(A11y.Form.TreeFieldView.Title.identifier(entity.label))
+                .accessibilityAddTraits(.isHeader)
 
-            ForEach(entity.children) { node in
-                cell(node: node, leadingPadding: Constants.Padding.nodeInitialLeading)
+            VStack(spacing: Constants.Spacing.cellVertical) {
+                ForEach(entity.children) { node in
+                    cell(node: node, leadingPadding: Constants.Padding.nodeInitialLeading)
+                }
             }
 
             if let error {
-                Text(error)
+                Text(L10n.Form.fieldError(entity.label, error))
                     .font(.caption)
                     .foregroundStyle(colors.status.error)
                     .accessibilityHidden(true)
             }
         }
-        .onChange(of: entity.value) { value in
-            error = value.isEmpty && entity.isRequired ? L10n.Common.required : nil
+        .onChange(of: entity.value) { _ in
+            error = entity.isMissingRequiredValue ? L10n.Common.required : nil
         }
         .onChange(of: error) { newError in
             if let newError {
-                A11y.announce(newError)
+                A11y.announce(L10n.Form.fieldError(entity.label, newError))
             }
         }
     }
@@ -95,30 +96,59 @@ struct TreeFieldView: View, Themed {
 
 private extension TreeFieldView {
     
+    @ViewBuilder
     func cell(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
-        VStack(spacing: Constants.Spacing.cellVertical) {
-            if let children = node.children, !children.isEmpty {
-                parentNodeView(node: node, leadingPadding: leadingPadding)
-            } else {
-                leafNodeView(node: node, leadingPadding: leadingPadding)
-            }
+        if let children = node.children, !children.isEmpty {
+            parentNodeView(node: node, leadingPadding: leadingPadding)
+        } else {
+            leafNodeView(node: node, leadingPadding: leadingPadding)
         }
     }
         
     func parentNodeView(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
-        DisclosureGroupView(isExpanded: !entity.value.isEmpty) {
+        DisclosureGroupView(isExpanded: !entity.value.isEmpty, containsSelection: containsSelection(node)) {
             childrenListView(children: node.children ?? [], leadingPadding: leadingPadding)
         } label: {
             parentNoteLabelView(node: node, leadingPadding: leadingPadding)
         }
     }
-    
+
+    /// Whether `node` or any of its descendants is the currently selected leaf — lets a collapsed
+    /// parent announce that the selection is inside it, since a VoiceOver user can't see the
+    /// checkmark on a hidden descendant without expanding every branch to find it.
+    func containsSelection(_ node: TreeNodeFieldEntity) -> Bool {
+        selectedNode(in: [node]) != nil
+    }
+
+    /// The label of the node whose value matches `entity.value`, searched recursively — derived
+    /// directly from `entity.value` rather than tracked as separate state, so the title's
+    /// accessibility value is correct on first render even when the field already has a selection
+    /// (e.g. a restored form), not only after the user taps a leaf in this session.
+    var selectedNodeLabel: String? {
+        selectedNode(in: entity.children)?.label
+    }
+
+    func isSelected(_ node: TreeNodeFieldEntity) -> Bool {
+        node.value == entity.value
+    }
+
+    func selectedNode(in nodes: [TreeNodeFieldEntity]) -> TreeNodeFieldEntity? {
+        for node in nodes {
+            if isSelected(node) {
+                return node
+            }
+
+            if let children = node.children, let match = selectedNode(in: children) {
+                return match
+            }
+        }
+
+        return nil
+    }
+
     func leafNodeView(node: TreeNodeFieldEntity, leadingPadding: CGFloat) -> some View {
         Button {
-            node.isSelected.toggle()
-
-            selectedNode = node
-            entity.value = entity.value == node.value ? "" : node.value
+            entity.value = isSelected(node) ? "" : node.value
 
             onChange()
         } label: {
@@ -130,7 +160,7 @@ private extension TreeFieldView {
 
                     Spacer()
 
-                    if entity.value == node.value {
+                    if isSelected(node) {
                         Asset.check
                             .font(.footnote.weight(.bold))
                             .foregroundStyle(colors.brand.primary)
@@ -143,12 +173,13 @@ private extension TreeFieldView {
             }
         }
         .padding(.top, Constants.Padding.nodeVertical)
-        .background(entity.value == node.value ? colors.background.surface.emphasis : colors.background.default)
+        .background(isSelected(node) ? colors.background.surface.emphasis : colors.background.default, in: .rect)
         .accessibilityElement(children: .ignore)
         .accessibilityIdentifier(A11y.Form.TreeFieldView.Content.Leaf.identifier(node.label))
         .accessibilityLabel(node.label)
-        .accessibilityHint(entity.value == node.value ? A11y.Form.TreeFieldView.Content.Leaf.Selected.hint : A11y.Form.TreeFieldView.Content.Leaf.hint)
-        .if(entity.value == node.value) { view in
+        .accessibilityHint(isSelected(node) ? A11y.Form.TreeFieldView.Content.Leaf.Selected.hint : A11y.Form.TreeFieldView.Content.Leaf.hint)
+        .accessibilityAddTraits(.isButton)
+        .if(isSelected(node)) { view in
             view.accessibilityAddTraits(.isSelected)
         }
     }

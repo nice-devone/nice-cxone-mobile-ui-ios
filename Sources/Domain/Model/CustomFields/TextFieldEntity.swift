@@ -38,6 +38,25 @@ class TextFieldEntity: FormCustomFieldType {
     
     /// A boolean flag indicating whether this text field is expected to contain an email address.
     let isEmail: Bool
+
+    /// The typed value without surrounding whitespace, such as the trailing space inserted by QuickType.
+    override var submissionValue: String {
+        value.trimmed
+    }
+
+    /// Whether this field is an e-mail field whose current value is a valid e-mail address.
+    var hasValidEmail: Bool {
+        isEmail && submissionValue.isValidEmail
+    }
+
+    /// Whether this field is an e-mail field with a value that is not a valid e-mail address.
+    ///
+    /// An empty value is not invalid here — whether it is allowed is decided by `isMissingRequiredValue`.
+    var hasInvalidEmail: Bool {
+        let value = submissionValue
+        
+        return isEmail && !value.isEmpty && !value.isValidEmail
+    }
     
     // MARK: - Init
     

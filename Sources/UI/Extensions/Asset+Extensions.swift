@@ -91,8 +91,6 @@ extension Asset {
         enum RichContent {
             /// `link`
             static let link = Image(systemName: "link")
-            /// `checkmark.circle`
-            static let optionSelected = Image(systemName: "checkmark.circle")
         }
     }
     
@@ -102,9 +100,9 @@ extension Asset {
         /// `xmark.circle.fill`
         static let remove = Image(systemName: "xmark.circle.fill")
         /// `play.fill`
-        static let play = Image(systemName: "play.circle.fill")
+        static let play = Image(systemName: "play.fill")
         /// `pause.fill`
-        static let pause = Image(systemName: "pause.circle.fill")
+        static let pause = Image(systemName: "pause.fill")
         /// `stop.circle.fill`
         static let stop = Image(systemName: "stop.circle.fill")
         /// `gobackward.10`
@@ -113,8 +111,6 @@ extension Asset {
         static let advance = Image(systemName: "goforward.10")
         /// `photo`
         static let placeholder = Image(systemName: "photo")
-        /// `paperclip`
-        static let file = Image(systemName: "paperclip")
         /// `mic.fill`
         static let recordVoice = Image(systemName: "mic.circle.fill")
         /// `trash.fill`
@@ -130,9 +126,6 @@ extension Asset {
     // MARK: - LiveChat - End Conversation
     
     enum LiveChat {
-        /// `person.crop.circle.badge.clock`
-        static let personWithClock = Image(systemName: "person.crop.circle.badge.clock")
-        
         enum EndConversation {
             /// `bubble.left.and.text.bubble.right`
             static let startNewChat = Image(systemName: "bubble.left.and.text.bubble.right")

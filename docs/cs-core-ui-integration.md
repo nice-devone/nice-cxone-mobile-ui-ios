@@ -10,10 +10,10 @@ This case study demonstrates how to integrate the CXone Chat UI module into your
 Before integrating the UI module, ensure you have:
 
 1. Added the CXone Chat UI package to your project
-2. Constructed and held a `CXoneChat` instance (`let chatProvider = CXoneChat()`) for the lifetime of your chat experience — the UI module is built on top of the SDK and needs a `ChatProvider` to drive it. See the [SDK README](../../cxone-chat-sdk/README.md) for the lifecycle rules.
+2. Constructed and held a `CXoneChat` instance (`let chatProvider = CXoneChat()`) for the lifetime of your chat experience — the UI module is built on top of the SDK and needs a `ChatProvider` to drive it. See the [SDK README](https://github.com/nice-devone/nice-cxone-mobile-sdk-ios/blob/main/README.md) for the lifecycle rules.
 3. Properly set up your CXone brand and channel configuration
 
-> 📖 **Upgrading from an earlier version that used `CXoneChat.shared` + `CXoneChatDelegate`?** See the [SDK Migration Guide](../../cxone-chat-sdk/docs/migration-from-singleton.md) — UI integrators are affected too, because `ChatCoordinator` now requires a `chatProvider:` parameter.
+> 📖 **Upgrading from an earlier version that used `CXoneChat.shared` + `CXoneChatDelegate`?** See the [SDK Migration Guide](https://github.com/nice-devone/nice-cxone-mobile-sdk-ios/blob/main/docs/migration-from-singleton.md) — UI integrators are affected too, because `ChatCoordinator` now requires a `chatProvider:` parameter.
 
 
 ## Integration Approach
@@ -44,8 +44,9 @@ class MyChatCoordinator: ChatCoordinator {
 
     init(chatProvider: ChatProvider) {
         // Configure localization
-        var localization = ChatLocalization()
-        localization.commonConfirm = "OK" // Override default strings
+        // Override default strings with a `LocalizationStringProvider` —
+        // `BrandLocalizationProvider` is the example from CS: Localization
+        let localization = ChatLocalization(provider: BrandLocalizationProvider())
 
         // Configure styling
         let chatStyle = ChatStyle() // Use default or customize
@@ -68,6 +69,7 @@ class MyChatCoordinator: ChatCoordinator {
 Create an instance of your custom coordinator, typically in your app coordinator or main view controller:
 
 ```swift
+@MainActor
 class AppCoordinator {
     let chatProvider: ChatProvider
     let chatCoordinator: MyChatCoordinator
@@ -80,47 +82,28 @@ class AppCoordinator {
 }
 ```
 
-> Warning: If you are using OAuth (implicit flow), hand the SDK a connection token before connecting — `chatProvider.customer.setConnectionToken(_:expiresAt:)` — and register a token-delegate listener via `chatProvider.customer.setTokenDelegateListener(_:)` so the SDK refreshes the token silently before it expires; no UI-level callback is involved. Without a listener, an expired or rejected token surfaces as `CXoneChatError.invalidAccessToken` from the failing call — obtain a fresh token, set it again, and retry. See the [OAuth case study](../../cxone-chat-sdk/docs/cs-oauth.md) for the full flow.
+> Warning: If you are using OAuth (implicit flow), hand the SDK a connection token before connecting — `chatProvider.customer.setConnectionToken(_:expiresAt:)` — and register a token-delegate listener via `chatProvider.customer.setTokenDelegateListener(_:)` so the SDK refreshes the token silently before it expires; no UI-level callback is involved. Without a listener, an expired or rejected token surfaces as `CXoneChatError.invalidAccessToken` from the failing call — obtain a fresh token, set it again, and retry. See the [OAuth case study](https://github.com/nice-devone/nice-cxone-mobile-sdk-ios/blob/main/docs/cs-oauth.md) for the full flow.
+
+If you are using explicit OAuth (PKCE), set `chatCoordinator.onSessionExpired` before presenting the chat. It is called instead of the generic connection-error alert when refresh-grant recovery fails during connect (`CXoneChatError.invalidRefreshToken`), so you can route the customer to a new authorization flow:
+
+```swift
+chatCoordinator.onSessionExpired = { [weak self] in
+    self?.startNewAuthorizationFlow()
+}
+```
 
 
 ### 3. Present the Chat Interface
 
-There are two main ways to present the chat interface:
+Use the `content(threadId:presentModally:onFinish:)` method to get the SwiftUI view for the chat. The chat does not dismiss itself, so hide or dismiss it from the `onFinish` callback.
 
-#### Option A: Using the `start()` Method (UIKit)
-
-The `start()` method handles view controller creation and presentation:
-
-```swift
-// Present modally
-chatCoordinator.start(
-    threadId: nil, // Optional: specify a thread ID for deep linking
-    in: navigationController,
-    presentModally: true,
-    onFinish: {
-        // Called when the chat is dismissed
-        print("Chat session ended")
-    }
-)
-
-// Present in navigation stack (full screen)
-chatCoordinator.start(
-    threadId: nil,
-    in: navigationController,
-    presentModally: false,
-    onFinish: {
-        print("Chat session ended")
-    }
-)
-```
-
-#### Option B: Using the `content()` Method (SwiftUI)
-
-For SwiftUI-based apps, use the `content()` method to get a SwiftUI view:
+#### Option A: SwiftUI
 
 ```swift
 struct ContentView: View {
     let chatCoordinator: MyChatCoordinator
+
+    @State private var showingChat = false
     
     var body: some View {
         NavigationStack {
@@ -141,15 +124,34 @@ struct ContentView: View {
 }
 ```
 
+With `presentModally: false`, the chat expects to be pushed onto an existing `NavigationStack` (for example, as a `navigationDestination`) and is closed with the system back navigation.
+
+#### Option B: UIKit
+
+Host the same view in a `UIHostingController` and present it modally:
+
+```swift
+// Inside a UIViewController
+let content = chatCoordinator.content(
+    threadId: nil, // Optional: specify a thread ID for deep linking
+    presentModally: true,
+    onFinish: { [weak self] in
+        // Called when the chat is dismissed
+        self?.dismiss(animated: true)
+    }
+)
+
+present(UIHostingController(rootView: content), animated: true)
+```
+
 ### 4. Handle Deep Linking (Optional)
 
 To open a specific chat thread (e.g., from a push notification), pass the thread ID:
 
 ```swift
 // Open a specific thread
-chatCoordinator.start(
+chatCoordinator.content(
     threadId: "123e4567-e89b-12d3-a456-426614174000",
-    in: navigationController,
     presentModally: true,
     onFinish: nil
 )
@@ -165,8 +167,10 @@ Here's a complete example showing integration in a UIKit-based app:
 ```swift
 import CXoneChatSDK
 import CXoneChatUI
+import SwiftUI
 import UIKit
 
+@MainActor
 class StoreCoordinator {
 
     // MARK: - Properties
@@ -186,15 +190,16 @@ class StoreCoordinator {
     
     // MARK: - Methods
     
-    func openChat(modally: Bool = true, threadId: String? = nil) {
-        chatCoordinator.start(
+    func openChat(threadId: String? = nil) {
+        let content = chatCoordinator.content(
             threadId: threadId,
-            in: navigationController,
-            presentModally: modally
+            presentModally: true
         ) { [weak self] in
-            // Reset navigation bar appearance after chat closes
-            self?.navigationController.navigationBar.defaultAppearance()
+            // Dismiss the hosting controller after chat closes
+            self?.navigationController.dismiss(animated: true)
         }
+
+        navigationController.present(UIHostingController(rootView: content), animated: true)
     }
 }
 ```
@@ -226,7 +231,7 @@ Configure logging to help with debugging and monitoring. See [CS: Logging](cs-lo
 
 1. **Single Coordinator Instance**: Create one coordinator instance and reuse it throughout your app to maintain consistent configuration.
 
-2. **Configuration Before Presentation**: Update any configuration (custom fields, styling) before calling `start()` or `content()`.
+2. **Configuration Before Presentation**: Update any configuration (custom fields, styling) before calling `content()`.
 
 3. **Handle onFinish Callback**: Always provide an `onFinish` callback to clean up UI state when the chat is dismissed.
 
@@ -245,7 +250,7 @@ Configure logging to help with debugging and monitoring. See [CS: Logging](cs-lo
 
 ### Custom styling not applied
 
-- Verify you're setting `chatStyle` before calling `start()` or `content()`
+- Verify you're setting `chatStyle` before calling `content()`
 - Ensure your `StyleColorsManager` is properly configured
 - Check that colors are being applied to both light and dark modes
 - See the [CS: Colors](cs-colors.md) for detailed troubleshooting based on the integration details

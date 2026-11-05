@@ -30,7 +30,6 @@
 "chat_container.alert.camera_permission_denied.button_settings.hint" = "Double-tap to navigate to system Settings";
 "chat_container.alert.microphone_permission_denied.button_settings.hint" = "Double-tap to navigate to system Settings";
 "chat_container.alert.connection_error.button_disconnect.hint" = "Double-tap to close the chat";
-"chat_container.alert.feature_unavailable.button_disconnect.hint" = "Double-tap to close the chat";
 "chat_container.alert.end_conversation.button_confirm.hint" = "Double-tap to end conversation";
 
 
@@ -74,19 +73,24 @@
 
 // MARK: TreeFieldView
 
-"form.tree_field_view.title.hint" = "Double-tap to select an option from the list";
 "form.tree_field_view.title.label" = "%1$@, %2$@";
 "form.tree_field_view.validation.invalid.argument" = "%1$@ is required";
 "form.tree_field_view.content.leaf.hint" = "Double-tap to select";
 "form.tree_field_view.content.leaf.selected.hint" = "Double-tap to deselect";
+"form.tree_field_view.content.parent_state.collapsed" = "Collapsed";
+"form.tree_field_view.content.parent_state.expanded" = "Expanded";
+"form.tree_field_view.content.parent_state.collapsed_with_selection" = "Collapsed, contains selection";
+"form.tree_field_view.content.parent_state.expanded_with_selection" = "Expanded, contains selection";
+"form.tree_field_view.content.parent_hint.collapsed" = "Double-tap to expand";
+"form.tree_field_view.content.parent_hint.expanded" = "Double-tap to collapse";
 
 // MARK: ListFieldView
 
 "form.list_field_view.content.label" = "%1$@, %2$@";
 "form.list_field_view.content.hint" = "Double-tap to select an option";
-"form.list_field_view.sheet.option.hint" = "Double-tap to select %1$@ as the %2$@ option";
-"form.list_field_view.sheet.option.cancel.label" = "Cancel %1$@ selection";
-"form.list_field_view.sheet.option.cancel.hint" = "Double-tap to cancel %1$@ selection";
+"form.list_field_view.content.value.collapsed" = "%1$@, collapsed";
+"form.list_field_view.content.value.expanded" = "%1$@, expanded";
+"form.list_field_view.content.value.invalid" = "%1$@, invalid";
 
 
 // MARK: - Conversation
@@ -213,54 +217,72 @@
 "conversation.message_cell.multiple_attachments.button_share.fallback" = "attachments";
 
 
-// MARK: - Attachments View
+// MARK: - Attachment Gallery View
 
-"attachments_view.title.label" = "Attachments";
-"attachments_view.button_select.label" = "Select";
-"attachments_view.button_select.hint" = "Double-tap to enter selection mode";
-"attachments_view.button_cancel.label" = "Cancel";
-"attachments_view.button_cancel.hint" = "Double-tap to exit selection mode";
+"attachment_gallery_view.title.label" = "Attachments";
+"attachment_gallery_view.button_select.label" = "Select";
+"attachment_gallery_view.button_select.hint" = "Double-tap to enter selection mode";
+"attachment_gallery_view.button_cancel.label" = "Cancel";
+"attachment_gallery_view.button_cancel.hint" = "Double-tap to exit selection mode";
 
-"attachments_view.item.image.label" = "Image: %1$@";
-"attachments_view.item.image.hint.browse" = "Double-tap to view";
-"attachments_view.item.image.hint.select" = "Double-tap to toggle selection";
-"attachments_view.item.image.value.selected" = "Selected";
-"attachments_view.item.image.value.not_selected" = "Not selected";
+"attachment_gallery_view.item.image.label" = "Image: %1$@";
+"attachment_gallery_view.item.image.hint.browse" = "Double-tap to view";
+"attachment_gallery_view.item.image.hint.select" = "Double-tap to toggle selection";
+"attachment_gallery_view.item.image.value.selected" = "Selected";
+"attachment_gallery_view.item.image.value.not_selected" = "Not selected";
 
-"attachments_view.item.video.label" = "Video: %1$@";
-"attachments_view.item.video.hint.browse" = "Double-tap to play";
-"attachments_view.item.video.hint.select" = "Double-tap to toggle selection";
-"attachments_view.item.video.value.selected" = "Selected";
-"attachments_view.item.video.value.not_selected" = "Not selected";
+"attachment_gallery_view.item.video.label" = "Video: %1$@";
+"attachment_gallery_view.item.video.hint.browse" = "Double-tap to play";
+"attachment_gallery_view.item.video.hint.select" = "Double-tap to toggle selection";
+"attachment_gallery_view.item.video.value.selected" = "Selected";
+"attachment_gallery_view.item.video.value.not_selected" = "Not selected";
 
-"attachments_view.item.document.label" = "Document: %1$@";
-"attachments_view.item.document.hint.browse" = "Double-tap to open";
-"attachments_view.item.document.hint.select" = "Double-tap to toggle selection";
-"attachments_view.item.document.value.selected" = "Selected";
-"attachments_view.item.document.value.not_selected" = "Not selected";
+"attachment_gallery_view.item.document.label" = "Document: %1$@";
+"attachment_gallery_view.item.document.hint.browse" = "Double-tap to open";
+"attachment_gallery_view.item.document.hint.select" = "Double-tap to toggle selection";
+"attachment_gallery_view.item.document.value.selected" = "Selected";
+"attachment_gallery_view.item.document.value.not_selected" = "Not selected";
 
-"attachments_view.button_select_all.label" = "Select all";
-"attachments_view.button_select_all.hint" = "Double-tap to select all attachments";
-"attachments_view.button_deselect.label" = "Deselect all";
-"attachments_view.button_deselect.hint" = "Double-tap to deselect all attachments";
-"attachments_view.button_share.label" = "Share";
-"attachments_view.button_share.hint.none" = "Select attachments to share";
-"attachments_view.button_share.hint.single" = "Double-tap to share selected attachment";
-"attachments_view.button_share.hint.multiple" = "Double-tap to share %1$@ selected attachments";
+"attachment_gallery_view.button_select_all.label" = "Select all";
+"attachment_gallery_view.button_select_all.hint" = "Double-tap to select all attachments";
+"attachment_gallery_view.button_deselect.label" = "Deselect all";
+"attachment_gallery_view.button_deselect.hint" = "Double-tap to deselect all attachments";
+"attachment_gallery_view.button_share.label" = "Share";
+"attachment_gallery_view.button_share.hint.none" = "Select attachments to share";
+"attachment_gallery_view.button_share.hint.single" = "Double-tap to share selected attachment";
+"attachment_gallery_view.button_share.hint.multiple" = "Double-tap to share %1$@ selected attachments";
 
-"attachments_view.status.selection_mode.label" = "Selection mode";
-"attachments_view.status.selected_count.label" = "%1$@ selected";
+"attachment_gallery_view.status.selection_mode.label" = "Selection mode";
+"attachment_gallery_view.status.selected_count.label" = "%1$@ selected";
 
-"attachments_view.item.value.loading" = "Loading";
-"attachments_view.item.value.failed" = "Failed to load";
+"attachment_gallery_view.item.value.loading" = "Loading";
+"attachment_gallery_view.item.value.failed" = "Failed to load";
+
+
+// MARK: - Document Viewer
+
+"document_viewer.button_close.label" = "Close";
+"document_viewer.button_close.hint" = "Double-tap to close document viewer";
 
 
 // MARK: - Image Viewer
 
 "image_viewer.button_close.label" = "Close";
 "image_viewer.button_close.hint" = "Double-tap to close image viewer";
+"image_viewer.button_share.label" = "Share";
+"image_viewer.button_share.hint" = "Double-tap to share the image";
 "image_viewer.content.label" = "Full screen image";
 "image_viewer.content.hint" = "Pinch to zoom";
+
+
+// MARK: - Video Viewer
+
+"video_viewer.button_close.label" = "Close";
+"video_viewer.button_close.hint" = "Double-tap to close video player";
+"video_viewer.button_share.label" = "Share";
+"video_viewer.button_share.hint" = "Double-tap to share the video";
+"video_viewer.content.label" = "Full screen video";
+"video_viewer.content.hint" = "Use the on-screen controls to play the video";
 
 
 // MARK: - Message Input
@@ -332,6 +354,12 @@
 "inactivity_popup.button_expire.hint" = "Double-tap to end the conversation";
 
 
+// MARK: Satisfaction Survey
+
+"satisfaction_survey.button_close.label" = "Close satisfaction survey";
+"satisfaction_survey.button_close.hint" = "Double-tap to close the satisfaction survey";
+
+
 // MARK: End Conversation Popup
 
 "end_conversation_popup.header.agent_info.label" = "Agent: %1$@";
@@ -344,6 +372,7 @@
 // MARK: - Validated Text Field
 
 "validated_text_field.hint" = "Enter %1$@";
+"validated_text_field.required_label" = "%1$@, %2$@";
 "validated_text_field.validation.valid.empty.value" = "Empty, valid";
 "validated_text_field.validation.valid.value" = "%1$@, valid";
 "validated_text_field.validation.invalid.empty.value" = "Empty, invalid";
@@ -380,9 +409,9 @@
 "announcement.attachment.added" = "%1$@ added";
 "announcement.attachment.removed" = "%1$@ removed";
 
-"announcement.attachments_view.selected" = "%1$@ selected";
-"announcement.attachments_view.deselected" = "%1$@ deselected";
-"announcement.attachments_view.selection_mode.enabled" = "Selection mode enabled";
-"announcement.attachments_view.selection_mode.disabled" = "Selection mode disabled";
-"announcement.attachments_view.selected_all" = "All attachments selected";
-"announcement.attachments_view.deselected_all" = "All attachments deselected";
+"announcement.attachment_gallery_view.selected" = "%1$@ selected";
+"announcement.attachment_gallery_view.deselected" = "%1$@ deselected";
+"announcement.attachment_gallery_view.selection_mode.enabled" = "Selection mode enabled";
+"announcement.attachment_gallery_view.selection_mode.disabled" = "Selection mode disabled";
+"announcement.attachment_gallery_view.selected_all" = "All attachments selected";
+"announcement.attachment_gallery_view.deselected_all" = "All attachments deselected";

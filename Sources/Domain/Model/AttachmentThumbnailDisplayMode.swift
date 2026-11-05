@@ -23,16 +23,20 @@ enum AttachmentThumbnailDisplayMode {
     
     /// Small thumbnail display mode used in attachment list above input field.
     case small
+    /// Shrunken variant of `small`, used in the attachment list while the keyboard is up on a
+    /// compact-height screen — there the regular strip plus the input bar do not fit above the
+    /// keyboard. See `StyleGuide.Sizing.Attachment.smallCompactDimension`.
+    case smallCompact
     /// Regular thumbnail display mode used in message bubble.
     case regular
-    /// Large thumbnail display mode used in `AttachmentsView`.
+    /// Large thumbnail display mode used in `AttachmentGalleryView`.
     case large
-    
+
     // MARK: - Computed Properties
-    
+
     var font: Font {
         switch self {
-        case .small:
+        case .small, .smallCompact:
             return .headline
         case .regular:
             return .title
@@ -40,10 +44,12 @@ enum AttachmentThumbnailDisplayMode {
             return .largeTitle
         }
     }
-    
+
     @MainActor
     var size: CGSize {
         switch self {
+        case .smallCompact:
+            return CGSize(width: StyleGuide.Sizing.Attachment.smallCompactDimension, height: StyleGuide.Sizing.Attachment.smallCompactDimension)
         case .small:
             return CGSize(width: StyleGuide.Sizing.Attachment.smallDimension, height: StyleGuide.Sizing.Attachment.smallDimension)
         case .regular:

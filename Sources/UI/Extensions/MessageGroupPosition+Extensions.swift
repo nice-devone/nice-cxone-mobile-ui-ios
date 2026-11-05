@@ -21,6 +21,13 @@ extension MessageGroupPosition {
     
     private static let cornerRadiusBetweenMessages: CGFloat = 4
     
+    // MARK: - Properties
+
+    /// Whether the message closes its group — it is either alone or the last one in it.
+    var isLastInGroup: Bool {
+        self == .single || self == .last
+    }
+    
     // MARK: - Methods
     
     func topLeftCornerRadius(isUserAgent: Bool) -> CGFloat {
@@ -44,14 +51,46 @@ extension MessageGroupPosition {
             return StyleGuide.Sizing.Message.cornerRadius
         }
         
-        return [.first, .inside].contains(self) ? Self.cornerRadiusBetweenMessages : StyleGuide.Sizing.Message.cornerRadius
+        return isLastInGroup ? StyleGuide.Sizing.Message.cornerRadius : Self.cornerRadiusBetweenMessages
     }
     
     func bottomRightCornerRadius(isUserAgent: Bool) -> CGFloat {
         guard self != .single, !isUserAgent else {
             return StyleGuide.Sizing.Message.cornerRadius
         }
-        
-        return [.first, .inside].contains(self) ? Self.cornerRadiusBetweenMessages : StyleGuide.Sizing.Message.cornerRadius
+
+        return isLastInGroup ? StyleGuide.Sizing.Message.cornerRadius : Self.cornerRadiusBetweenMessages
+    }
+
+    /// The bubble-matched rounded-rectangle clip shape for a cell at this position.
+    ///
+    /// Single source of the per-corner radius mapping shared by the image, video,
+    /// document, and multiple-attachment cells so their corners stay in sync.
+    func clipShape(isUserAgent: Bool, insetAmount: CGFloat = 0) -> UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
+            topLeft: topLeftCornerRadius(isUserAgent: isUserAgent),
+            topRight: topRightCornerRadius(isUserAgent: isUserAgent),
+            bottomLeft: bottomLeftCornerRadius(isUserAgent: isUserAgent),
+            bottomRight: bottomRightCornerRadius(isUserAgent: isUserAgent),
+            insetAmount: insetAmount
+        )
+    }
+}
+
+// MARK: - Optional clip shape
+
+extension Optional where Wrapped == MessageGroupPosition {
+
+    /// The clip shape for an attachment cell that may be standalone or grouped:
+    /// `nil` (e.g. inside the multiple-attachment grid) → fully-rounded corners using
+    /// the attachment corner radius; a concrete position → the bubble-matched shape.
+    func attachmentClipShape(isUserAgent: Bool) -> UnevenRoundedRectangle {
+        guard let self else {
+            let radius = StyleGuide.Sizing.Attachment.cornerRadius
+
+            return UnevenRoundedRectangle(topLeft: radius, topRight: radius, bottomLeft: radius, bottomRight: radius)
+        }
+
+        return self.clipShape(isUserAgent: isUserAgent)
     }
 }

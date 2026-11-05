@@ -79,19 +79,6 @@ final class ChatAlertType: Identifiable {
         }
     }
 
-    static func featureUnavailableAlert(featureName: String, action: @escaping () -> Void) -> ChatAlertType {
-        ChatAlertType(
-            title: L10n.Common.attention,
-            message: L10n.Alert.FeatureUnavailable.message(featureName)
-        ) {
-            // `.cancel` role so SwiftUI doesn't auto-add its own Cancel button — this alert has a
-            // single action that closes the chat.
-            Button(L10n.Common.closeChat, role: .cancel, action: action)
-                .accessibilityIdentifier(A11yAlert.FeatureUnavailable.ButtonDisconnect.identifier)
-                .accessibilityHint(A11yAlert.FeatureUnavailable.ButtonDisconnect.hint)
-        }
-    }
-
     static var invalidAttachmentType: ChatAlertType {
         ChatAlertType(title: L10n.Alert.FileValidation.title, message: L10n.Alert.InvalidFileType.message) {
             Button(L10n.Common.cancel, role: .cancel)

@@ -31,8 +31,8 @@ final class AttachmentCache: @unchecked Sendable {
     private let cache = NSCache<NSString, NSData>()
 
     private let diskCacheURL: URL = {
-        let urls = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)
-        let url = urls[0].appendingPathComponent("AttachmentThumbnails")
+        let cachesDirectory = FileManager.default.cachesDirectory ?? FileManager.default.temporaryDirectory
+        let url = cachesDirectory.appendingPathComponent("AttachmentThumbnails")
         try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         
         return url

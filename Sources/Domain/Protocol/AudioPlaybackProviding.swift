@@ -141,9 +141,7 @@ final class DefaultAudioPlaybackProvider: AudioPlaybackProviding {
         }
 
         let duration = try await asset.load(.duration)
-        let seconds = CMTimeGetSeconds(duration)
-
-        return seconds.isFinite && seconds >= 0 ? seconds : 0
+        return CMTimeGetSeconds(duration).finiteNonNegative
     }
 
     func replaceCurrentItem(with url: URL) {

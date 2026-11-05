@@ -32,6 +32,7 @@ Pass a `ChatAccessibility` instance when creating your coordinator:
 
 ```swift
 let coordinator = ChatCoordinator(
+    chatProvider: chatProvider,
     chatAccessibility: ChatAccessibility(
         bundle: .main,        // your bundle (for .lproj support)
         provider: myProvider  // optional: programmatic overrides
@@ -73,8 +74,9 @@ final class BrandAccessibilityProvider: AccessibilityStringProvider {
 ```swift
 class MyChatCoordinator: ChatCoordinator {
 
-    init() {
+    init(chatProvider: ChatProvider) {
         super.init(
+            chatProvider: chatProvider,
             chatAccessibility: ChatAccessibility(provider: BrandAccessibilityProvider())
         )
     }
@@ -114,8 +116,9 @@ You do not need to include every key — the SDK fills in anything you omit.
 ```swift
 class MyChatCoordinator: ChatCoordinator {
 
-    init() {
+    init(chatProvider: ChatProvider) {
         super.init(
+            chatProvider: chatProvider,
             chatAccessibility: ChatAccessibility(bundle: .main)
         )
     }
@@ -158,8 +161,9 @@ No change needed — `bundle: .main` already picks the correct `.lproj` based on
 ```swift
 class MyChatCoordinator: ChatCoordinator {
 
-    init() {
+    init(chatProvider: ChatProvider) {
         super.init(
+            chatProvider: chatProvider,
             chatAccessibility: ChatAccessibility(bundle: .main)
         )
     }
@@ -187,10 +191,14 @@ final class DynamicAccessibilityProvider: AccessibilityStringProvider {
 
 class MyChatCoordinator: ChatCoordinator {
 
-    private let a11yProvider = DynamicAccessibilityProvider()
+    private let a11yProvider: DynamicAccessibilityProvider
 
-    init() {
+    init(chatProvider: ChatProvider) {
+        let a11yProvider = DynamicAccessibilityProvider()
+        self.a11yProvider = a11yProvider
+
         super.init(
+            chatProvider: chatProvider,
             chatAccessibility: ChatAccessibility(
                 bundle: .main,
                 provider: a11yProvider
@@ -212,8 +220,9 @@ If your integration code lives in a separate framework bundle (not the app targe
 ```swift
 class MyChatCoordinator: ChatCoordinator {
 
-    init() {
+    init(chatProvider: ChatProvider) {
         super.init(
+            chatProvider: chatProvider,
             chatAccessibility: ChatAccessibility(bundle: Bundle(for: MyChatCoordinator.self))
         )
     }

@@ -30,7 +30,7 @@ final class OverlayManager: ObservableObject {
             LogManager.warning("Overlay already displayed, ignoring show request")
             return
         }
-        guard let scene = currentWindowScene else {
+        guard let scene = UIWindowScene.activeWindowScene else {
             LogManager.error("Unable to get scene")
             return
         }
@@ -38,7 +38,10 @@ final class OverlayManager: ObservableObject {
         LogManager.trace("Show overlay")
         
         let window = UIWindow(windowScene: scene)
-        let controller = UIHostingController(rootView: content())
+        // This window is outside `ChatContainerView`'s hierarchy, so it inherits none of its environment.
+        // Without its own host, any `LayoutAware` content placed here would keep the launch-time
+        // orientation, with nothing at compile or lint time to catch it.
+        let controller = UIHostingController(rootView: content().measuringChatLayout())
         controller.view.backgroundColor = .clear
         
         window.layer.opacity = 0
@@ -68,36 +71,6 @@ final class OverlayManager: ObservableObject {
             self?.window?.isHidden = true
             self?.window = nil
         }
-    }
-}
-
-// MARK: - Private methods
-
-private extension OverlayManager {
-    
-    /// Returns the most appropriate `UIWindowScene` for presenting overlay content if one can be determined;
-    /// otherwise `nil` if there are no connected window scenes.
-    ///
-    /// The method inspects the app's connected scenes and prefers, in order:
-    /// - A scene that is currently in the `.foregroundActive` state.
-    /// - A scene whose window stack contains the key window.
-    /// - The first available window scene as a final fallback.
-    var currentWindowScene: UIWindowScene? {
-        let windowScenes = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-
-        // Prefer the scene that is actively in the foreground.
-        if let foregroundActiveScene = windowScenes.first(where: { $0.activationState == .foregroundActive }) {
-            return foregroundActiveScene
-        }
-
-        // Next, try the scene that currently hosts the key window.
-        if let keyWindowScene = windowScenes.first(where: { $0.windows.contains(where: \.isKeyWindow) }) {
-            return keyWindowScene
-        }
-
-        // As a final fallback, return the first available window scene (if any).
-        return windowScenes.first
     }
 }
 

@@ -49,6 +49,11 @@ struct ListFieldView: View, Themed {
     @State private var isActionSheetVisible = false
     @State private var error: String?
     
+    /// Whether the picker is open or the field already has a value — drives the divider's colour and thickness.
+    private var isActive: Bool {
+        isActionSheetVisible || !entity.value.isEmpty
+    }
+    
     let onChange: () -> Void
     
     // MARK: - Init
@@ -74,10 +79,10 @@ struct ListFieldView: View, Themed {
                 ColoredDivider(
                     error != nil
                         ? colors.status.error
-                        : isActionSheetVisible || !entity.value.isEmpty
+                        : isActive
                             ? colors.brand.primary
                             : colors.border.default,
-                    height: isActionSheetVisible || !entity.value.isEmpty
+                    height: isActive
                         ? Constants.Sizing.dividerFocusedHeight
                         : Constants.Sizing.dividerHeight
                 )
@@ -85,26 +90,49 @@ struct ListFieldView: View, Themed {
             }
 
             if let error {
-                Text(error)
+                Text(L10n.Form.fieldError(entity.label, error))
                     .font(.caption)
                     .foregroundStyle(colors.status.error)
                     .accessibilityHidden(true) // The information that the field is mandatory is part of the button.
             }
         }
-        .onChange(of: entity.value) { value in
-            error = value.isEmpty && entity.isRequired ? L10n.Common.required : nil
+        .onChange(of: entity.value) { _ in
+            error = entity.isMissingRequiredValue ? L10n.Common.required : nil
         }
         .onChange(of: isActionSheetVisible) { isVisible in
             if !isVisible {
-                error = entity.value.isEmpty && entity.isRequired ? L10n.Common.required : nil
+                error = entity.isMissingRequiredValue ? L10n.Common.required : nil
             }
         }
         .onChange(of: error) { newError in
             if let newError {
-                A11y.announce(newError)
+                A11y.announce(L10n.Form.fieldError(entity.label, newError))
             }
         }
         .animation(.easeInOut(duration: StyleGuide.animationDuration), value: isActionSheetVisible)
+    }
+}
+
+// MARK: - Internal Methods
+
+extension ListFieldView {
+
+    /// What VoiceOver should announce for the field's current value: the selected option (or "no
+    /// selection"), whether the picker is expanded, and — persistently, not just via the one-time
+    /// `A11y.announce` — whether the field is currently invalid. Pure and independent of SwiftUI
+    /// state so it's directly unit-testable without rendering the view.
+    ///
+    /// Before this existed, "Required" on the label was the only thing that changed between a
+    /// fresh required field and an invalid one, and unconditionally announcing "Required" (to fix
+    /// that state not appearing on first render) made the two indistinguishable. This value is what
+    /// actually carries the invalid signal now, so a VoiceOver user who returns to an invalid field
+    /// later — after missing the one-time announcement — can still tell.
+    static func accessibilityValueText(selectedOption: String, isExpanded: Bool, isInvalid: Bool) -> String {
+        let stateText = isExpanded
+            ? A11y.Form.ListFieldView.Content.Value.expanded(selectedOption)
+            : A11y.Form.ListFieldView.Content.Value.collapsed(selectedOption)
+
+        return isInvalid ? A11y.Form.ListFieldView.Content.Value.invalid(stateText) : stateText
     }
 }
 
@@ -135,8 +163,14 @@ private extension ListFieldView {
             optionsSheet
         }
         .accessibilityIdentifier(A11y.Form.ListFieldView.Content.identifier(entity.ident))
-        .accessibilityLabel(error != nil ? A11y.Form.ListFieldView.Content.label(entity.label, L10n.Common.required) : entity.label)
-        .accessibilityValue(entity.value.isEmpty ? L10n.Common.noSelection : entity.value)
+        .accessibilityLabel(entity.isRequired ? A11y.Form.ListFieldView.Content.label(entity.label, L10n.Common.required) : entity.label)
+        .accessibilityValue(
+            Self.accessibilityValueText(
+                selectedOption: entity.value.isEmpty ? L10n.Common.noSelection : entity.selectedOption,
+                isExpanded: isActionSheetVisible,
+                isInvalid: error != nil
+            )
+        )
         .accessibilityHint(A11y.Form.ListFieldView.Content.hint)
     }
 
@@ -150,10 +184,6 @@ private extension ListFieldView {
 
                     onChange()
                 }
-                .accessibilityIdentifier(A11y.Form.ListFieldView.Sheet.Option.identifier(key))
-                .accessibilityLabel(A11y.Form.ListFieldView.Content.label(entity.label, value))
-                .accessibilityHint(A11y.Form.ListFieldView.Sheet.Option.hint(value, entity.label))
-                .accessibilityValue(value)
             } else {
                 EmptyView()
                     .onAppear {
@@ -165,10 +195,6 @@ private extension ListFieldView {
         Button(L10n.Common.cancel, role: .cancel) {
             entity.value = ""
         }
-        .accessibilityIdentifier(A11y.Form.ListFieldView.Sheet.Option.Cancel.identifier)
-        .accessibilityLabel(A11y.Form.ListFieldView.Sheet.Option.Cancel.label(entity.label))
-        .accessibilityHint(A11y.Form.ListFieldView.Sheet.Option.Cancel.hint(entity.label))
-        .accessibilityValue(L10n.Common.noSelection)
     }
 }
 

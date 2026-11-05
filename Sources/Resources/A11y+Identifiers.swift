@@ -61,11 +61,6 @@ extension A11y.ChatContainer.Alert.ConnectionError.ButtonDisconnect {
     static let identifier = "chat_container.alert.connection_error.button_disconnect"
 }
 
-extension A11y.ChatContainer.Alert.FeatureUnavailable.ButtonDisconnect {
-    /// `chat_container.alert.feature_unavailable.button_disconnect`
-    static let identifier = "chat_container.alert.feature_unavailable.button_disconnect"
-}
-
 extension A11y.ChatContainer.Alert.EndConversation.ButtonConfirm {
     /// `chat_container.alert.end_conversation.button_confirm`
     static let identifier = "chat_container.alert.end_conversation.button_confirm"
@@ -100,9 +95,6 @@ extension A11y.ThreadList.EmptyState {
 // MARK: Cell
 
 extension A11y.ThreadList.Cell {
-    /// `thread_list.cell`
-    static let identifier = "thread_list.cell"
-
     /// `thread_list.cell.\(threadId)`
     static func identifier(_ threadId: String) -> String {
         "thread_list.cell.\(threadId)"
@@ -204,16 +196,11 @@ extension A11y.Form.ListFieldView.Content {
     }
 }
 
-extension A11y.Form.ListFieldView.Sheet.Option {
-    /// `form.list_field_view.sheet.option.\(param)`
-    static func identifier(_ param: String) -> String {
-        "form.list_field_view.sheet.option.\(param)"
-    }
-}
+// MARK: - Document Viewer
 
-extension A11y.Form.ListFieldView.Sheet.Option.Cancel {
-    /// `form.list_field_view.sheet.option.cancel`
-    static let identifier = "form.list_field_view.sheet.option.cancel"
+extension A11y.DocumentViewer.ButtonClose {
+    /// `document_viewer.button_close`
+    static let identifier = "document_viewer.button_close"
 }
 
 // MARK: - Image Viewer
@@ -223,9 +210,31 @@ extension A11y.ImageViewer.ButtonClose {
     static let identifier = "image_viewer.button_close"
 }
 
+extension A11y.ImageViewer.ButtonShare {
+    /// `image_viewer.button_share`
+    static let identifier = "image_viewer.button_share"
+}
+
 extension A11y.ImageViewer.Content {
     /// `image_viewer.content`
     static let identifier = "image_viewer.content"
+}
+
+// MARK: - Video Viewer
+
+extension A11y.VideoViewer.ButtonClose {
+    /// `video_viewer.button_close`
+    static let identifier = "video_viewer.button_close"
+}
+
+extension A11y.VideoViewer.ButtonShare {
+    /// `video_viewer.button_share`
+    static let identifier = "video_viewer.button_share"
+}
+
+extension A11y.VideoViewer.Content {
+    /// `video_viewer.content`
+    static let identifier = "video_viewer.content"
 }
 
 // MARK: - Conversation
@@ -372,16 +381,6 @@ extension A11y.Conversation.MessageCell.ListPicker.Sheet.Cell.Check {
     static let identifier = "conversation.message_cell.list_picker.sheet.cell.check"
 }
 
-extension A11y.Conversation.MessageCell.ListPicker.Sheet.ButtonCancel {
-    /// `conversation.message_cell.list_picker.sheet.button_cancel`
-    static let identifier = "conversation.message_cell.list_picker.sheet.button_cancel"
-}
-
-extension A11y.Conversation.MessageCell.ListPicker.Sheet.ButtonConfirm {
-    /// `conversation.message_cell.list_picker.sheet.button_confirm`
-    static let identifier = "conversation.message_cell.list_picker.sheet.button_confirm"
-}
-
 // MARK: Message+TimePicker
 
 extension A11y.Conversation.MessageCell.TimePicker {
@@ -466,36 +465,6 @@ extension A11y.Conversation.MessageCell.Attachment.Failed {
     static let identifier = "conversation.message_cell.attachment.failed"
 }
 
-extension A11y.Conversation.MessageCell.Attachment.Audio {
-    /// `conversation.message_cell.attachment.audio`
-    static let identifier = "conversation.message_cell.attachment.audio"
-}
-
-extension A11y.Conversation.MessageCell.Attachment.Audio.ProgressBar {
-    /// `conversation.message_cell.attachment.audio.progress_bar`
-    static let identifier = "conversation.message_cell.attachment.audio.progress_bar"
-}
-
-extension A11y.Conversation.MessageCell.Attachment.Audio.ButtonRewind {
-    /// `conversation.message_cell.attachment.audio.button_rewind`
-    static let identifier = "conversation.message_cell.attachment.audio.button_rewind"
-}
-
-extension A11y.Conversation.MessageCell.Attachment.Audio.ButtonPlay {
-    /// `conversation.message_cell.attachment.audio.button_play`
-    static let identifier = "conversation.message_cell.attachment.audio.button_play"
-}
-
-extension A11y.Conversation.MessageCell.Attachment.Audio.ButtonPause {
-    /// `conversation.message_cell.attachment.audio.button_pause`
-    static let identifier = "conversation.message_cell.attachment.audio.button_pause"
-}
-
-extension A11y.Conversation.MessageCell.Attachment.Audio.ButtonAdvance {
-    /// `conversation.message_cell.attachment.audio.button_advance`
-    static let identifier = "conversation.message_cell.attachment.audio.button_advance"
-}
-
 extension A11y.Conversation.MessageCell.MultipleAttachments.Container {
     /// `conversation.message_cell.multiple_attachments.container`
     static let identifier = "conversation.message_cell.multiple_attachments.container"
@@ -504,11 +473,6 @@ extension A11y.Conversation.MessageCell.MultipleAttachments.Container {
 extension A11y.Conversation.MessageCell.MultipleAttachments.MoreIndicator {
     /// `conversation.message_cell.multiple_attachments.more_indicator`
     static let identifier = "conversation.message_cell.multiple_attachments.more_indicator"
-}
-
-extension A11y.Conversation.MessageCell.MultipleAttachments.ButtonShare {
-    /// `conversation.message_cell.multiple_attachments.button_share`
-    static let identifier = "conversation.message_cell.multiple_attachments.button_share"
 }
 
 // MARK: Unsupported Message
@@ -522,55 +486,55 @@ extension A11y.Conversation.MessageCell {
 
 // MARK: - Attachments View
 
-extension A11y.AttachmentsView.Title {
-    /// `attachments_view.title`
-    static let identifier = "attachments_view.title"
+extension A11y.AttachmentGalleryView.Title {
+    /// `attachment_gallery_view.title`
+    static let identifier = "attachment_gallery_view.title"
 }
 
-extension A11y.AttachmentsView.ButtonSelect {
-    /// `attachments_view.button_select`
-    static let identifier = "attachments_view.button_select"
+extension A11y.AttachmentGalleryView.ButtonSelect {
+    /// `attachment_gallery_view.button_select`
+    static let identifier = "attachment_gallery_view.button_select"
 }
 
-extension A11y.AttachmentsView.ButtonCancel {
-    /// `attachments_view.button_cancel`
-    static let identifier = "attachments_view.button_cancel"
+extension A11y.AttachmentGalleryView.ButtonCancel {
+    /// `attachment_gallery_view.button_cancel`
+    static let identifier = "attachment_gallery_view.button_cancel"
 }
 
-extension A11y.AttachmentsView.Item.Image {
-    /// `attachments_view.item.image`
-    static let identifier: String = "attachments_view.item.image"
+extension A11y.AttachmentGalleryView.Item.Image {
+    /// `attachment_gallery_view.item.image`
+    static let identifier: String = "attachment_gallery_view.item.image"
 }
 
-extension A11y.AttachmentsView.Item.Document {
-    /// `attachments_view.item.document`
-    static let identifier: String = "attachments_view.item.document"
+extension A11y.AttachmentGalleryView.Item.Document {
+    /// `attachment_gallery_view.item.document`
+    static let identifier: String = "attachment_gallery_view.item.document"
 }
 
-extension A11y.AttachmentsView.Item.Video {
-    /// `attachments_view.item.video`
-    static let identifier: String = "attachments_view.item.video"
+extension A11y.AttachmentGalleryView.Item.Video {
+    /// `attachment_gallery_view.item.video`
+    static let identifier: String = "attachment_gallery_view.item.video"
 }
 
-extension A11y.AttachmentsView.ButtonSelectAll {
-    /// `attachments_view.button_select_all`
-    static let identifier = "attachments_view.button_select_all"
+extension A11y.AttachmentGalleryView.ButtonSelectAll {
+    /// `attachment_gallery_view.button_select_all`
+    static let identifier = "attachment_gallery_view.button_select_all"
 }
 
-extension A11y.AttachmentsView.ButtonDeselect {
-    /// `attachments_view.button_deselect`
-    static let identifier = "attachments_view.button_deselect"
+extension A11y.AttachmentGalleryView.ButtonDeselect {
+    /// `attachment_gallery_view.button_deselect`
+    static let identifier = "attachment_gallery_view.button_deselect"
 }
 
-extension A11y.AttachmentsView.ButtonShare {
-    /// `attachments_view.button_share`
-    static let identifier = "attachments_view.button_share"
+extension A11y.AttachmentGalleryView.ButtonShare {
+    /// `attachment_gallery_view.button_share`
+    static let identifier = "attachment_gallery_view.button_share"
 }
 
-extension A11y.AttachmentsView.Status {
-    /// `attachments_view.status.\(param)` (selection_mode|selected_count)
+extension A11y.AttachmentGalleryView.Status {
+    /// `attachment_gallery_view.status.\(param)` (selection_mode|selected_count)
     static func identifier(_ param: String) -> String {
-        "attachments_view.status.\(param)"
+        "attachment_gallery_view.status.\(param)"
     }
 }
 
@@ -634,17 +598,7 @@ extension A11y.MessageInput.AttachmentPreview.ButtonRemove {
     static let identifier = "message_input.attachment_preview.button_remove"
 }
 
-extension A11y.MessageInput.AttachmentPreview.Loading {
-    /// `message_input.attachment_preview.loading`
-    static let identifier = "message_input.attachment_preview.loading"
-}
-
 // MARK: VoiceMessage
-
-extension A11y.MessageInput.VoiceMessage {
-    /// `message_input.voice_message`
-    static let identifier = "message_input.voice_message"
-}
 
 extension A11y.MessageInput.VoiceMessage.Delete {
     /// `message_input.voice_message.delete`
@@ -708,6 +662,21 @@ extension A11y.InactivityPopup.ButtonRefresh {
 extension A11y.InactivityPopup.ButtonExpire {
     /// `inactivity_popup.button_expire`
     static let identifier = "inactivity_popup.button_expire"
+}
+
+// MARK: Satisfaction Survey
+
+extension A11y.SatisfactionSurvey {
+
+    enum Header {
+        /// `satisfaction_survey.header`
+        static let identifier = "satisfaction_survey.header"
+    }
+}
+
+extension A11y.SatisfactionSurvey.ButtonClose {
+    /// `satisfaction_survey.button_close`
+    static let identifier = "satisfaction_survey.button_close"
 }
 
 // MARK: End Conversation Popup

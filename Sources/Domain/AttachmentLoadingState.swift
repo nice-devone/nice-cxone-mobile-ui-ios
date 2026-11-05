@@ -34,28 +34,30 @@ enum AttachmentLoadingState<Value> {
     var isInitial: Bool {
         if case .initial = self {
             return true
+        } else {
+            return false
         }
-        return false
     }
 
-    var isLoading: Bool {
-        if case .loading = self {
-            return true
-        }
-        return false
-    }
-
+    // periphery:ignore - used only by the test target, which Periphery does not index
     var isLoaded: Bool {
         if case .loaded = self {
             return true
+        } else {
+            return false
         }
-        return false
     }
 
     var isFailed: Bool {
         if case .failed = self {
             return true
+        } else {
+            return false
         }
-        return false
+    }
+
+    /// Whether a (new) load may be started: nothing has been attempted yet, or the previous attempt failed.
+    var canStartLoading: Bool {
+        isInitial || isFailed
     }
 }

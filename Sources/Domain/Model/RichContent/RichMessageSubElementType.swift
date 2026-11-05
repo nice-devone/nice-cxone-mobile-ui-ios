@@ -18,8 +18,8 @@ import Foundation
 /// Object representing the elements available for selection within the ``ListPickerItem`` or Menu message cell elements
 ///
 /// This enum is designed for organizing and representing various sub-elements within rich messages,
-/// which can include interactive buttons, text content, and file attachments.
-/// The `postback` property allows easy access to the postback value for button elements,
+/// which can include interactive buttons and time slots.
+/// The `postback` property allows easy access to the postback value for these elements,
 /// making it convenient for handling user interactions in rich messages.
 enum RichMessageSubElementType: Hashable, Equatable {
     
@@ -30,23 +30,15 @@ enum RichMessageSubElementType: Hashable, Equatable {
     
     case timeSlot(RichMessageTimeSlot)
     
-    /// Represents a text element, which can be either regular text or a title, in the rich message.
-    case text(String, isTitle: Bool)
-    
-    /// Represents a file attachment with a URL.
-    case file(URL)
-    
     // MARK: - Properties
     
-    /// An optional property that extracts the postback value from a sub-element type, returning `nil` for other types.
+    /// The postback value of the sub-element: the button's postback, or the time slot's identifier.
     var postback: String? {
         switch self {
         case .button(let entity):
             return entity.postback
         case .timeSlot(let entity):
             return entity.id
-        default:
-            return nil
         }
     }
 }

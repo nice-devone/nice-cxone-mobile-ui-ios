@@ -26,6 +26,8 @@ class ThreadListViewModel: ObservableObject {
     @Published var threadStatus: ThreadStatusType = .current
     @Published var currentThread: CXoneChatUI.ChatThread?
     @Published var isEditingThreadName = false
+    /// Threads holding a satisfaction survey that arrived while they weren't open - shown as unread until opened.
+    @Published private(set) var threadIdsWithPendingSurvey = Set<String>()
 
     /// Binding that drives whether `ThreadListView` is presenting a `ThreadView`.
     ///
@@ -70,6 +72,13 @@ class ThreadListViewModel: ObservableObject {
         self.chatProvider = containerViewModel.chatProvider
         self.containerViewModel = containerViewModel
         self.threadToOpen = containerViewModel.threadToOpen
+
+        containerViewModel.$pendingSatisfactionSurveys
+            .map { pendingSurveys in
+                Set(pendingSurveys.keys)
+            }
+            .removeDuplicates()
+            .assign(to: &$threadIdsWithPendingSurvey)
     }
 
     @MainActor
@@ -130,8 +139,8 @@ extension ThreadListViewModel {
         } catch {
             error.logError()
             
-            self.alertType = .connectionErrorAlert {
-                Task { @MainActor [weak self] in
+            self.alertType = .connectionErrorAlert { [weak self] in
+                Task { @MainActor in
                     await self?.containerViewModel?.disconnect()
                 }
             }
@@ -258,12 +267,12 @@ private extension ThreadListViewModel {
     func updateCurrentThreads(with threads: [CXoneChatSDK.ChatThread]? = nil) {
         chatThreads = (threads ?? chatProvider.threads.get())
             .filter { (threadStatus == .current) == ($0.state != .closed) }
+            .compactMap(ChatThreadMapper.map)
             .sorted { (thread1, thread2) in
                 // Sort by the most recent message's createdAt field
-                let latestMessage1 = thread1.messages.max { $0.createdAt < $1.createdAt }?.createdAt ?? Date.distantPast
-                let latestMessage2 = thread2.messages.max { $0.createdAt < $1.createdAt }?.createdAt ?? Date.distantPast
+                let latestMessage1 = thread1.latestMessageDate ?? Date.distantPast
+                let latestMessage2 = thread2.latestMessageDate ?? Date.distantPast
                 return latestMessage1 > latestMessage2
             }
-            .compactMap(ChatThreadMapper.map)
     }
 }

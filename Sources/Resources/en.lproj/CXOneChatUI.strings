@@ -29,7 +29,7 @@
 "alert.edit_prechat_custom_fields.title" = "Edit Pre-chat Form";
 "alert.generic_error.message" = "Something went wrong. Please, try again later.";
 "alert.disconnect_error.message" = "Oops! The chat encountered an issue and will disconnect. Please try again later.";
-"alert.feature_unavailable.message" = "The chat is not available because the '%1$@' feature is not implemented. Check the documentation for more information.";
+"alert.feature_unavailable.message" = "The chat is not available because the '%1$@' feature could not be enabled. Check your channel configuration or contact support for more information.";
 "alert.end_conversation.message" = "Are you sure you want to end this conversation?";
 "alert.disconnect.confirm" = "Disconnect";
 "alert.camera_permission.message" = "Camera access is required to take photos or record videos. Please allow camera access in Settings.";
@@ -102,6 +102,9 @@
 "chat.message.quick_replies.select_one_option" = "Select one option below";
 "chat.message.time_picker.formatted" = "%@, %@ min";
 
+// MARK: - Chat - Satisfaction Survey
+"chat.satisfaction_survey.notification_title" = "Satisfaction survey";
+
 // MARK: - LiveChat - Offline
 "live_chat.offline.title" = "We are currently offline";
 "live_chat.offline.message" = "Please check back soon.";
@@ -122,9 +125,12 @@
 
 // MARK: - Form
 "form.required_label" = "%@ *";
+"form.field_error" = "%1$@, %2$@";
 
 // MARK: - Form - Pre-chat Survey
 "pre_chat_survey.subtitle" = "Please fill out all fields and submit the form.";
+"pre_chat_survey.required_fields_legend" = "Fields marked with * are required.";
+"pre_chat_survey.subtitle_with_required_fields_legend" = "%1$@ %2$@";
 
 // MARK: - Form - Send Transcript
 "send_transcript.title" = "Chat Transcript";

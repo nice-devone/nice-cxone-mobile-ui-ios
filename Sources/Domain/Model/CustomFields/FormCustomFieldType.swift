@@ -32,6 +32,7 @@ import Foundation
 ///     ...
 /// }
 /// ```
+@MainActor
 class FormCustomFieldType: ObservableObject, Identifiable {
     
     // MARK: - Properties
@@ -47,6 +48,18 @@ class FormCustomFieldType: ObservableObject, Identifiable {
     
     /// A unique identifier or key for this field.
     let ident: String
+    
+    /// The value used for validation and submission.
+    ///
+    /// Kept verbatim here, since list and tree values are backend-defined option keys; free-text fields override it.
+    var submissionValue: String {
+        value
+    }
+    
+    /// Whether the field is required but has no value yet.
+    var isMissingRequiredValue: Bool {
+        isRequired && submissionValue.isEmpty
+    }
     
     // MARK: - Init
     
