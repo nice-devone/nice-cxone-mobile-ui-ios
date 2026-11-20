@@ -2,6 +2,13 @@
 # [Unreleased]
 
 
+<a name="4.1.1"></a>
+# [4.1.1] - 2026-11-20
+
+## Fixes
+- Picking photos from the photo library no longer fails with an error when a document from the Files app is already attached to the message. The check that skips a photo already attached read every attached file, including the document, which the app can only read with the access the Files app grants for it. It now compares only attached images that weren't picked from the Files app.
+
+
 <a name="4.1.0"></a>
 # [4.1.0] - 2026-11-04
 
@@ -586,7 +593,8 @@
   - typing start/end
 
 
-[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/4.1.0...HEAD
+[Unreleased]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/4.1.1...HEAD
+[4.1.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/4.1.0...4.1.1
 [4.1.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/4.0.0...4.1.0
 [4.0.0]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.3.1...4.0.0
 [3.3.1]: https://github.com/nice-devone/nice-cxone-mobile-ui-ios/compare/3.3.0...3.3.1
