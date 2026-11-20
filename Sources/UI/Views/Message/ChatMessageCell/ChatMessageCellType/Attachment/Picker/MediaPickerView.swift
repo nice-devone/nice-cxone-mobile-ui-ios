@@ -244,7 +244,7 @@ private extension MediaPickerView.Coordinator {
         }
         
         // Check if the file already locally exists, we don't want to handle the same file multiple times
-        if let first = try attachments.first(where: { try Data(contentsOf: $0.url) == data }) {
+        if let first = attachments.firstImage(containing: data) {
             LogManager.info("Attachment already exists -> reusing")
             return first
         }
